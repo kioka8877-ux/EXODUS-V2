@@ -41,6 +41,56 @@ drive.mount('/content/drive')
 
 ---
 
+## 🎮 Interfaces Colab
+
+Deux notebooks sont disponibles pour des usages différents:
+
+### EXO_00_CORTEX_CONTROL.ipynb — Mode Développement
+
+**Quand l'utiliser:**
+- Pendant la phase de test (DELTA)
+- Pour debugger des erreurs
+- Pour tester différents prompts/modèles
+- Pour inspecter les résultats en détail
+
+**Fonctionnalités:**
+- ✅ Vérification API
+- 🖼️ Preview vidéo (frame + métadonnées)
+- ✏️ Prompt éditable
+- 🤖 Sélection de modèle
+- 📋 Inspection JSON détaillée
+- 🧪 Tests unitaires
+- 🛡️ Validation Arsenal
+
+**Cellules:** 13 cellules exécutables individuellement
+
+### EXO_00_CORTEX_PRODUCTION.ipynb — Mode Batch
+
+**Quand l'utiliser:**
+- Après le scellage de l'unité
+- Pour traiter plusieurs vidéos d'un coup
+- Production de masse
+
+**Fonctionnalités:**
+- ⚡ Setup one-click
+- 🏭 Traitement automatique de toutes les vidéos
+- ⏭️ Skip des vidéos déjà traitées
+- 📊 Rapport de batch
+
+**Cellules:** 4 cellules seulement (Setup → Tir → Rapport)
+
+### Accès aux notebooks
+
+```
+00_CORTEX_HQ/CODEBASE/
+├── EXO_00_CORTEX.py               # Script principal
+├── EXO_00_CORTEX_CONTROL.ipynb    # Notebook DEBUG
+├── EXO_00_CORTEX_PRODUCTION.ipynb # Notebook BATCH
+└── requirements.txt
+```
+
+---
+
 ## 🔑 Configuration API Gemini
 
 1. Obtenir une clé API sur [Google AI Studio](https://aistudio.google.com/)
@@ -113,14 +163,16 @@ python EXO_00_CORTEX.py \
 ```
 00_CORTEX_HQ/
 ├── CODEBASE/
-│   ├── EXO_00_CORTEX.py    # Script principal
-│   └── requirements.txt     # Dépendances
-├── IN_VIDEO_SOURCE/         # Déposer les vidéos ici
+│   ├── EXO_00_CORTEX.py               # Script principal
+│   ├── EXO_00_CORTEX_CONTROL.ipynb    # Notebook DEBUG
+│   ├── EXO_00_CORTEX_PRODUCTION.ipynb # Notebook BATCH
+│   └── requirements.txt                # Dépendances
+├── IN_VIDEO_SOURCE/                    # Déposer les vidéos ici
 │   └── video.mp4
-├── OUT_MANIFEST/            # JSON générés ici
+├── OUT_MANIFEST/                       # JSON générés ici
 │   └── PRODUCTION_PLAN_video.json
-├── UNIT_00_SUBPLAN.md       # Sous-plan technique
-└── README_DEV.md            # Cette documentation
+├── UNIT_00_SUBPLAN.md                  # Sous-plan technique
+└── README_DEV.md                       # Cette documentation
 ```
 
 ---
