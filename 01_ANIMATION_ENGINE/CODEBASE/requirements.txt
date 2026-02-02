@@ -1,0 +1,27 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║           TRANSMUTATION ENGINE — Python Dependencies                         ║
+# ╠══════════════════════════════════════════════════════════════════════════════╣
+# ║  Pour Colab: Ces packages sont pré-installés ou installés via pip            ║
+# ║  EMOCA doit être installé séparément (voir README_DEV.md)                    ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# Core ML/Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Numerical & Signal Processing
+numpy>=1.24.0
+scipy>=1.10.0
+
+# Video Processing
+opencv-python-headless>=4.8.0
+
+# Configuration
+PyYAML>=6.0
+omegaconf>=2.3.0
+
+# Image Processing (pour prétraitement EMOCA)
+Pillow>=9.0.0
+
+# Utilities
+tqdm>=4.65.0
