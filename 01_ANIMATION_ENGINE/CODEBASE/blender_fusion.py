@@ -1,9 +1,10 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║              BLENDER FUSION — Body + Face → Alembic Export                   ║
+║        BLENDER FUSION — Body + Face → .blend (Master) + .abc (Preview)       ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Script Blender pour fusion Body + Face → Alembic.                           ║
-║  Exécuté via: blender --background --python blender_fusion.py -- [args]      ║
+║  PATCH TITUS: Double export pour compatibilité U02 (LOGISTICS DEPOT)         ║
+║  Output Principal: .blend avec armature active (pour attachement props)      ║
+║  Output Secondaire: .abc (preview/backup)                                    ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -27,6 +28,7 @@ parser.add_argument('--face-json', required=True, help='Facial data JSON')
 parser.add_argument('--output', required=True, help='Output Alembic path')
 parser.add_argument('--sync-offset', type=int, default=0, help='Sync offset in frames')
 parser.add_argument('--smooth-window', type=int, default=5, help='Savitzky-Golay window')
+parser.add_argument('--output-blend', help='Output .blend path (auto-generated if not provided)')
 
 args = parser.parse_args(argv)
 
@@ -354,6 +356,24 @@ def transfer_body_animation(source_armature: bpy.types.Object, target_armature: 
     log(f"Animation transférée: frames {frame_start}-{frame_end}")
 
 
+def export_blend(output_path: str):
+    """Exporte le fichier .blend avec textures packées."""
+    log(f"Export Blend: {output_path}")
+    
+    output_dir = Path(output_path).parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    bpy.ops.file.pack_all()
+    
+    bpy.ops.wm.save_as_mainfile(filepath=output_path, compress=True)
+    
+    if Path(output_path).exists():
+        size_mb = Path(output_path).stat().st_size / (1024 * 1024)
+        log(f"Export Blend réussi: {output_path} ({size_mb:.2f} MB)")
+    else:
+        log("Export Blend échoué!", "ERROR")
+
+
 def export_alembic(output_path: str):
     """Exporte la scène en Alembic."""
     log(f"Export Alembic: {output_path}")
@@ -411,11 +431,17 @@ def main():
     if actor_armature and args.smooth_window > 2:
         apply_smoothing(actor_armature, args.smooth_window)
     
+    blend_output = args.output_blend
+    if not blend_output:
+        blend_output = str(Path(args.output).with_suffix('.blend'))
+    
+    export_blend(blend_output)
+    
+    export_alembic(args.output)
+    
     if body_armature:
         bpy.data.objects.remove(body_armature, do_unlink=True)
         log("Armature FBX source supprimée")
-    
-    export_alembic(args.output)
     
     print("=" * 60)
     print("  FUSION COMPLÈTE")

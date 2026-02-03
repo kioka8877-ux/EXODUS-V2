@@ -5,7 +5,7 @@
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                 FRÉGATE 01_TRANSMUTATION — TECHNICAL SUBPLAN                 ║
-║                    Body Motion + Facial Capture → Alembic                    ║
+║            Body Motion + Facial Capture → .blend (Master) + .abc             ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
@@ -25,7 +25,8 @@ Fusionner des animations corporelles (FBX MoCap) avec des expressions faciales e
 ### Output
 | Type | Format | Destination |
 |------|--------|-------------|
-| Baked Animation | `.abc` | Blender / Unity / Roblox |
+| Baked Animation (MAÎTRE) | `.blend` | U02 LOGISTICS (props attachment) |
+| Baked Animation (SECONDAIRE) | `.abc` | Preview / Backup |
 | Face Data | `.json` | Debug / Archive |
 
 ---
@@ -52,8 +53,14 @@ Fusionner des animations corporelles (FBX MoCap) avec des expressions faciales e
 │  │  (Rigged)    │                               │                          │
 │  └──────────────┘                               ▼                          │
 │                                          ┌──────────────┐                  │
-│                                          │  OUTPUT.abc  │                  │
-│                                          │  (Alembic)   │                  │
+│                                          │ OUTPUT.blend │ ← MAÎTRE         │
+│                                          │  (Armature)  │                  │
+│                                          └──────┬───────┘                  │
+│                                                 │                          │
+│                                                 ▼                          │
+│                                          ┌──────────────┐                  │
+│                                          │  OUTPUT.abc  │ ← SECONDAIRE     │
+│                                          │  (Preview)   │                  │
 │                                          └──────────────┘                  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -148,7 +155,9 @@ offset = video_frame - fbx_frame
 # 3. Transfer body animation
 # 4. Apply facial shape keys
 # 5. Apply smoothing
-# 6. Export Alembic
+# 6. Export .blend MAÎTRE (avec armature pour U02)
+# 7. Export .abc SECONDAIRE (preview/backup)
+# 8. Cleanup armature FBX source
 ```
 
 ### Phase 4: Smoothing
@@ -169,6 +178,7 @@ offset = video_frame - fbx_frame
 |-----------|---------|-------------|
 | `--sync-offset` | 0 | Offset sync en frames |
 | `--smooth-window` | 5 | Fenêtre Savitzky-Golay |
+| `--output-blend` | auto | Chemin .blend (auto = même nom que .abc) |
 | `--sync-marker` | — | Paire (video_frame, fbx_frame) |
 | `--dry-run` | false | Validation sans exécution |
 
@@ -253,8 +263,10 @@ EXODUS_AI_MODELS/
 - [ ] Blender 4.0 installé
 - [ ] Sync offset calculé
 - [ ] Dry-run passé
-- [ ] Output .abc généré
+- [ ] Output .blend généré (MAÎTRE)
+- [ ] Output .abc généré (SECONDAIRE)
 - [ ] Validé dans Blender
+- [ ] Prêt pour U02 (LOGISTICS)
 
 ---
 
