@@ -1,0 +1,27 @@
+# EXODUS V2 — Unit 02: LOGISTICS DEPOT
+# Requirements for Colab/Local execution
+
+# Note: bpy (Blender Python) is provided by Blender itself
+# These are auxiliary dependencies for the wrapper scripts
+
+# JSON parsing (stdlib, included for reference)
+# json - built-in
+
+# Path handling (stdlib)
+# pathlib - built-in
+
+# CLI arguments (stdlib)
+# argparse - built-in
+
+# Subprocess management (stdlib)
+# subprocess - built-in
+
+# Optional: for standalone testing without Blender
+numpy>=1.21.0
+
+# Optional: for generating reports
+# (no additional deps needed, using stdlib json)
+
+# Development/Debug
+# ipykernel  # For Jupyter notebooks
+# matplotlib  # For visualization in notebooks
