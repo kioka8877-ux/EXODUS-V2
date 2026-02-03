@@ -1,0 +1,45 @@
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║           AIRCRAFT CARRIER — Python Dependencies                             ║
+# ╠══════════════════════════════════════════════════════════════════════════════╣
+# ║  Pour Colab: Certains packages sont pré-installés                            ║
+# ║  FFmpeg doit être installé séparément (apt install ffmpeg)                   ║
+# ║  RIFE/Real-ESRGAN doivent être téléchargés et configurés                    ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# Core ML/Deep Learning (pour RIFE et Real-ESRGAN)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Image/Video Processing
+opencv-python-headless>=4.8.0
+Pillow>=9.0.0
+numpy>=1.24.0
+
+# Real-ESRGAN (optionnel - pour upscale IA)
+# basicsr>=1.4.2
+# realesrgan>=0.3.0
+
+# Audio Processing
+scipy>=1.10.0
+
+# Utilities
+tqdm>=4.65.0
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DÉPENDANCES SYSTÈME REQUISES (non-pip)
+# ═══════════════════════════════════════════════════════════════════════════════
+# 
+# FFmpeg (requis):
+#   Ubuntu: sudo apt install ffmpeg
+#   Colab: !apt install -y ffmpeg
+#
+# RIFE (optionnel, pour interpolation IA):
+#   Télécharger depuis: https://github.com/hzwer/Practical-RIFE
+#   Placer dans: EXODUS_AI_MODELS/rife/
+#
+# Real-ESRGAN (optionnel, pour upscale IA):
+#   pip install basicsr realesrgan
+#   Télécharger modèle depuis: https://github.com/xinntao/Real-ESRGAN
+#   Placer dans: EXODUS_AI_MODELS/realesrgan/
+#
+# ═══════════════════════════════════════════════════════════════════════════════
