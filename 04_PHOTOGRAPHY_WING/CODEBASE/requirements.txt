@@ -1,0 +1,13 @@
+# EXODUS 04_PHOTOGRAPHY_WING Dependencies
+# Blender 4.0+ headless pour le traitement
+
+# Standard library suffisante pour le wrapper CLI
+# Blender intégré fournit: bpy, mathutils
+
+# Pour les notebooks Colab
+scipy>=1.10.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+
+# Validation JSON schema (optionnel)
+jsonschema>=4.17.0
