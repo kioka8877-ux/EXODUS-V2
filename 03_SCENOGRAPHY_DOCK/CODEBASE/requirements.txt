@@ -1,0 +1,15 @@
+# Requirements for EXODUS Unit 03 - Scenography Dock
+# Note: bpy (Blender Python) is provided by Blender runtime
+
+# Core
+pathlib2>=2.3.7; python_version < "3.4"
+
+# JSON handling (stdlib, but explicit)
+# json is built-in
+
+# CLI
+argparse>=1.4.0; python_version < "3.2"
+
+# Optional: For standalone testing without Blender
+# numpy>=1.21.0
+# pillow>=9.0.0
