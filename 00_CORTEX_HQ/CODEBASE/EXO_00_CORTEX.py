@@ -729,7 +729,7 @@ Exemples:
     drive_root = Path(args.drive_root).resolve()
     cortex_dir = drive_root / "00_CORTEX_HQ"
     input_dir = cortex_dir / "IN_VIDEO_SOURCE"
-    output_dir = cortex_dir / "OUT_MANIFEST"
+    output_dir = cortex_dir / "OUT_PRODUCTION_PLAN"
     
     video_path = input_dir / args.input_video
     

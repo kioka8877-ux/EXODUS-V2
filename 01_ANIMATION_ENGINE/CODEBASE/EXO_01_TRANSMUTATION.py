@@ -168,11 +168,13 @@ Exemples:
     parser.add_argument('--drive-root', required=True, 
                         help='Racine du Drive EXODUS')
     parser.add_argument('--body-fbx', required=True,
-                        help='Fichier FBX du mouvement corps')
+                        help='Fichier FBX du mouvement corps (cherché dans IN_MIXAMO_BASE/)')
     parser.add_argument('--video', required=True,
-                        help='Vidéo source pour extraction faciale')
+                        help='Vidéo source pour extraction faciale (cherchée dans IN_CORTEX_JSON/ ou chemin absolu)')
     parser.add_argument('--actor-blend', required=True,
-                        help='Fichier .blend de l\'avatar Roblox riggé')
+                        help='Fichier .blend de l\'avatar Roblox riggé (chemin absolu requis)')
+    parser.add_argument('--production-plan',
+                        help='PRODUCTION_PLAN.JSON (cherché dans IN_CORTEX_JSON/)')
     
     parser.add_argument('--output-name', default='TRANSMUTED_ACTOR',
                         help='Nom du fichier output (sans extension)')
@@ -198,12 +200,19 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "01_ANIMATION_ENGINE"
     
-    input_dir = unit_root / "IN_INPUTS"
-    output_dir = unit_root / "OUT_BAKED"
+    cortex_json_dir = unit_root / "IN_CORTEX_JSON"
+    mixamo_base_dir = unit_root / "IN_MIXAMO_BASE"
+    output_dir = unit_root / "OUT_MOTION_DATA"
     
-    body_path = input_dir / "body_motions" / args.body_fbx
-    video_path = input_dir / "source_videos" / args.video
-    actor_path = input_dir / "actor_models" / args.actor_blend
+    body_path = Path(args.body_fbx)
+    if not body_path.is_absolute():
+        body_path = mixamo_base_dir / args.body_fbx
+    
+    video_path = Path(args.video)
+    if not video_path.is_absolute():
+        video_path = cortex_json_dir / args.video
+    
+    actor_path = Path(args.actor_blend)
     
     logger.info(f"Drive Root: {drive_root}")
     logger.info(f"Body FBX: {body_path}")

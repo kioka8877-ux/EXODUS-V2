@@ -489,12 +489,12 @@ Exemples:
     
     parser.add_argument('--drive-root', required=True,
                         help='Racine du Drive EXODUS')
-    parser.add_argument('--components-dir',
-                        help='Dossier des composants (défaut: IN_COMPONENTS/)')
+    parser.add_argument('--assembly-kit-dir',
+                        help='Dossier des composants (défaut: IN_ASSEMBLY_KIT/)')
     parser.add_argument('--output-dir',
-                        help='Dossier output (défaut: OUT_FINAL/)')
+                        help='Dossier output (défaut: OUT_FINAL_MOVIE/)')
     parser.add_argument('--production-plan',
-                        help='PRODUCTION_PLAN.JSON (défaut: IN_COMPONENTS/PRODUCTION_PLAN.JSON)')
+                        help='PRODUCTION_PLAN.JSON (défaut: IN_ASSEMBLY_KIT/PRODUCTION_PLAN.JSON)')
     parser.add_argument('--project-name', default='EXODUS_OUTPUT',
                         help='Nom du projet pour les fichiers output')
     parser.add_argument('--no-rife', action='store_true',
@@ -519,23 +519,23 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "06_AIRCRAFT_CARRIER"
     
-    if args.components_dir:
-        components_dir = Path(args.components_dir)
+    if args.assembly_kit_dir:
+        assembly_kit_dir = Path(args.assembly_kit_dir)
     else:
-        components_dir = unit_root / "IN_COMPONENTS"
+        assembly_kit_dir = unit_root / "IN_ASSEMBLY_KIT"
     
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
-        output_dir = unit_root / "OUT_FINAL"
+        output_dir = unit_root / "OUT_FINAL_MOVIE"
     
     if args.production_plan:
         plan_path = Path(args.production_plan)
     else:
-        plan_path = components_dir / "PRODUCTION_PLAN.JSON"
+        plan_path = assembly_kit_dir / "PRODUCTION_PLAN.JSON"
     
     logger.info(f"Drive Root: {drive_root}")
-    logger.info(f"Components: {components_dir}")
+    logger.info(f"Assembly Kit: {assembly_kit_dir}")
     logger.info(f"Output: {output_dir}")
     logger.info(f"Project: {args.project_name}")
     
@@ -555,7 +555,7 @@ Exemples:
         esrgan_model_path = check_realesrgan_model(drive_root, logger)
     
     plan = validate_production_plan(plan_path, logger)
-    components = validate_components(components_dir, plan, logger)
+    components = validate_components(assembly_kit_dir, plan, logger)
     
     output_dir.mkdir(parents=True, exist_ok=True)
     

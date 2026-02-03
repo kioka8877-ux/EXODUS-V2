@@ -426,9 +426,9 @@ Exemples:
     parser.add_argument('--production-plan', required=True,
                         help='PRODUCTION_PLAN.JSON du Cortex')
     parser.add_argument('--render-dir',
-                        help='Dossier rendus EXR (défaut: IN_RENDER/)')
+                        help='Dossier rendus EXR (défaut: IN_RAW_FRAMES/)')
     parser.add_argument('--output-dir',
-                        help='Dossier output (défaut: OUT_GRADED/)')
+                        help='Dossier output (défaut: OUT_FINAL_FRAMES/)')
     parser.add_argument('--luts-dir',
                         help='Dossier LUTs (défaut: LUTS/)')
     parser.add_argument('--blender-path',
@@ -453,19 +453,21 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "05_ALCHEMIST_LAB"
     
+    raw_frames_dir = unit_root / "IN_RAW_FRAMES"
+    
     plan_path = Path(args.production_plan)
     if not plan_path.is_absolute():
-        plan_path = unit_root / "IN_RENDER" / args.production_plan
+        plan_path = raw_frames_dir / args.production_plan
     
     if args.render_dir:
         render_dir = Path(args.render_dir)
     else:
-        render_dir = unit_root / "IN_RENDER"
+        render_dir = raw_frames_dir
     
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
-        output_dir = unit_root / "OUT_GRADED"
+        output_dir = unit_root / "OUT_FINAL_FRAMES"
     
     if args.luts_dir:
         luts_dir = Path(args.luts_dir)
