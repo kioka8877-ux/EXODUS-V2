@@ -281,7 +281,8 @@ blender --background --python blender_fusion.py -- \
     --body-fbx motion.fbx \
     --actor-blend avatar.blend \
     --face-json face.json \
-    --output output.abc
+    --output output.abc \
+    --output-blend output.blend  # Optionnel: auto-généré si absent
 ```
 
 ### Inspecter face.json
@@ -344,8 +345,24 @@ Utiliser `EXO_01_PRODUCTION.ipynb` pour traiter plusieurs acteurs en séquence.
 
 ## 📁 Output Format
 
-### Alembic (.abc)
-- Contient mesh + animation
+### Dual Export (PATCH TITUS)
+Le pipeline génère deux outputs:
+
+```
+OUT_BAKED/
+├── actor_animated.blend    # MAÎTRE — Armature active pour U02
+└── actor_animated.abc      # SECONDAIRE — Preview/Backup
+```
+
+### Blend (.blend) — OUTPUT MAÎTRE
+- Contient mesh + animation + **armature active**
+- Textures packées pour portabilité
+- **Requis pour U02 (LOGISTICS)** qui attache des props aux bones
+- Compatible: Blender natif
+
+### Alembic (.abc) — OUTPUT SECONDAIRE
+- Contient mesh + animation (preview)
+- **Attention**: L'armature/bones sont perdus!
 - Compatible: Blender, Unity, Maya
 - Inclut shape keys animées
 
