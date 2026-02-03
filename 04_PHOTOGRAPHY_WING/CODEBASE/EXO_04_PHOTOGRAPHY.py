@@ -308,10 +308,12 @@ Exemples:
                         help='Racine du Drive EXODUS')
     parser.add_argument('--production-plan', required=True,
                         help='PRODUCTION_PLAN.JSON du Cortex')
-    parser.add_argument('--input-dir',
-                        help='Dossier IN_SCENE/ (défaut: IN_SCENE/)')
+    parser.add_argument('--video-source-dir',
+                        help='Dossier IN_VIDEO_SOURCE/ (vidéo de référence)')
+    parser.add_argument('--scene-ref-dir',
+                        help='Dossier IN_SCENE_REF/ (référence scène 3D)')
     parser.add_argument('--output-dir',
-                        help='Dossier output (défaut: OUT_CAMERA/)')
+                        help='Dossier output (défaut: OUT_CAMERA_LOGIC/)')
     parser.add_argument('--scene-id',
                         help='Traiter uniquement cette scène (défaut: toutes)')
     parser.add_argument('--blender-path',
@@ -332,28 +334,33 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "04_PHOTOGRAPHY_WING"
     
+    video_source_dir = unit_root / "IN_VIDEO_SOURCE"
+    scene_ref_dir = unit_root / "IN_SCENE_REF"
+    
     plan_path = Path(args.production_plan)
     if not plan_path.is_absolute():
-        plan_path = unit_root / "IN_SCENE" / args.production_plan
+        plan_path = scene_ref_dir / args.production_plan
     
-    if args.input_dir:
-        input_dir = Path(args.input_dir)
-    else:
-        input_dir = unit_root / "IN_SCENE"
+    if args.video_source_dir:
+        video_source_dir = Path(args.video_source_dir)
+    
+    if args.scene_ref_dir:
+        scene_ref_dir = Path(args.scene_ref_dir)
     
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
-        output_dir = unit_root / "OUT_CAMERA"
+        output_dir = unit_root / "OUT_CAMERA_LOGIC"
     
     logger.info(f"Drive Root: {drive_root}")
     logger.info(f"Production Plan: {plan_path}")
-    logger.info(f"Input Dir: {input_dir}")
+    logger.info(f"Video Source Dir: {video_source_dir}")
+    logger.info(f"Scene Ref Dir: {scene_ref_dir}")
     logger.info(f"Output Dir: {output_dir}")
     
     blender_path = check_blender(drive_root, logger, args.blender_path)
     plan = validate_production_plan(plan_path, logger)
-    env_mapping = validate_environment_files(input_dir, plan, logger)
+    env_mapping = validate_environment_files(scene_ref_dir, plan, logger)
     
     output_dir.mkdir(parents=True, exist_ok=True)
     

@@ -396,11 +396,11 @@ Exemples:
     parser.add_argument('--production-plan', required=True,
                         help='PRODUCTION_PLAN.JSON du Cortex')
     parser.add_argument('--hdri-library',
-                        help='Dossier HDRi library (défaut: IN_MAPS/hdri_library)')
+                        help='Dossier HDRi library (défaut: IN_MAP_RAW/hdri_library)')
     parser.add_argument('--environment-assets',
-                        help='Dossier environment assets (défaut: IN_MAPS/environment_assets)')
+                        help='Dossier environment assets (défaut: IN_MAP_RAW/environment_assets)')
     parser.add_argument('--output-dir',
-                        help='Dossier output (défaut: OUT_ENVIRONMENTS/)')
+                        help='Dossier output (défaut: OUT_PREMIUM_SCENE/)')
     parser.add_argument('--scene-ids',
                         help='IDs des scènes à traiter (ex: 1,2,3) — défaut: toutes')
     parser.add_argument('--blender-path',
@@ -421,24 +421,27 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "03_SCENOGRAPHY_DOCK"
     
+    cortex_json_dir = unit_root / "IN_CORTEX_JSON"
+    map_raw_dir = unit_root / "IN_MAP_RAW"
+    
     plan_path = Path(args.production_plan)
     if not plan_path.is_absolute():
-        plan_path = unit_root / "IN_MAPS" / args.production_plan
+        plan_path = cortex_json_dir / args.production_plan
     
     if args.hdri_library:
         hdri_library = Path(args.hdri_library)
     else:
-        hdri_library = unit_root / "IN_MAPS" / "hdri_library"
+        hdri_library = map_raw_dir / "hdri_library"
     
     if args.environment_assets:
         env_assets = Path(args.environment_assets)
     else:
-        env_assets = unit_root / "IN_MAPS" / "environment_assets"
+        env_assets = map_raw_dir / "environment_assets"
     
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
-        output_dir = unit_root / "OUT_ENVIRONMENTS"
+        output_dir = unit_root / "OUT_PREMIUM_SCENE"
     
     scene_filter = []
     if args.scene_ids:

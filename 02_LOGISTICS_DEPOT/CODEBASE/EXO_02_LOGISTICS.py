@@ -309,13 +309,15 @@ Exemples:
     parser.add_argument('--drive-root', required=True,
                         help='Racine du Drive EXODUS')
     parser.add_argument('--actor-blend', required=True,
-                        help='Fichier .blend de l\'avatar animé (de U01)')
+                        help='Fichier .blend de l\'avatar animé (cherché dans IN_MOTION_DATA/)')
     parser.add_argument('--production-plan', required=True,
-                        help='PRODUCTION_PLAN.JSON du Cortex')
+                        help='PRODUCTION_PLAN.JSON du Cortex (chemin absolu ou relatif)')
+    parser.add_argument('--roblox-avatar',
+                        help='Avatar Roblox .blend (cherché dans IN_ROBLOX_AVATAR/)')
     parser.add_argument('--props-library',
-                        help='Dossier props_library/ (défaut: IN_LOGISTICS/props_library)')
+                        help='Dossier props_library/ (défaut: IN_PROPS_LIBRARY/)')
     parser.add_argument('--output-dir',
-                        help='Dossier output (défaut: OUT_EQUIPPED/)')
+                        help='Dossier output (défaut: OUT_BAKED_ACTORS/)')
     parser.add_argument('--output-name', default='actor_equipped',
                         help='Nom des fichiers output (défaut: actor_equipped)')
     parser.add_argument('--blender-path',
@@ -336,23 +338,27 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "02_LOGISTICS_DEPOT"
     
+    motion_data_dir = unit_root / "IN_MOTION_DATA"
+    roblox_avatar_dir = unit_root / "IN_ROBLOX_AVATAR"
+    props_library_dir = unit_root / "IN_PROPS_LIBRARY"
+    
     actor_path = Path(args.actor_blend)
     if not actor_path.is_absolute():
-        actor_path = unit_root / "IN_LOGISTICS" / args.actor_blend
+        actor_path = motion_data_dir / args.actor_blend
     
     plan_path = Path(args.production_plan)
     if not plan_path.is_absolute():
-        plan_path = unit_root / "IN_LOGISTICS" / args.production_plan
+        plan_path = motion_data_dir / args.production_plan
     
     if args.props_library:
         props_library = Path(args.props_library)
     else:
-        props_library = unit_root / "IN_LOGISTICS" / "props_library"
+        props_library = props_library_dir
     
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
-        output_dir = unit_root / "OUT_EQUIPPED"
+        output_dir = unit_root / "OUT_BAKED_ACTORS"
     
     logger.info(f"Drive Root: {drive_root}")
     logger.info(f"Actor Blend: {actor_path}")
