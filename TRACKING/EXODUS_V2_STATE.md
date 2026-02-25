@@ -1,0 +1,62 @@
+# EXODUS V2 — ÉTAT J0 (Phylactère de Vérité)
+> Diagnostic de mutation — Point de départ 0%
+
+## TABLEAU DE CONFORMITÉ V2
+
+| Unité | Nom | Statut Code Actuel | Conformité V2 | Écart Principal |
+|-------|-----|--------------------|----------------|-----------------|
+| U00 | CORTEX HQ | 🟢 Scellée (V1) | 🔴 16% | 5/6 moteurs manquants |
+| U01 | ANIMATION ENGINE | 🟢 Forgé (V1) | 🔴 10% | Paradigme EMOCA ≠ Emotional Intent |
+| U02 | LOGISTICS DEPOT | 🟡 En Forge | 🟡 70% | Bypass conditionnel absent |
+| U03 | SCENOGRAPHY DOCK | 🟢 Forgé (V1) | 🔴 5% | McPrep ≠ Tri-Layer System |
+| U04 | PHOTOGRAPHY WING | 🟢 Opérationnel (V1) | 🟡 40% | Manque fSpy, DOF, Shake |
+| U05 | ALCHEMIST LAB | 🟢 Opérationnel (V1) | 🟡 50% | Manque Match Color, Grain |
+| U06 | AIRCRAFT CARRIER | ✅ Opérationnel (V1) | 🟢 80% | Manque ratio lock + CRF |
+| MARSHAL | INTENDANT | ❌ Inexistant | 🔴 0% | Module entièrement à créer |
+
+## ÉCARTS DÉTAILLÉS
+
+### U00 — CORTEX HQ
+- **Code actuel** : `EXO_00_CORTEX.py` — Gemini narrative analysis only
+- **V2 exige** : 6 moteurs parallèles (Gemini, T2M/SayMotion, Facial JSON, DepthAnything V2, SAM segmentation, FOV/Ratio extraction)
+- **Manquant** : DepthAnything V2 (depth maps .png sequence), SAM (semantic masks), T2M (motion synthesis prompt), Facial JSON (ARKit timing), FOV extraction (camera metadata)
+- **Outputs manquants** : `motion_synthesis_prompt.txt`, `facial_animation.json`, `DEPTH_MAP/` sequence, `semantic_masks.json`, `camera_fov_ratio` metadata, `audio_source.wav`
+
+### U01 — ANIMATION ENGINE
+- **Code actuel** : `facial_extractor.py` (355 lines) uses EMOCA mathematical extraction — trained on human faces, fails on Roblox avatars
+- **V2 exige** : "Emotional Intent Transfer" — Gemini text → Python → ARKit 52 Shape Keys. 3 layers: Observation (U00 Gemini), Translation (emotion→shape keys), Micro-Jitter injection. Plus Rhubarb lip-sync.
+- **Impact** : Complete rewrite of facial pipeline. `blender_fusion.py` and `sync_engine.py` also affected.
+
+### U02 — LOGISTICS DEPOT
+- **Code actuel** : Full module exists (props_loader, socketing_engine, timeline_manager, final_baker)
+- **V2 exige** : Conditional activation via `requires_u02` boolean from PRODUCTION_PLAN.JSON. Skip if no props detected.
+- **Impact** : Minor — add bypass logic to `EXO_02_LOGISTICS.py`
+
+### U03 — SCENOGRAPHY DOCK
+- **Code actuel** : Uses McPrep (Minecraft addon) to import map → PBR + HDRi. Files: `environment_builder.py`, `hdri_manager.py`, `pbr_applicator.py`, `props_placer.py`
+- **V2 exige** : Tri-Layer System — A) Infinity Dome (video on half-sphere), B) Displacement Mesh (DepthAnything depth maps → Blender Displace modifier on subdivided plane), C) PBR Swap (SAM masks → replace near surfaces). Plus Shadow Catcher, Reflectivity Hack (glass planes), World Sync.
+- **Impact** : Complete architecture rewrite. All 4 modules obsolete.
+
+### U04 — PHOTOGRAPHY WING
+- **Code actuel** : `camera_director.py`, `lighting_rig.py`, `cuts_engine.py`, `keyframe_animator.py` — has camera tracking and lighting
+- **V2 exige** : 4 pillars — A) fSpy/Blender tracker perspective lock (±5% movement limit), B) Auto-DOF with Empty on avatar bust, C) Procedural camera shake (Noise modifier in Graph Editor), D) Volume Scatter + invisible lights aligned to video sources
+- **Impact** : Partial rewrite — extend existing camera_director, add DOF and shake systems
+
+### U05 — ALCHEMIST LAB
+- **Code actuel** : `color_grader.py`, `compositor_pipeline.py`, `denoiser.py`, `effects_forge.py` — has LUT grading and denoising
+- **V2 exige** : Match Color (histogram alignment to source video), Film Grain matching (not just adding grain — matching source grain), Bloom/Glow bleed, Sharpness transfer blur. Uses OpenCV+Pillow.
+- **Impact** : Partial rewrite — needs histogram-based color matching instead of LUT, grain extraction from source
+
+### U06 — AIRCRAFT CARRIER
+- **Code actuel** : `rife_interpolator.py`, `final_encoder.py`, `upscaler.py`, `audio_sync.py`, `sequence_assembler.py` — has RIFE + FFmpeg
+- **V2 exige** : Strict ratio lock from U00 metadata (no letterbox), H.265/HEVC CRF 16-18 specifically, ~450MB-1.5GB per 60s
+- **Impact** : Minor — add ratio lock check and enforce CRF range
+
+### MARSHAL — L'Intendant
+- **Code actuel** : Does not exist anywhere in the repo
+- **V2 exige** : Ghost script per unit. 3 functions: Out-Check (verify OUT files), In-Check (validate IN files), Campaign Log. CLI: `python EXO_MARSHAL.py --unit F04 --mode validate`
+- **Impact** : Entire module to create from scratch
+
+## DÉSYNCHRONISATION CAMPAIGN_LOG
+Le fichier `EXODUS_CAMPAIGN_LOG.md` racine montre U01-U06 comme "EN ATTENTE" alors que les UNIT_XX_SUBPLAN.md confirment :
+- U01: 🟢 FORGÉ | U03: 🟢 FORGÉ | U04: 🟢 OPÉRATIONNEL | U05: 🟢 OPÉRATIONNEL | U06: ✅ OPÉRATIONNEL
