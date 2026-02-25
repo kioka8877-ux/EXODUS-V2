@@ -1,0 +1,63 @@
+# EXODUS V2 — RISKS (Analyse Forensique)
+
+## RISQUES CRITIQUES
+
+### R1 — VRAM Colab T4 (15GB limit)
+- **Unités touchées** : U00 (DepthAnything + SAM simultanés), U01 (Blender headless), U06 (RIFE)
+- **Probabilité** : HAUTE
+- **Impact** : OOM crash, perte du runtime Colab
+- **Mitigation** : Exécution séquentielle des moteurs lourds, garbage collection entre étapes, float16
+
+### R2 — Quotas API Gemini
+- **Unités touchées** : U00 (analyse vidéo), U01 (si fallback Gemini)
+- **Probabilité** : MOYENNE
+- **Impact** : Rate limiting, blocage pipeline
+- **Mitigation** : Retry avec exponential backoff, cache des résultats, quota monitoring
+
+### R3 — Temps de rendu RIFE sur T4
+- **Unités touchées** : U06
+- **Probabilité** : HAUTE
+- **Impact** : 60s vidéo → estimation 30-60 min de rendu pour interpolation 120FPS
+- **Mitigation** : Batch processing par segments de 10s, checkpoint system
+
+### R4 — Shadowban Google Colab
+- **Probabilité** : MOYENNE
+- **Impact** : Perte accès GPU pendant 24-48h
+- **Mitigation** : Rotation de comptes, sessions < 8h, pas de boucles infinies
+
+### R5 — Stabilité DepthAnything V2 sur séquences vidéo
+- **Probabilité** : MOYENNE
+- **Impact** : Flickering des depth maps entre frames, mesh instable en U03
+- **Mitigation** : Temporal smoothing, médiane sur 3 frames consécutives
+
+### R6 — Qualité SAM sur scènes Roblox/Brookhaven
+- **Probabilité** : MOYENNE
+- **Impact** : Mauvaise segmentation des surfaces → PBR Swap incorrect
+- **Mitigation** : Prompts spécifiques pour SAM, validation manuelle des masques critiques
+
+### R7 — Transferts manuels (facteur humain)
+- **Probabilité** : HAUTE
+- **Impact** : Fichiers manquants/corrompus entre frégates, rendus gaspillés
+- **Mitigation** : MARSHAL module (Out-Check + In-Check obligatoires)
+
+---
+
+## MATRICE DE RISQUES PAR FRÉGATE
+
+| Unité | R1 (VRAM) | R2 (Gemini) | R3 (RIFE) | R4 (Colab) | R5 (Depth) | R6 (SAM) | R7 (Transfert) |
+|-------|-----------|-------------|-----------|------------|------------|----------|-----------------|
+| U00 | 🔴 | 🔴 | ⬜ | 🟡 | 🔴 | 🔴 | 🟡 |
+| U01 | 🟡 | 🟡 | ⬜ | 🟡 | ⬜ | ⬜ | 🟡 |
+| U02 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | 🟡 |
+| U03 | 🟡 | ⬜ | ⬜ | 🟡 | 🔴 | 🔴 | 🟡 |
+| U04 | ⬜ | ⬜ | ⬜ | 🟡 | ⬜ | ⬜ | 🟡 |
+| U05 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | 🟡 |
+| U06 | 🔴 | ⬜ | 🔴 | 🟡 | ⬜ | ⬜ | 🟡 |
+| MARSHAL | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+
+**Légende** : 🔴 Critique | 🟡 Modéré | ⬜ Non concerné
+
+## RÉFÉRENCES
+- [PRD](./EXODUS_V2_PRD.md) — Arsenal et specs techniques
+- [ROADMAP](./EXODUS_V2_ROADMAP.md) — Phases de mitigation
+- [VALIDATION](./EXODUS_V2_VALIDATION.md) — Critères d'acceptation
