@@ -31,6 +31,7 @@ parser.add_argument('--sync-offset', type=int, default=0, help='Sync offset in f
 parser.add_argument('--intensity-mode', choices=['linear', 'quadratic', 'ease_in_out'],
                     default='ease_in_out', help='Intensity interpolation mode')
 parser.add_argument('--output-blend', help='Output .blend path (auto-generated if not provided)')
+parser.add_argument('--lip-sync-json', help='Lip-sync data JSON (from RhubarbBridge)', default=None)
 
 args = parser.parse_args(argv)
 
@@ -424,6 +425,80 @@ def apply_micro_jitter(actor: bpy.types.Object, blender_data: dict):
     log(f"Micro-jitter: {modified_count} noise modifiers appliqués")
 
 
+def apply_lip_sync_nla(actor: bpy.types.Object, lip_sync_data: dict, sync_offset: int):
+    """Applique le lip-sync comme NLA track prioritaire sur MOUTH_KEYS.
+
+    Ce track est layered AU-DESSUS des expression segments.
+    blend_type = 'REPLACE' pour que le lip-sync écrase les MOUTH_KEYS des émotions.
+
+    Architecture NLA après application :
+        Track N+1 (TOP) : Lip-Sync (Rhubarb) — REPLACE sur MOUTH_KEYS uniquement
+        Track N         : Expressions (émotions) — REPLACE
+        Track N-1       : Micro-Jitter (Noise) — ADD
+    """
+    log("Application lip-sync NLA")
+
+    mesh_obj = find_shape_key_mesh(actor)
+    if not mesh_obj:
+        log("Aucun mesh avec shape keys trouvé!", "ERROR")
+        return
+
+    segments = lip_sync_data.get("lip_sync_segments", [])
+    if not segments:
+        log("Aucun segment lip-sync", "WARN")
+        return
+
+    all_keys = set()
+    for seg in segments:
+        all_keys.update(seg["values"].keys())
+    create_missing_shape_keys(mesh_obj, list(all_keys))
+
+    shape_keys = mesh_obj.data.shape_keys
+    if not shape_keys.animation_data:
+        shape_keys.animation_data_create()
+
+    action = bpy.data.actions.new(name="lip_sync_rhubarb")
+
+    for key_name in all_keys:
+        kb = shape_keys.key_blocks.get(key_name)
+        if not kb:
+            continue
+
+        data_path = f'key_blocks["{key_name}"].value'
+        fcurve = action.fcurves.new(data_path=data_path)
+
+        for seg in segments:
+            fs = seg["frame_start"] - sync_offset
+            fe = seg["frame_end"] - sync_offset
+
+            if fe < 0:
+                continue
+            fs = max(0, fs)
+
+            mid_frame = (fs + fe) / 2.0
+            value = float(seg["values"].get(key_name, 0.0))
+
+            fcurve.keyframe_points.add(1)
+            kp = fcurve.keyframe_points[-1]
+            kp.co = (mid_frame, value)
+            kp.interpolation = 'BEZIER'
+            kp.handle_left_type = 'AUTO_CLAMPED'
+            kp.handle_right_type = 'AUTO_CLAMPED'
+
+    track = shape_keys.animation_data.nla_tracks.new()
+    track.name = "lip_sync"
+
+    first_frame = max(0, segments[0]["frame_start"] - sync_offset)
+    strip = track.strips.new(
+        name="lip_sync_rhubarb",
+        start=first_frame,
+        action=action,
+    )
+    strip.blend_type = 'REPLACE'
+
+    log(f"Lip-sync NLA: {len(segments)} cues appliqués sur {len(all_keys)} MOUTH_KEYS")
+
+
 # =========================================================================
 # MAIN
 # =========================================================================
@@ -454,6 +529,11 @@ def main():
     if actor_armature:
         apply_nla_facial_animation(actor_armature, blender_data, args.sync_offset)
         apply_micro_jitter(actor_armature, blender_data)
+
+        # Lip-sync (optionnel — NLA track prioritaire sur MOUTH_KEYS)
+        if args.lip_sync_json:
+            lip_sync_data = load_blender_data(args.lip_sync_json)
+            apply_lip_sync_nla(actor_armature, lip_sync_data, args.sync_offset)
 
     blend_output = args.output_blend
     if not blend_output:
