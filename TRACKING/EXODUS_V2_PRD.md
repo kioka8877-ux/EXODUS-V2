@@ -57,13 +57,39 @@ Transmuter n'importe quelle vidéo virale en animation Roblox cinématique 4K/12
 | audio_source.wav | .wav | U06 |
 
 **Key Technical Specs**
-- 6 moteurs parallèles : Gemini (narrative), T2M (motion prompt), Facial JSON (ARKit timing), DepthAnything V2 (depth maps), SAM (segmentation), FOV/Ratio (camera metadata)
-- Exécution séquentielle si VRAM < 15GB (Colab T4)
-- DepthAnything V2 : génère une séquence .png de depth maps (1 par frame ou keyframe)
-- SAM : segmentation sémantique des surfaces (route, herbe, mur, ciel, eau, verre)
-- Gemini 2.5 Flash API : analyse narrative + émotionnelle segment par segment
-- Extraction audio via FFmpeg (`-vn -acodec pcm_s16le`)
-- FOV/Ratio : extraction des métadonnées de résolution + estimation de focale
+
+**Architecture 6-Moteurs (exécution séquentielle) :**
+
+| Phase | Moteur | Technologie | VRAM | Output |
+|-------|--------|-------------|------|--------|
+| 1-CPU | M2 Audio | FFmpeg `-vn -acodec pcm_s16le` | 0 GB | `audio_source.wav` |
+| 1-CPU | M3 FOV | OpenCV métadonnées vidéo | 0 GB | `camera_fov_ratio.json` |
+| 2-API | M1 Gemini | Gemini 2.5 Flash + `response_schema` | 0 GB | Master JSON (3 blocs) |
+| 2-API | M4 Facial | Dispatcher (extraction bloc) | 0 GB | `facial_animation.json` |
+| 2-API | M5 Motion | Dispatcher (extraction bloc) | 0 GB | `motion_synthesis_prompt.txt` |
+| 3-GPU | M6 Depth | DepthAnything V2 (vitl) | ~3.5 GB | `DEPTH_MAP/*.png` |
+| 4-GPU | M7 SAM | SAM vit_h | ~4 GB | `semantic_masks.json` |
+
+**Protocole VRAM (Loi VIII) :**
+- Exécution strictement séquentielle : jamais 2 modèles GPU chargés simultanément
+- Entre Phase 3 et Phase 4 : `del model` → `gc.collect()` → `torch.cuda.empty_cache()` → vérification VRAM < 0.5 GB
+- VRAM peak global : ~4 GB (27% de la capacité T4)
+
+**Verrouillage Arsenal (`response_schema`) :**
+- Tous les IDs (characters, props, environments, animations, camera, lighting, audio) contraints par `enum` dans le `response_schema` Gemini
+- Si aucun match : Gemini est forcé de choisir `"generic_prop"` (seul fallback dans l'enum)
+- Pattern anti-null : `"none"` comme valeur enum au lieu de `null` pour les champs optionnels
+- Double sécurité : `validate_json_output()` en post-traitement (ceinture + bretelles)
+
+**Dispatcher :**
+- Gemini retourne UN Master JSON monolithique avec 3 blocs (`production_plan`, `facial_animation`, `motion_synthesis`)
+- Le script Python découpe en 3 fichiers séparés : `PRODUCTION_PLAN.JSON`, `facial_animation.json`, `motion_synthesis_prompt.txt`
+- `normalize_timecodes()` force la cohérence temporelle (segments faciaux clampés sur bornes scène)
+
+**Résilience :**
+- `MotorStatus` : suivi par moteur (success/failed/partial)
+- `flags` dans le JSON final : `all_motors_ok`, `partial_failure[]`, `manual_review_required`
+- Mode `--rerun <motor>` : relance un seul moteur sans retoucher les fichiers Gemini existants
 
 ---
 
@@ -268,48 +294,142 @@ Transmuter n'importe quelle vidéo virale en animation Roblox cinématique 4K/12
 
 ## SCHÉMAS JSON DE RÉFÉRENCE
 
-### PRODUCTION_PLAN.JSON (Généré par U00)
+### Master JSON V2 (Généré par Gemini, découpé par Dispatcher)
+
+Le Master JSON est la structure monolithique retournée par Gemini via `response_schema`. Le Dispatcher le découpe en 3 fichiers.
+
+#### Bloc 1 — `production_plan` → `PRODUCTION_PLAN.JSON`
 
 ```json
 {
-  "project_id": "EXO_BROOKHAVEN_01",
-  "format": { "resolution": [1080, 1920], "ratio": "9:16", "fps_source": 30 },
-  "motion_engine": {
-    "saymotion_prompt": "Human actor kneeling...",
+  "production_plan": {
+    "project_id": "EXO_SOURCE_001",
+    "format": {
+      "resolution": [1080, 1920],
+      "ratio": "9:16",
+      "fps_source": 30
+    },
+    "scenes": [
+      {
+        "scene_id": 1,
+        "timecode_start": 0.0,
+        "timecode_end": 5.200,
+        "description": "Two characters running across a grass field",
+        "characters": [
+          {
+            "character_id": "bacon_hair",
+            "role": "protagonist",
+            "actions": ["run", "jump"]
+          }
+        ],
+        "props": [
+          {
+            "prop_id": "linked_sword",
+            "quantity": 1,
+            "interaction": "held"
+          }
+        ],
+        "environment": {
+          "environment_id": "grass_terrain",
+          "vibe": "open_field_sunny",
+          "pbr_targets": ["grass", "dirt_path"],
+          "lighting_ref": "daylight"
+        },
+        "camera": {
+          "style_id": "follow",
+          "movements": ["tracking right to left"]
+        },
+        "audio": {
+          "music_id": "epic_orchestral",
+          "sfx": ["footstep", "sword_hit"],
+          "ambient_id": "ambient_nature"
+        }
+      }
+    ],
     "requires_u02": true,
-    "props_detected": ["rat_model", "phone"]
+    "production_notes": {
+      "complexity_score": 6,
+      "warnings": []
+    }
   },
-  "facial_engine": {
-    "segments": [
-      { "start": 0.0, "end": 2.5, "expression": "joy", "intensity": 0.8 }
-    ]
-  },
-  "scenography_logic": {
-    "vibe": "luxury_villa",
-    "pbr_targets": ["road", "pool_water", "glass_windows"],
-    "lighting_ref": "sunset_golden_hour"
+  "flags": {
+    "all_motors_ok": true,
+    "partial_failure": [],
+    "partial_success": [],
+    "manual_review_required": false,
+    "warnings": []
   }
 }
 ```
 
-### facial_animation.json (Généré par U00, Consommé par U01)
+#### Bloc 2 — `facial_animation` → `facial_animation.json`
 
 ```json
 {
-  "sequence_id": "ACTOR_01_SCENE_0",
+  "sequence_id": "ACTOR_01",
   "facial_animation": [
     {
       "time_start": 0.0,
-      "time_end": 1.5,
-      "expression": "suspicious",
-      "eyes": "narrowed",
-      "mouth": "pursed lips",
-      "intensity": 0.7,
-      "apex_time": 0.8
+      "time_end": 2.500,
+      "expression": "determined",
+      "eyes": "focused_forward",
+      "mouth": "closed_tight",
+      "intensity": 0.8,
+      "apex_time": 1.200,
+      "low_visibility": false
     }
   ]
 }
 ```
+
+#### Bloc 3 — `motion_synthesis` → `motion_synthesis_prompt.txt`
+
+Contenu texte brut (pas JSON) :
+```
+Human actor sprinting across open field, holding sword in right hand, jumps over obstacle at 3.5 seconds, lands firmly on both feet.
+Duration: 8.0 seconds. Style: athletic_urgent.
+```
+
+### Enums Complets (contraints par `response_schema`)
+
+#### Expressions faciales
+`joy`, `sadness`, `anger`, `fear`, `surprise`, `disgust`, `neutral`, `suspicious`, `determined`, `confused`, `pain`, `love`, `bored`, `excited`, `shocked`
+
+#### Direction des yeux
+`focused_forward`, `looking_left`, `looking_right`, `looking_up`, `looking_down`, `narrowed`, `wide_open`, `closed`, `winking`
+
+#### État de la bouche
+`closed_tight`, `slightly_open`, `wide_open`, `smiling`, `frowning`, `pursed_lips`, `shouting`, `neutral`
+
+#### Style de mouvement (motion_synthesis)
+`casual`, `athletic`, `dramatic`, `comedic`, `aggressive`, `elegant`, `robotic`, `urgent`
+
+#### Rôle personnage
+`protagonist`, `antagonist`, `background`
+
+#### Interaction prop
+`held`, `placed`, `animated`, `worn`
+
+#### Ratio vidéo
+`9:16`, `16:9`, `4:3`, `1:1`
+
+#### Valeur "none" (anti-null)
+Tout champ optionnel utilise la valeur string `"none"` au lieu de `null`. Exemple :
+- `"music_id": "none"` → pas de musique
+- `"ambient_id": "none"` → pas d'ambiance
+
+Les scripts aval testent : `if value != "none": # utiliser la valeur`
+
+### Impact par Frégate
+
+| Frégate | Fichier(s) consommé(s) | Champs clés lus |
+|---------|----------------------|-----------------|
+| U01 | `PRODUCTION_PLAN.JSON`, `facial_animation.json` | `scenes[].characters[].actions`, `facial_animation[].*` |
+| U02 | `PRODUCTION_PLAN.JSON` | `requires_u02`, `scenes[].props[]` |
+| U03 | `PRODUCTION_PLAN.JSON`, `DEPTH_MAP/*.png`, `semantic_masks.json` | `scenes[].environment.*`, depth maps, masks |
+| U04 | `PRODUCTION_PLAN.JSON`, `camera_fov_ratio.json` | `format.*`, `scenes[].camera.*`, FOV data |
+| U05 | `PRODUCTION_PLAN.JSON` | `scenes[].environment.lighting_ref` |
+| U06 | `PRODUCTION_PLAN.JSON`, `audio_source.wav` | `format.*`, audio track |
 
 ---
 
@@ -341,3 +461,5 @@ MARSHAL : vérifie chaque transfert (Out-Check → In-Check)
 - [TRANSFERS](./EXODUS_V2_TRANSFER_LOG.md) — Registre des flux
 
 > **Loi du Béton** : Pas de fichier, pas d'existence. Chaque spécification ci-dessus doit se traduire en code traçable par commit.
+<!-- v2.1 — Post-Mutation Alignement -->
+
