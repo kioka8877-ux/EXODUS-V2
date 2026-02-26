@@ -37,14 +37,32 @@
 - [ ] Verdict 🔴 BLOQUÉ : fichier principal absent/corrompu OU > 20% depth maps corrompues → transfert interdit
 
 ## U01 — ANIMATION ENGINE
-- [ ] N'utilise PAS EMOCA (zéro import EMOCA)
-- [ ] Lit `facial_animation.json` de U00
-- [ ] Mappe les émotions textuelles vers les 52 ARKit Shape Keys
-- [ ] Génère des courbes de Bézier (pas d'interpolation linéaire)
-- [ ] Passe par état "neutre" entre émotions opposées
-- [ ] Injecte Micro-Jitter sur yeux et bouche
-- [ ] Intègre Rhubarb lip-sync (désactive shape keys bouche pendant parole)
+
+### expression_schema.py (Bible Anatomique)
+- [ ] Module `expression_schema.py` existe et est importable (Python pur, zéro dépendance Blender)
+- [ ] 15 EXPRESSION_PRESETS définis, chacun avec exactement 52 valeurs ARKit (toutes les clés présentes)
+- [ ] 9 EYE_PRESETS définis (focused_forward, looking_left, looking_right, looking_up, looking_down, narrowed, wide_open, closed, winking)
+- [ ] 8 MOUTH_PRESETS définis (closed_tight, slightly_open, wide_open, smiling, frowning, pursed_lips, shouting, neutral)
+- [ ] Matrice des Conflits : bloque les combinaisons anatomiques impossibles (test : mouthSmileLeft + mouthFrownLeft simultanés → rejeté)
+- [ ] Table des Oppositions : 5+ paires d'émotions antagonistes définies (joy↔sadness, joy↔anger, anger↔fear, surprise↔bored, love↔disgust)
+- [ ] Ranges Anatomiques : toutes les valeurs clampées dans les bornes esthétiques Roblox (test : jawOpen > 0.8 → clampé à 0.8)
+- [ ] Courbes d'Intensité : au moins 3 modes de scaling (linear, quadratic, ease-in-out)
+- [ ] Micro-Expressions Involontaires : presets blink/tics définis avec amplitude et fréquence
+- [ ] Règle de fusion : expression (base) + eyes (override oculaire) + mouth (override buccal) → résultat 52 keys
+- [ ] Test "Expression Hérétique" : le module rejette intensity > 1.0, conflits shape keys, et ID expression inconnu
+
+### Pipeline (consommateurs)
+- [ ] N'utilise PAS EMOCA (zéro import EMOCA dans tout le CODEBASE/)
+- [ ] Lit `facial_animation.json` de U00 (champs : time_start, time_end, expression, eyes, mouth, intensity, apex_time)
+- [ ] Utilise F-Curve Bézier natif Blender (zéro code custom de courbes Bézier)
+- [ ] Utilise F-Curve Noise Modifier pour Micro-Jitter (pas numpy/scipy custom pour le bruit)
+- [ ] Utilise NLA strips pour layering (expression + eyes + mouth comme strips séparés)
+- [ ] Passe par état "neutre" entre émotions opposées (via Table des Oppositions du schema)
 - [ ] Export dual : .blend + .abc
+
+### Rhubarb (Phase 2)
+- [ ] Intègre Rhubarb lip-sync (NLA strip dédié)
+- [ ] Désactive shape keys bouche pendant segments de parole (priorité Rhubarb)
 
 ## U02 — LOGISTICS DEPOT
 - [ ] Lit `requires_u02` du PRODUCTION_PLAN.JSON
@@ -98,4 +116,4 @@
 
 > **Loi du Béton** : Chaque ✅ doit être prouvable par un test reproductible ou un fichier vérifiable.
 
-<!-- v2.1 — Post-Mutation Alignement -->
+<!-- v2.2 — B1.1 Cathédrale de Chair -->

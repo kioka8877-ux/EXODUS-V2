@@ -45,10 +45,22 @@
 
 ### PHASE B : VIE & DÉCOR (Semaines 2-3)
 **Priorité : U01 + U03**
-- [ ] U01 : Supprimer EMOCA, implémenter Emotional Intent Transfer
-- [ ] U01 : Mapping émotions → 52 ARKit Shape Keys
-- [ ] U01 : Injection Micro-Jitter (bruit procédural)
-- [ ] U01 : Intégration Rhubarb Lip-Sync
+
+#### B1.1 — expression_schema.py (Bible Anatomique) ← CIBLE COURANTE
+- [ ] U01 : Créer `expression_schema.py` — 7 Piliers (15 expressions, 9 yeux, 8 bouche, conflits, oppositions, ranges, intensité)
+- [ ] U01 : Rapport validation "Expression Hérétique"
+- [ ] U01 : Marshal In-Check passé
+
+#### B1.2 — Réécriture Pipeline U01
+- [ ] U01 : Supprimer EMOCA, réécrire `facial_extractor.py` (Emotional Intent Transfer)
+- [ ] U01 : Adapter `blender_fusion.py` (NLA + F-Curve Noise + Bézier natif)
+- [ ] U01 : Simplifier `sync_engine.py`, adapter `EXO_01_TRANSMUTATION.py`
+- [ ] U01 : Mettre à jour notebooks
+
+#### B1.3 — Rhubarb Lip-Sync (Futur)
+- [ ] U01 : Intégrer Rhubarb lip-sync (NLA strip, priorité bouche)
+
+#### B2 — U03 Scenography (Tri-Layer)
 - [ ] U03 : Supprimer McPrep, implémenter Tri-Layer System
 - [ ] U03 : Couche A — Infinity Dome (video texture on half-sphere)
 - [ ] U03 : Couche B — Displacement Mesh (depth maps → Displace)
@@ -91,4 +103,4 @@ Phase courante : PHASE B (Vie & Décor — U01 prochaine cible)
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.1 — Post-Mutation Alignement -->
+<!-- v2.2 — B1.1 Cathédrale de Chair -->
