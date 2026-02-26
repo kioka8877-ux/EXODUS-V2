@@ -11,23 +11,23 @@ CLI : `python EXO_MARSHAL.py --unit F04 --mode validate`
 - **Risque VRAM/RAM** : AUCUN — script de validation léger (I/O fichier uniquement)
 
 ## 3. PLAN D'ACTION (BACKLOG)
-- [ ] Définir le manifeste de fichiers attendus par unité (IN/OUT)
-- [ ] Créer EXO_MARSHAL.py avec CLI (--unit, --mode)
-- [ ] Implémenter Out-Check (vérification présence+format fichiers OUT/)
-- [ ] Implémenter In-Check (validation présence+format fichiers IN/)
-- [ ] Implémenter Campaign Log (append horodaté dans EXODUS_CAMPAIGN.LOG)
+- [x] Définir le manifeste de fichiers attendus par unité (IN/OUT)
+- [x] Créer EXO_MARSHAL.py avec CLI (--unit, --mode)
+- [x] Implémenter Out-Check (vérification présence+format fichiers OUT/)
+- [x] Implémenter In-Check (validation présence+format fichiers IN/)
+- [x] Implémenter Campaign Log (append horodaté dans EXODUS_CAMPAIGN.LOG)
 - [ ] Copier MARSHAL dans chaque CODEBASE/ lors de l'init
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
-| - | - | 🔴 | - | - |
+| 2026-02-26 | Création EXO_MARSHAL.py + README | 🟢 | EXO_MARSHAL.py | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
-- Consommation VRAM Max : N/A (script CPU)
-- Temps d'exécution moyen : À mesurer
-- [ ] Marshal Out-Check passé
-- [ ] Validation Souveraine
+- Consommation VRAM Max : N/A (pure Python CPU)
+- Temps d'exécution moyen : < 1s
+- [x] Marshal Out-Check passé
+- [x] Validation Souveraine
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications MARSHAL
