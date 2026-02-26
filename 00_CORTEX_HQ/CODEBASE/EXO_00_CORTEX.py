@@ -6,8 +6,8 @@ Orchestrateur 6-moteurs séquentiel → Master JSON V2
 Phases:
     Phase 1 CPU (0 VRAM)  : M2 Audio + M3 FOV
     Phase 2 API (0 VRAM)  : M1 Gemini (response_schema) → Dispatcher → M4 + M5
-    Phase 3 GPU-A (~3.5GB) : M6 DepthAnything [STUB]
-    Phase 4 GPU-B (~4GB)   : M7 SAM [STUB]
+    Phase 3 GPU-A (~3.5GB) : M6 DepthAnything V2
+    Phase 4 GPU-B (~4GB)   : M7 SAM vit_h
 
 Usage:
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4
@@ -50,6 +50,28 @@ try:
     SUBPROCESS_AVAILABLE = True
 except ImportError:
     SUBPROCESS_AVAILABLE = False
+
+try:
+    import torch
+    import numpy as np
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    print("[WARN] torch non installé. Moteurs GPU (Depth/SAM) désactivés.")
+
+DEPTH_AVAILABLE = False
+try:
+    from depth_anything_v2.dpt import DepthAnythingV2
+    DEPTH_AVAILABLE = True
+except ImportError:
+    pass
+
+SAM_AVAILABLE = False
+try:
+    from segment_anything import sam_model_registry, SamAutomaticMaskGenerator
+    SAM_AVAILABLE = True
+except ImportError:
+    pass
 
 
 # ============================================================================
@@ -774,29 +796,332 @@ def run_fov_extraction(video_path: Path, output_path: Path,
 
 
 # ============================================================================
-# M6 — DEPTH ANYTHING V2 [STUB]
+# GPU UTILITIES
+# ============================================================================
+
+def flush_gpu(logger: CortexLogger):
+    """Protocole de nettoyage VRAM complet entre moteurs GPU."""
+    try:
+        import gc
+        import torch
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+            allocated = torch.cuda.memory_allocated() / 1e9
+            reserved = torch.cuda.memory_reserved() / 1e9
+            logger.info(f"GPU flush: {allocated:.2f}GB allocated, {reserved:.2f}GB reserved")
+            if allocated > 0.5:
+                logger.warn(f"VRAM non totalement libérée: {allocated:.2f}GB (cible < 0.5GB)")
+                torch.cuda.reset_peak_memory_stats()
+        else:
+            logger.debug("Pas de GPU CUDA détecté — flush ignoré")
+    except ImportError:
+        logger.debug("torch non disponible — flush ignoré")
+
+
+def extract_video_frames(video_path: Path, logger: CortexLogger,
+                         mode: str = "all", target_fps: int = 1) -> list:
+    """Extrait les frames d'une vidéo.
+    mode="all" : toutes les frames
+    mode="keyframes" : 1 frame par seconde (pour SAM)
+    Retourne une liste de numpy arrays (BGR)."""
+
+    if not CV2_AVAILABLE:
+        logger.error("OpenCV requis pour l'extraction de frames")
+        return []
+
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        logger.error(f"Impossible d'ouvrir la vidéo: {video_path}")
+        return []
+
+    fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    if mode == "keyframes":
+        frame_interval = max(1, fps // target_fps)
+    else:
+        frame_interval = 1
+
+    frames = []
+    frame_idx = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if frame_idx % frame_interval == 0:
+            frames.append(frame)
+        frame_idx += 1
+
+    cap.release()
+    logger.info(f"Frames extraites: {len(frames)} (mode={mode}, interval={frame_interval})")
+    return frames
+
+
+# ============================================================================
+# M6 — DEPTH ANYTHING V2
 # ============================================================================
 
 def run_depth_anything(video_path: Path, output_dir: Path,
                        logger: CortexLogger,
                        model_path: Optional[Path] = None) -> bool:
-    """M6 — DepthAnything V2 [STUB — implémenté dans Task B]."""
-    logger.warn("MOTEUR DEPTH_ANYTHING: STUB — pas encore implémenté")
-    logger.warn("Ce moteur sera ajouté dans la prochaine mise à jour")
-    return False
+    """M6 — Génère les depth maps via DepthAnything V2."""
+
+    if not TORCH_AVAILABLE:
+        logger.error("torch/numpy requis pour DepthAnything V2")
+        return False
+
+    if not torch.cuda.is_available():
+        logger.error("CUDA non disponible — DepthAnything requiert un GPU")
+        return False
+
+    vram_before = torch.cuda.memory_allocated() / 1e9
+    logger.info(f"MOTEUR DEPTH — VRAM avant: {vram_before:.2f} GB")
+
+    frames_done = 0
+    frames_total = 0
+    model = None
+    frames = None
+
+    try:
+        if not DEPTH_AVAILABLE:
+            logger.error("depth_anything_v2 non installé — moteur désactivé")
+            return False
+
+        model_configs = {
+            'vitl': {'encoder': 'vitl', 'features': 256, 'out_channels': [256, 512, 1024, 1024]}
+        }
+
+        model = DepthAnythingV2(**model_configs['vitl'])
+
+        if model_path and model_path.exists():
+            checkpoint = model_path
+        else:
+            possible_paths = [
+                Path("checkpoints/depth_anything_v2_vitl.pth"),
+                Path("EXODUS_AI_MODELS/DEPTH_ANYTHING/depth_anything_v2_vitl.pth"),
+            ]
+            checkpoint = None
+            for p in possible_paths:
+                if p.exists():
+                    checkpoint = p
+                    break
+            if checkpoint is None:
+                logger.error("Checkpoint DepthAnything V2 non trouvé")
+                return False
+
+        model.load_state_dict(torch.load(str(checkpoint), map_location='cpu'))
+        model = model.to('cuda').eval().half()
+
+        vram_loaded = torch.cuda.memory_allocated() / 1e9
+        logger.info(f"MOTEUR DEPTH — Modèle chargé: {vram_loaded:.2f} GB (delta: {vram_loaded - vram_before:.2f} GB)")
+
+        frames = extract_video_frames(video_path, logger, mode="all")
+        if not frames:
+            logger.error("Aucune frame extraite")
+            return False
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        frames_total = len(frames)
+
+        for i, frame in enumerate(frames):
+            try:
+                with torch.no_grad():
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    depth = model.infer_image(frame_rgb)
+
+                if isinstance(depth, torch.Tensor):
+                    depth = depth.cpu().numpy()
+                depth_normalized = ((depth - depth.min()) / (depth.max() - depth.min() + 1e-8) * 255).astype(np.uint8)
+
+                output_file = output_dir / f"frame_{i:05d}.png"
+                cv2.imwrite(str(output_file), depth_normalized)
+                frames_done += 1
+
+                if i % 50 == 0:
+                    vram_current = torch.cuda.memory_allocated() / 1e9
+                    logger.debug(f"Depth frame {i}/{frames_total} — VRAM: {vram_current:.2f} GB")
+                    if vram_current > vram_loaded + 1.5:
+                        logger.warn(f"FUITE VRAM potentielle: {vram_current:.2f} GB")
+
+            except torch.cuda.OutOfMemoryError:
+                logger.error(f"OOM à la frame {i}/{frames_total}")
+                break
+            except Exception as e:
+                logger.warn(f"Frame {i} échouée: {e}")
+                continue
+
+        logger.info(f"MOTEUR DEPTH — {frames_done}/{frames_total} frames générées")
+
+    except Exception as e:
+        logger.error(f"MOTEUR DEPTH — Erreur fatale: {e}")
+
+    finally:
+        logger.info("MOTEUR DEPTH — Destruction du modèle...")
+        if model is not None:
+            del model
+        if frames is not None:
+            del frames
+        flush_gpu(logger)
+        try:
+            vram_final = torch.cuda.memory_allocated() / 1e9
+            logger.info(f"MOTEUR DEPTH — VRAM après flush: {vram_final:.2f} GB")
+        except Exception:
+            pass
+
+    return frames_done > 0
 
 
 # ============================================================================
-# M7 — SAM SEGMENTATION [STUB]
+# M7 — SAM SEGMENTATION
 # ============================================================================
 
 def run_sam_segmentation(video_path: Path, output_path: Path,
                          logger: CortexLogger,
                          model_path: Optional[Path] = None) -> bool:
-    """M7 — SAM Segmentation [STUB — implémenté dans Task B]."""
-    logger.warn("MOTEUR SAM: STUB — pas encore implémenté")
-    logger.warn("Ce moteur sera ajouté dans la prochaine mise à jour")
-    return False
+    """M7 — Segmentation sémantique via SAM vit_h."""
+
+    if not TORCH_AVAILABLE:
+        logger.error("torch/numpy requis pour SAM")
+        return False
+
+    if not torch.cuda.is_available():
+        logger.error("CUDA non disponible — SAM requiert un GPU")
+        return False
+
+    vram_free = (torch.cuda.get_device_properties(0).total_mem - torch.cuda.memory_allocated()) / 1e9
+    logger.info(f"MOTEUR SAM — VRAM disponible: {vram_free:.2f} GB")
+    if vram_free < 3.0:
+        logger.error(f"VRAM insuffisante: {vram_free:.2f} GB < 3.0 GB requis")
+        return False
+
+    if not SAM_AVAILABLE:
+        logger.error("segment_anything non installé — moteur désactivé")
+        return False
+
+    sam = None
+    mask_generator = None
+    keyframes = None
+    masks_output = []
+
+    try:
+        if model_path and model_path.exists():
+            checkpoint = model_path
+        else:
+            possible_paths = [
+                Path("checkpoints/sam_vit_h.pth"),
+                Path("EXODUS_AI_MODELS/SAM/sam_vit_h.pth"),
+            ]
+            checkpoint = None
+            for p in possible_paths:
+                if p.exists():
+                    checkpoint = p
+                    break
+            if checkpoint is None:
+                logger.error("Checkpoint SAM vit_h non trouvé")
+                return False
+
+        sam = sam_model_registry["vit_h"](checkpoint=str(checkpoint))
+        sam = sam.to('cuda')
+        mask_generator = SamAutomaticMaskGenerator(
+            model=sam,
+            points_per_side=32,
+            pred_iou_thresh=0.86,
+            stability_score_thresh=0.92,
+            min_mask_region_area=1000,
+        )
+
+        vram_loaded = torch.cuda.memory_allocated() / 1e9
+        logger.info(f"MOTEUR SAM — Modèle chargé: {vram_loaded:.2f} GB")
+
+        keyframes = extract_video_frames(video_path, logger, mode="keyframes", target_fps=1)
+        if not keyframes:
+            logger.error("Aucune keyframe extraite")
+            return False
+
+        SURFACE_CATEGORIES = ["road", "grass", "wall", "sky", "water", "glass",
+                              "floor", "ceiling", "ground", "unknown"]
+
+        for i, frame in enumerate(keyframes):
+            try:
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+                with torch.no_grad():
+                    masks = mask_generator.generate(frame_rgb)
+
+                classified_segments = []
+                frame_h, frame_w = frame.shape[:2]
+
+                for mask_data in sorted(masks, key=lambda x: x['area'], reverse=True)[:20]:
+                    bbox = mask_data['bbox']
+                    area_ratio = mask_data['area'] / (frame_h * frame_w)
+                    center_y = (bbox[1] + bbox[3] / 2) / frame_h
+
+                    if center_y < 0.25 and area_ratio > 0.1:
+                        category = "sky"
+                    elif center_y > 0.7 and area_ratio > 0.05:
+                        category = "ground"
+                    elif area_ratio > 0.3:
+                        category = "wall"
+                    else:
+                        category = "unknown"
+
+                    classified_segments.append({
+                        "category": category,
+                        "bbox": [int(b) for b in bbox],
+                        "area_ratio": round(area_ratio, 4),
+                        "stability_score": round(float(mask_data.get('stability_score', 0)), 3)
+                    })
+
+                masks_output.append({
+                    "keyframe_index": i,
+                    "timestamp": round(i * 1.0, 3),
+                    "segments": classified_segments
+                })
+
+                logger.debug(f"SAM keyframe {i}/{len(keyframes)} — {len(classified_segments)} segments")
+
+            except torch.cuda.OutOfMemoryError:
+                logger.error(f"OOM à la keyframe {i}")
+                break
+            except Exception as e:
+                logger.warn(f"Keyframe {i} échouée: {e}")
+                continue
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        sam_result = {
+            "model": "sam_vit_h",
+            "keyframes_processed": len(masks_output),
+            "keyframes_total": len(keyframes),
+            "surface_categories": SURFACE_CATEGORIES,
+            "masks": masks_output
+        }
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(sam_result, f, indent=2, ensure_ascii=False)
+
+        logger.info(f"MOTEUR SAM — {len(masks_output)}/{len(keyframes)} keyframes segmentées → {output_path}")
+
+    except Exception as e:
+        logger.error(f"MOTEUR SAM — Erreur fatale: {e}")
+        return False
+
+    finally:
+        logger.info("MOTEUR SAM — Destruction du modèle...")
+        if sam is not None:
+            del sam
+        if mask_generator is not None:
+            del mask_generator
+        if keyframes is not None:
+            del keyframes
+        flush_gpu(logger)
+        try:
+            vram_final = torch.cuda.memory_allocated() / 1e9
+            logger.info(f"MOTEUR SAM — VRAM après flush: {vram_final:.2f} GB")
+        except Exception:
+            pass
+
+    return len(masks_output) > 0
 
 
 # ============================================================================
@@ -1485,11 +1810,23 @@ def run_pipeline(args, logger: CortexLogger):
         depth_dir.mkdir(parents=True, exist_ok=True)
         depth_ok = run_depth_anything(video_path, depth_dir, logger)
         if depth_ok:
-            motor_status.mark_success("depth_anything", depth_dir)
+            depth_count = len(list(depth_dir.glob("frame_*.png")))
+            frames_total = 0
+            if CV2_AVAILABLE:
+                cap = cv2.VideoCapture(str(video_path))
+                frames_total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else 0
+                cap.release()
+            if frames_total > 0 and depth_count < frames_total:
+                motor_status.mark_partial("depth_anything", depth_count, frames_total, depth_dir)
+            else:
+                motor_status.mark_success("depth_anything", depth_dir)
         else:
-            motor_status.mark_failed("depth_anything", "Stub not implemented")
+            motor_status.mark_failed("depth_anything", "DepthAnything V2 failed")
     else:
         logger.info("M6 DepthAnything: skip (--rerun != depth_anything)")
+    
+    # Flush GPU entre Phase 3 et Phase 4
+    flush_gpu(logger)
     
     # =================================================================
     # PHASE 4 — GPU-B (SAM)
@@ -1502,7 +1839,7 @@ def run_pipeline(args, logger: CortexLogger):
         if sam_ok:
             motor_status.mark_success("sam_segmentation", sam_out)
         else:
-            motor_status.mark_failed("sam_segmentation", "Stub not implemented")
+            motor_status.mark_failed("sam_segmentation", "SAM segmentation failed")
     else:
         logger.info("M7 SAM: skip (--rerun != sam_segmentation)")
     
@@ -1525,6 +1862,49 @@ def run_pipeline(args, logger: CortexLogger):
     else:
         failed_count = len(flags["partial_failure"])
         logger.warn(f"{failed_count} moteur(s) en échec — revue manuelle recommandée")
+    
+    # =================================================================
+    # PHASE FINALE — INVOCATION DU MARSHAL (Loi III — Étanchéité)
+    # =================================================================
+    logger.info("═══ INVOCATION DU MARSHAL ═══")
+    
+    marshal_script = Path(args.drive_root) / "EXO_MARSHAL.py"
+    if not marshal_script.exists():
+        marshal_script = Path(__file__).parent.parent.parent / "EXO_MARSHAL.py"
+    
+    if marshal_script.exists() and SUBPROCESS_AVAILABLE:
+        import subprocess
+        marshal_cmd = [
+            sys.executable, str(marshal_script),
+            "--unit", "U00",
+            "--mode", "check-out"
+        ]
+        logger.info(f"Lancement: {' '.join(marshal_cmd)}")
+        try:
+            result = subprocess.run(
+                marshal_cmd,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            logger.info(f"MARSHAL stdout:\n{result.stdout}")
+            if result.stderr:
+                logger.warn(f"MARSHAL stderr:\n{result.stderr}")
+            if result.returncode != 0:
+                logger.error(f"MARSHAL check-out ÉCHOUÉ (exit code {result.returncode})")
+                logger.error("La sortie de U00 n'est PAS validée — revue manuelle requise")
+            else:
+                logger.info("MARSHAL check-out RÉUSSI — sortie U00 validée ✅")
+        except subprocess.TimeoutExpired:
+            logger.error("MARSHAL timeout (120s) — vérification manuelle requise")
+        except Exception as e:
+            logger.error(f"MARSHAL erreur: {e}")
+    else:
+        if not marshal_script.exists():
+            logger.warn(f"EXO_MARSHAL.py introuvable — check-out manuel requis")
+        elif not SUBPROCESS_AVAILABLE:
+            logger.warn("subprocess non disponible — check-out manuel requis")
+        logger.warn("Commande manuelle: python EXO_MARSHAL.py --unit U00 --mode check-out")
     
     logger.info("═══ MISSION ACCOMPLIE — CORTEX TERMINÉ ═══")
 
