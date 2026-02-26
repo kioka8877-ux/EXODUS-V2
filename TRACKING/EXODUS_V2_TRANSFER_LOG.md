@@ -10,7 +10,7 @@
 
 | # | Date | Projet | Source | Destination | Fichiers | Marshal Out | Marshal In | Statut |
 |---|------|--------|--------|-------------|----------|-------------|------------|--------|
-| 1 | - | - | - | - | - | ⬜ | ⬜ | 🔴 |
+| 1 | 2026-02-26 | TEST_MARSHAL | U00 | — | 0/7 | ❌ (0/7) | ⬜ | 🔴 Attendu — U00 non muté |
 
 ## MATRICE DES FLUX STANDARD
 

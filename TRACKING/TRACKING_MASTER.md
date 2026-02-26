@@ -11,12 +11,13 @@
 | 4 | U04 | PHOTOGRAPHY WING | 🟡 P1 | 40% | 🟡 EN ATTENTE | fSpy + DOF + Shake |
 | 5 | U05 | ALCHEMIST LAB | 🟡 P1 | 50% | 🟡 EN ATTENTE | Match Color + Grain |
 | 6 | U06 | AIRCRAFT CARRIER | 🟢 P2 | 80% | 🟡 EN ATTENTE | Ratio lock + CRF |
-| M | MARSHAL | L'INTENDANT | 🔴 P0 | 100% | 🟢 SCELLÉ | - |
+| M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [░░░░░░░░░░] 0% — Aucune frégate conforme V2
-Frégates conformes : 1/8
-Phase courante : PHASE 0 (Fondation documentaire)
+Mutation V2 : [█░░░░░░░░░] 12% — MARSHAL scellé, U00 en attente
+Frégates conformes : 1/8 (MARSHAL)
+Phase courante : PHASE A (Cerveau & Logistique)
+Dernière frappe : PR #12 — MARSHAL (2026-02-26)
 
 ## LÉGENDE
 - 🔴 BLOQUÉ : Écart majeur, réécriture nécessaire
