@@ -10,15 +10,38 @@
 
 ### PHASE A : CERVEAU & LOGISTIQUE (Semaines 1-2)
 **Priorité : MARSHAL + U00**
+
+#### A1 — MARSHAL (✅ SCELLÉ)
 - [x] Créer EXO_MARSHAL.py (Out-Check, In-Check, Campaign Log) — PR #12 (2026-02-26)
 - [ ] Déployer MARSHAL dans chaque CODEBASE/
-- [ ] U00 : Ajouter moteur DepthAnything V2 (depth maps .png)
-- [ ] U00 : Ajouter moteur SAM (semantic_masks.json)
-- [ ] U00 : Ajouter moteur T2M (motion_synthesis_prompt.txt)
-- [ ] U00 : Ajouter moteur Facial JSON (facial_animation.json)
-- [ ] U00 : Ajouter extraction FOV/Ratio (camera_fov_ratio)
-- [ ] U00 : Ajouter extraction audio (audio_source.wav)
-- Statut : 🟡 12% (1/8 tâches)
+
+#### A2 — U00 Phase 1 CPU (VRAM = 0 GB)
+- [ ] M2 : Extraction audio FFmpeg → `audio_source.wav`
+- [ ] M3 : Extraction FOV/ratio OpenCV → `camera_fov_ratio.json`
+
+#### A3 — U00 Phase 2 API (VRAM = 0 GB)
+- [ ] M1 : Prompt Gemini enrichi + `response_schema` avec enum verrouillé
+- [ ] M1 : Dispatcher (Master JSON → 3 fichiers)
+- [ ] M4 : `facial_animation.json` (extrait par Dispatcher)
+- [ ] M5 : `motion_synthesis_prompt.txt` (extrait par Dispatcher)
+- [ ] Validation : `normalize_timecodes()`, `validate_structure()`, `validate_completeness()`
+
+#### A4 — U00 Phase 3 GPU-A (VRAM ~3.5 GB)
+- [ ] M6 : DepthAnything V2 → `DEPTH_MAP/*.png`
+- [ ] Flush GPU vérifié (VRAM < 0.5 GB après destruction modèle)
+
+#### A5 — U00 Phase 4 GPU-B (VRAM ~4 GB)
+- [ ] M7 : SAM vit_h → `semantic_masks.json`
+- [ ] Flush GPU vérifié
+
+#### A6 — U00 Transverse
+- [ ] `MotorStatus` + `flags` dans le JSON final
+- [ ] Mode `--rerun <motor>`
+- [ ] Log VRAM (`vram_log.txt`)
+- [ ] MARSHAL Out-Check passé
+- [ ] Alignement documentaire v2.1 (TRACKING, PRD, VALIDATION)
+
+- Statut : 🟡 12% (1/20 tâches — MARSHAL scellé)
 
 ### PHASE B : VIE & DÉCOR (Semaines 2-3)
 **Priorité : U01 + U03**
@@ -58,7 +81,7 @@ MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
 Mutation V2 : [█░░░░░░░░░] 🟡 12%
-Phase courante : PHASE A (Cerveau & Logistique — MARSHAL scellé, U00 en attente)
+Phase courante : PHASE A (Cerveau & Logistique — MARSHAL scellé, U00 6-moteurs séquentiels en attente)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -67,3 +90,5 @@ Phase courante : PHASE A (Cerveau & Logistique — MARSHAL scellé, U00 en atten
 - [MASTER](./TRACKING_MASTER.md) — Vue d'ensemble
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
+
+<!-- v2.1 — Post-Mutation Alignement -->

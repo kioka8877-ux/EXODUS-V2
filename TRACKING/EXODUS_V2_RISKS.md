@@ -3,10 +3,15 @@
 ## RISQUES CRITIQUES
 
 ### R1 — VRAM Colab T4 (15GB limit)
-- **Unités touchées** : U00 (DepthAnything + SAM simultanés), U01 (Blender headless), U06 (RIFE)
-- **Probabilité** : HAUTE
+- **Unités touchées** : U00 (DepthAnything + SAM séquentiels), U01 (Blender headless), U06 (RIFE)
+- **Probabilité** : MOYENNE (réduite grâce au protocole séquentiel)
 - **Impact** : OOM crash, perte du runtime Colab
-- **Mitigation** : Exécution séquentielle des moteurs lourds, garbage collection entre étapes, float16
+- **Mitigation** :
+  - Exécution séquentielle obligatoire : Depth → flush → SAM → flush (jamais simultanés)
+  - Protocole de flush : `del model` → `gc.collect()` → `torch.cuda.empty_cache()` → vérification < 0.5 GB
+  - VRAM peak cible : ~4 GB (27% de la capacité T4)
+  - Inférence en `float16` et `torch.no_grad()` systématique
+  - Mode `--rerun` en cas d'OOM partiel (relance sans perdre les outputs précédents)
 
 ### R2 — Quotas API Gemini
 - **Unités touchées** : U00 (analyse vidéo), U01 (si fallback Gemini)
@@ -61,3 +66,5 @@
 - [PRD](./EXODUS_V2_PRD.md) — Arsenal et specs techniques
 - [ROADMAP](./EXODUS_V2_ROADMAP.md) — Phases de mitigation
 - [VALIDATION](./EXODUS_V2_VALIDATION.md) — Critères d'acceptation
+
+<!-- v2.1 — Post-Mutation Alignement -->

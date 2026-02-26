@@ -2,14 +2,39 @@
 > Critères de succès binaires : ✅ Validé ou ❌ Hérétique
 
 ## U00 — CORTEX HQ
-- [ ] Génère `PRODUCTION_PLAN.JSON` avec tous les champs du schéma V2
-- [ ] Génère `motion_synthesis_prompt.txt` (texte anatomique pour SayMotion)
-- [ ] Génère `facial_animation.json` (segments temporels avec expression/intensity/apex)
-- [ ] Génère `DEPTH_MAP/` (séquence .png depth maps via DepthAnything V2)
-- [ ] Génère `semantic_masks.json` (zones SAM: route, herbe, mur, etc.)
-- [ ] Extrait `camera_fov_ratio` (résolution + focale)
-- [ ] Extrait `audio_source.wav`
-- [ ] Les 6 moteurs tournent en parallèle sur Colab T4 (< 15GB VRAM)
+
+### Outputs (7 fichiers obligatoires)
+- [ ] Génère `PRODUCTION_PLAN.JSON` conforme au Master JSON V2 (3 blocs : `production_plan`, `facial_animation`, `motion_synthesis`)
+- [ ] Génère `motion_synthesis_prompt.txt` (texte anatomique anglais pour SayMotion, non vide)
+- [ ] Génère `facial_animation.json` (segments avec `time_start`, `time_end`, `expression`, `eyes`, `mouth`, `intensity`, `apex_time`, `low_visibility`)
+- [ ] Génère `DEPTH_MAP/` (séquence .png depth maps via DepthAnything V2, ≥ 50% des frames)
+- [ ] Génère `semantic_masks.json` (zones SAM catégorisées : road, grass, wall, sky, water, glass)
+- [ ] Génère `camera_fov_ratio.json` (résolution + ratio + focale estimée)
+- [ ] Extrait `audio_source.wav` (PCM 16-bit via FFmpeg, taille > 44 bytes)
+
+### Architecture d'exécution
+- [ ] Exécution **séquentielle** avec flush GPU obligatoire entre moteurs (CPU → API → GPU-A → GPU-B)
+- [ ] VRAM peak < 5 GB sur Colab T4 (jamais 2 modèles GPU simultanés)
+- [ ] Protocole flush vérifié : VRAM résiduelle < 0.5 GB entre Phase 3 (Depth) et Phase 4 (SAM)
+
+### Intégrité du Master JSON
+- [ ] `response_schema` avec enum verrouillé : Gemini ne peut PAS retourner d'ID hors Arsenal
+- [ ] Pattern anti-null : `"none"` dans les enums au lieu de `null` (ex: `"music_id": "none"`)
+- [ ] `normalize_timecodes()` : segments faciaux clampés sur bornes scène, apex_time ∈ [time_start, time_end]
+- [ ] `validate_structure()` : 0 erreur FATAL (champs requis, timecodes croissants, intensité ∈ [0.0, 1.0])
+- [ ] `validate_completeness()` : cohérence croisée entre les 3 blocs (couverture temporelle, requires_u02 ↔ props)
+- [ ] `low_visibility` : segments avec visage non visible → expression "neutral", intensity basse
+
+### Résilience
+- [ ] `flags.all_motors_ok` présent dans le JSON final
+- [ ] Échec Gemini → TOUT s'arrête (exit 1, rien n'est écrit)
+- [ ] Échec Depth/SAM/Audio/FOV → JSON écrit, `flags.partial_failure` liste les moteurs en échec
+- [ ] Mode `--rerun <motor>` relance un seul moteur sans retoucher le JSON Gemini
+
+### MARSHAL Out-Check
+- [ ] Verdict ✅ : tous fichiers présents, intègres, conformes
+- [ ] Verdict 🟡 PARTIEL : fichiers principaux OK mais frames corrompues (< 20%) → transfert autorisé avec avertissement
+- [ ] Verdict 🔴 BLOQUÉ : fichier principal absent/corrompu OU > 20% depth maps corrompues → transfert interdit
 
 ## U01 — ANIMATION ENGINE
 - [ ] N'utilise PAS EMOCA (zéro import EMOCA)
@@ -72,3 +97,5 @@
 4. Les résultats sont consignés dans le [TRACKING](./TRACKING_MASTER.md) correspondant
 
 > **Loi du Béton** : Chaque ✅ doit être prouvable par un test reproductible ou un fichier vérifiable.
+
+<!-- v2.1 — Post-Mutation Alignement -->
