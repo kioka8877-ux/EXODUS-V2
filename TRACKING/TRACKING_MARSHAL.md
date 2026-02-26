@@ -5,10 +5,12 @@ Créer le module EXO_MARSHAL.py — Ghost script de validation logistique.
 3 fonctions : Out-Check (vérifier fichiers OUT/), In-Check (valider fichiers IN/), Campaign Log (horodatage).
 CLI : `python EXO_MARSHAL.py --unit F04 --mode validate`
 
-## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
-- **Écarts constatés** : Module entièrement inexistant. Aucun script, aucun fichier, aucune logique de validation dans le repo.
-- **Goulot d'étranglement** : Définition du schéma de validation par unité (quels fichiers attendus dans chaque IN/ et OUT/)
-- **Risque VRAM/RAM** : AUCUN — script de validation léger (I/O fichier uniquement)
+## 2. ÉTAT POST-FORGE (ÉCARTS RÉSOLUS)
+- **Écarts résolus** : ✅ Module complet — `EXO_MARSHAL.py` (578 lignes), `README_MARSHAL.md` (138 lignes)
+- **Localisation** : `/EXODUS-V2/EXO_MARSHAL.py` (racine du repo)
+- **CLI** : `python EXO_MARSHAL.py --unit U00 --mode check-out`
+- **PR** : #12 (mergée 2026-02-26)
+- **Test** : U00 check-out confirmé ❌ 0/7 (attendu — U00 non muté V2)
 
 ## 3. PLAN D'ACTION (BACKLOG)
 - [x] Définir le manifeste de fichiers attendus par unité (IN/OUT)
@@ -16,12 +18,13 @@ CLI : `python EXO_MARSHAL.py --unit F04 --mode validate`
 - [x] Implémenter Out-Check (vérification présence+format fichiers OUT/)
 - [x] Implémenter In-Check (validation présence+format fichiers IN/)
 - [x] Implémenter Campaign Log (append horodaté dans EXODUS_CAMPAIGN.LOG)
-- [ ] Copier MARSHAL dans chaque CODEBASE/ lors de l'init
+- [x] Copier MARSHAL dans chaque CODEBASE/ lors de l'init
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
-| 2026-02-26 | Création EXO_MARSHAL.py + README | 🟢 | EXO_MARSHAL.py | N/A |
+| 2026-02-26 | Création EXO_MARSHAL.py + README | 🟢 | PR #12 | N/A |
+| 2026-02-26 | Test check-out U00 (0/7 — attendu) | 🟢 | EXODUS_CAMPAIGN.LOG | < 1s |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (pure Python CPU)

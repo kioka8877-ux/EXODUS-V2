@@ -3,14 +3,14 @@
 ## PHASES DE MUTATION
 
 ### PHASE 0 : FONDATION (Semaine 1)
-- [ ] Ériger le sanctuaire TRACKING/ (CE DOCUMENT)
-- [ ] Valider l'Hexalogie avec l'Empereur
+- [x] Ériger le sanctuaire TRACKING/ (PR #11 — 2026-02-26)
+- [x] Valider l'Hexalogie avec l'Empereur
 - [ ] Corriger EXODUS_CAMPAIGN_LOG.md (désynchronisé)
-- Statut : 🔴 0%
+- Statut : 🟡 66%
 
 ### PHASE A : CERVEAU & LOGISTIQUE (Semaines 1-2)
 **Priorité : MARSHAL + U00**
-- [ ] Créer EXO_MARSHAL.py (Out-Check, In-Check, Campaign Log)
+- [x] Créer EXO_MARSHAL.py (Out-Check, In-Check, Campaign Log) — PR #12 (2026-02-26)
 - [ ] Déployer MARSHAL dans chaque CODEBASE/
 - [ ] U00 : Ajouter moteur DepthAnything V2 (depth maps .png)
 - [ ] U00 : Ajouter moteur SAM (semantic_masks.json)
@@ -18,7 +18,7 @@
 - [ ] U00 : Ajouter moteur Facial JSON (facial_animation.json)
 - [ ] U00 : Ajouter extraction FOV/Ratio (camera_fov_ratio)
 - [ ] U00 : Ajouter extraction audio (audio_source.wav)
-- Statut : 🔴 0%
+- Statut : 🟡 12% (1/8 tâches)
 
 ### PHASE B : VIE & DÉCOR (Semaines 2-3)
 **Priorité : U01 + U03**
@@ -57,8 +57,8 @@
 MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [░░░░░░░░░░] 🔴 0%
-Phase courante : PHASE 0 (Fondation documentaire)
+Mutation V2 : [█░░░░░░░░░] 🟡 12%
+Phase courante : PHASE A (Cerveau & Logistique — MARSHAL scellé, U00 en attente)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes

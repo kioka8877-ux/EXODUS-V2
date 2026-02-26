@@ -12,7 +12,7 @@
 | U04 | PHOTOGRAPHY WING | 🟢 Opérationnel (V1) | 🟡 40% | Manque fSpy, DOF, Shake |
 | U05 | ALCHEMIST LAB | 🟢 Opérationnel (V1) | 🟡 50% | Manque Match Color, Grain |
 | U06 | AIRCRAFT CARRIER | ✅ Opérationnel (V1) | 🟢 80% | Manque ratio lock + CRF |
-| MARSHAL | INTENDANT | ❌ Inexistant | 🔴 0% | Module entièrement à créer |
+| MARSHAL | INTENDANT | ✅ Scellé (PR #12) | 🟢 100% | — |
 
 ## ÉCARTS DÉTAILLÉS
 
@@ -52,10 +52,12 @@
 - **V2 exige** : Strict ratio lock from U00 metadata (no letterbox), H.265/HEVC CRF 16-18 specifically, ~450MB-1.5GB per 60s
 - **Impact** : Minor — add ratio lock check and enforce CRF range
 
-### MARSHAL — L'Intendant
-- **Code actuel** : Does not exist anywhere in the repo
-- **V2 exige** : Ghost script per unit. 3 functions: Out-Check (verify OUT files), In-Check (validate IN files), Campaign Log. CLI: `python EXO_MARSHAL.py --unit F04 --mode validate`
-- **Impact** : Entire module to create from scratch
+### MARSHAL — L'Intendant ✅ SCELLÉ
+- **Code actuel** : `EXO_MARSHAL.py` (578 lignes) — Python pur, zéro dépendance
+- **V2 exige** : Ghost script per unit. 3 fonctions : Out-Check, In-Check, Campaign Log ✅
+- **Localisation** : `/EXODUS-V2/EXO_MARSHAL.py` + `/EXODUS-V2/README_MARSHAL.md`
+- **PR** : #12 (mergée 2026-02-26)
+- **Impact** : ✅ Module complet — manifeste 7 unités, routage, SHA256, CLI opérationnelle
 
 ## DÉSYNCHRONISATION CAMPAIGN_LOG
 Le fichier `EXODUS_CAMPAIGN_LOG.md` racine montre U01-U06 comme "EN ATTENTE" alors que les UNIT_XX_SUBPLAN.md confirment :
