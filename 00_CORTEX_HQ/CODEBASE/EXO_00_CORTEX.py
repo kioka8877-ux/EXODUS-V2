@@ -1863,6 +1863,49 @@ def run_pipeline(args, logger: CortexLogger):
         failed_count = len(flags["partial_failure"])
         logger.warn(f"{failed_count} moteur(s) en échec — revue manuelle recommandée")
     
+    # =================================================================
+    # PHASE FINALE — INVOCATION DU MARSHAL (Loi III — Étanchéité)
+    # =================================================================
+    logger.info("═══ INVOCATION DU MARSHAL ═══")
+    
+    marshal_script = Path(args.drive_root) / "EXO_MARSHAL.py"
+    if not marshal_script.exists():
+        marshal_script = Path(__file__).parent.parent.parent / "EXO_MARSHAL.py"
+    
+    if marshal_script.exists() and SUBPROCESS_AVAILABLE:
+        import subprocess
+        marshal_cmd = [
+            sys.executable, str(marshal_script),
+            "--unit", "U00",
+            "--mode", "check-out"
+        ]
+        logger.info(f"Lancement: {' '.join(marshal_cmd)}")
+        try:
+            result = subprocess.run(
+                marshal_cmd,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            logger.info(f"MARSHAL stdout:\n{result.stdout}")
+            if result.stderr:
+                logger.warn(f"MARSHAL stderr:\n{result.stderr}")
+            if result.returncode != 0:
+                logger.error(f"MARSHAL check-out ÉCHOUÉ (exit code {result.returncode})")
+                logger.error("La sortie de U00 n'est PAS validée — revue manuelle requise")
+            else:
+                logger.info("MARSHAL check-out RÉUSSI — sortie U00 validée ✅")
+        except subprocess.TimeoutExpired:
+            logger.error("MARSHAL timeout (120s) — vérification manuelle requise")
+        except Exception as e:
+            logger.error(f"MARSHAL erreur: {e}")
+    else:
+        if not marshal_script.exists():
+            logger.warn(f"EXO_MARSHAL.py introuvable — check-out manuel requis")
+        elif not SUBPROCESS_AVAILABLE:
+            logger.warn("subprocess non disponible — check-out manuel requis")
+        logger.warn("Commande manuelle: python EXO_MARSHAL.py --unit U00 --mode check-out")
+    
     logger.info("═══ MISSION ACCOMPLIE — CORTEX TERMINÉ ═══")
 
 
