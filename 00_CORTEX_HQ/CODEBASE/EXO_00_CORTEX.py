@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """
 EXODUS V2 — FRÉGATE 00: CORTEX HQ
-Analyse vidéo source → PRODUCTION_PLAN.JSON
+Orchestrateur 6-moteurs séquentiel → Master JSON V2
 
-Mission: Analyser une vidéo et générer un plan de production structuré
-         utilisant exclusivement l'Arsenal Impérial approuvé.
+Phases:
+    Phase 1 CPU (0 VRAM)  : M2 Audio + M3 FOV
+    Phase 2 API (0 VRAM)  : M1 Gemini (response_schema) → Dispatcher → M4 + M5
+    Phase 3 GPU-A (~3.5GB) : M6 DepthAnything [STUB]
+    Phase 4 GPU-B (~4GB)   : M7 SAM [STUB]
 
 Usage:
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --dry-run
+    python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --rerun audio_extraction
 """
 
 import argparse
@@ -17,7 +21,8 @@ import os
 import re
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
+from math import gcd
 from pathlib import Path
 from typing import Any, Optional
 
@@ -34,10 +39,17 @@ except ImportError:
 
 try:
     import google.generativeai as genai
+    from google.generativeai import types as content_types
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
     print("[WARN] google-generativeai non installé. Mode dry-run uniquement.")
+
+try:
+    import subprocess
+    SUBPROCESS_AVAILABLE = True
+except ImportError:
+    SUBPROCESS_AVAILABLE = False
 
 
 # ============================================================================
@@ -219,84 +231,263 @@ IMPERIAL_ARSENAL = {
 
 
 # ============================================================================
-# SCENE ANALYSIS PROMPT
+# ENUMS EXTRAITS DE L'ARSENAL (pour response_schema + validation)
 # ============================================================================
 
-SCENE_ANALYSIS_PROMPT = """Tu es CORTEX, l'IA d'analyse du pipeline EXODUS V2.
+CHARACTER_IDS = [c["id"] for c in IMPERIAL_ARSENAL["roblox_characters"]["items"]]
 
-MISSION: Analyser cette vidéo et générer un PRODUCTION_PLAN.JSON pour recréer la scène en animation Roblox.
+PROP_IDS = []
+for _category in IMPERIAL_ARSENAL["props"]["categories"].values():
+    PROP_IDS.extend([p["id"] for p in _category])
+PROP_IDS.append("none")
 
-## ARSENAL IMPÉRIAL (Assets autorisés UNIQUEMENT)
-{arsenal_json}
+ENVIRONMENT_IDS = [e["id"] for e in IMPERIAL_ARSENAL["environments"]["items"]]
+ANIMATION_IDS = [a["id"] for a in IMPERIAL_ARSENAL["animations"]["items"]]
+CAMERA_IDS = [c["id"] for c in IMPERIAL_ARSENAL["camera_styles"]["items"]]
+LIGHTING_IDS = [l["id"] for l in IMPERIAL_ARSENAL["lighting_presets"]["items"]]
+AUDIO_IDS = [a["id"] for a in IMPERIAL_ARSENAL["audio"]["items"]] + ["none"]
 
-## RÈGLES STRICTES
-1. Utilise UNIQUEMENT les IDs de l'Arsenal ci-dessus
-2. Si un élément n'existe pas dans l'Arsenal, utilise "generic_prop" ou l'alternative la plus proche
-3. Chaque scène doit avoir: characters, props, environment, animations, camera, lighting, audio
-4. Découpe la vidéo en scènes logiques (changement de plan = nouvelle scène)
-5. Estime les timecodes en secondes
+EXPRESSION_ENUM = [
+    "joy", "sadness", "anger", "fear", "surprise", "disgust", "neutral",
+    "suspicious", "determined", "confused", "pain", "love", "bored",
+    "excited", "shocked"
+]
+EYES_ENUM = [
+    "focused_forward", "looking_left", "looking_right", "looking_up",
+    "looking_down", "narrowed", "wide_open", "closed", "winking"
+]
+MOUTH_ENUM = [
+    "closed_tight", "slightly_open", "wide_open", "smiling", "frowning",
+    "pursed_lips", "shouting", "neutral"
+]
+ROLE_ENUM = ["protagonist", "antagonist", "background"]
+INTERACTION_ENUM = ["held", "placed", "animated", "worn"]
+RATIO_ENUM = ["9:16", "16:9", "4:3", "1:1"]
+MOTION_STYLE_ENUM = [
+    "casual", "athletic", "dramatic", "comedic", "aggressive",
+    "elegant", "robotic", "urgent"
+]
 
-## FORMAT DE SORTIE (JSON STRICT)
-```json
-{{
-  "metadata": {{
-    "source_video": "nom_fichier",
-    "duration_seconds": 0,
-    "fps": 0,
-    "resolution": "WxH",
-    "analysis_date": "YYYY-MM-DD",
-    "cortex_version": "2.0"
-  }},
-  "scenes": [
-    {{
-      "scene_id": 1,
-      "timecode_start": 0.0,
-      "timecode_end": 0.0,
-      "description": "Description courte de la scène",
-      "characters": [
-        {{
-          "character_id": "id_from_arsenal",
-          "role": "protagonist/antagonist/background",
-          "actions": ["animation_id_1", "animation_id_2"]
-        }}
-      ],
-      "props": [
-        {{
-          "prop_id": "id_from_arsenal",
-          "quantity": 1,
-          "interaction": "held/placed/animated"
-        }}
-      ],
-      "environment": {{
-        "environment_id": "id_from_arsenal",
-        "modifications": ["description des modifications si nécessaire"]
-      }},
-      "camera": {{
-        "style_id": "id_from_arsenal",
-        "movements": ["description des mouvements"]
-      }},
-      "lighting": {{
-        "preset_id": "id_from_arsenal",
-        "adjustments": ["modifications si nécessaire"]
-      }},
-      "audio": {{
-        "music_id": "id_from_arsenal_or_null",
-        "sfx": ["sfx_id_1", "sfx_id_2"],
-        "ambient_id": "id_from_arsenal_or_null"
-      }}
-    }}
-  ],
-  "production_notes": {{
-    "complexity_score": 1-10,
-    "estimated_render_hours": 0,
-    "special_requirements": ["liste des besoins spéciaux"],
-    "warnings": ["problèmes potentiels identifiés"]
-  }}
-}}
-```
 
-Analyse la vidéo et génère le JSON complet. Réponds UNIQUEMENT avec le JSON, sans texte avant ou après.
-"""
+# ============================================================================
+# RESPONSE SCHEMA — MASTER JSON V2
+# ============================================================================
+
+RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "production_plan": {
+            "type": "object",
+            "properties": {
+                "metadata": {
+                    "type": "object",
+                    "properties": {
+                        "source_video": {"type": "string"},
+                        "duration_seconds": {"type": "number"},
+                        "fps": {"type": "integer"},
+                        "resolution": {"type": "string"},
+                        "analysis_date": {"type": "string"},
+                        "cortex_version": {"type": "string"}
+                    },
+                    "required": ["source_video", "duration_seconds", "fps",
+                                 "resolution", "analysis_date", "cortex_version"]
+                },
+                "scenes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "scene_id": {"type": "integer"},
+                            "timecode_start": {"type": "number"},
+                            "timecode_end": {"type": "number"},
+                            "description": {"type": "string"},
+                            "characters": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "character_id": {"type": "string", "enum": CHARACTER_IDS},
+                                        "role": {"type": "string", "enum": ROLE_ENUM},
+                                        "actions": {
+                                            "type": "array",
+                                            "items": {"type": "string", "enum": ANIMATION_IDS}
+                                        }
+                                    },
+                                    "required": ["character_id", "role", "actions"]
+                                }
+                            },
+                            "props": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "prop_id": {"type": "string", "enum": PROP_IDS},
+                                        "quantity": {"type": "integer"},
+                                        "interaction": {"type": "string", "enum": INTERACTION_ENUM}
+                                    },
+                                    "required": ["prop_id", "quantity", "interaction"]
+                                }
+                            },
+                            "environment": {
+                                "type": "object",
+                                "properties": {
+                                    "environment_id": {"type": "string", "enum": ENVIRONMENT_IDS},
+                                    "modifications": {
+                                        "type": "array",
+                                        "items": {"type": "string"}
+                                    }
+                                },
+                                "required": ["environment_id", "modifications"]
+                            },
+                            "camera": {
+                                "type": "object",
+                                "properties": {
+                                    "style_id": {"type": "string", "enum": CAMERA_IDS},
+                                    "movements": {
+                                        "type": "array",
+                                        "items": {"type": "string"}
+                                    }
+                                },
+                                "required": ["style_id", "movements"]
+                            },
+                            "lighting": {
+                                "type": "object",
+                                "properties": {
+                                    "preset_id": {"type": "string", "enum": LIGHTING_IDS},
+                                    "adjustments": {
+                                        "type": "array",
+                                        "items": {"type": "string"}
+                                    }
+                                },
+                                "required": ["preset_id", "adjustments"]
+                            },
+                            "audio": {
+                                "type": "object",
+                                "properties": {
+                                    "music_id": {"type": "string", "enum": AUDIO_IDS},
+                                    "sfx": {
+                                        "type": "array",
+                                        "items": {"type": "string", "enum": AUDIO_IDS}
+                                    },
+                                    "ambient_id": {"type": "string", "enum": AUDIO_IDS}
+                                },
+                                "required": ["music_id", "sfx", "ambient_id"]
+                            }
+                        },
+                        "required": ["scene_id", "timecode_start", "timecode_end",
+                                     "description", "characters", "props",
+                                     "environment", "camera", "lighting", "audio"]
+                    }
+                },
+                "production_notes": {
+                    "type": "object",
+                    "properties": {
+                        "complexity_score": {"type": "integer"},
+                        "estimated_render_hours": {"type": "number"},
+                        "special_requirements": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "warnings": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "requires_u02": {"type": "boolean"}
+                    },
+                    "required": ["complexity_score", "estimated_render_hours",
+                                 "special_requirements", "warnings", "requires_u02"]
+                }
+            },
+            "required": ["metadata", "scenes", "production_notes"]
+        },
+        "facial_animation": {
+            "type": "object",
+            "properties": {
+                "sequence_id": {"type": "string"},
+                "segments": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "time_start": {"type": "number"},
+                            "time_end": {"type": "number"},
+                            "character_id": {"type": "string", "enum": CHARACTER_IDS},
+                            "expression": {"type": "string", "enum": EXPRESSION_ENUM},
+                            "intensity": {"type": "number"},
+                            "eyes": {"type": "string", "enum": EYES_ENUM},
+                            "mouth": {"type": "string", "enum": MOUTH_ENUM},
+                            "apex_time": {"type": "number"},
+                            "low_visibility": {"type": "boolean"}
+                        },
+                        "required": ["time_start", "time_end", "character_id",
+                                     "expression", "intensity", "eyes", "mouth",
+                                     "apex_time", "low_visibility"]
+                    }
+                }
+            },
+            "required": ["sequence_id", "segments"]
+        },
+        "motion_synthesis": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string"},
+                "duration_seconds": {"type": "number"},
+                "style": {"type": "string", "enum": MOTION_STYLE_ENUM},
+                "ratio": {"type": "string", "enum": RATIO_ENUM}
+            },
+            "required": ["prompt", "duration_seconds", "style", "ratio"]
+        }
+    },
+    "required": ["production_plan", "facial_animation", "motion_synthesis"]
+}
+
+
+# ============================================================================
+# MASTER PROMPT — GEMINI V2
+# ============================================================================
+
+MASTER_PROMPT = """Tu es CORTEX, le moteur d'analyse sémantique du pipeline EXODUS V2.
+
+MISSION : Analyser cette vidéo et produire un plan de production en 3 blocs pour recréer la scène en animation Roblox.
+
+## ARSENAL IMPÉRIAL — IDs disponibles
+
+Personnages : {character_ids}
+Props : {prop_ids}
+Environnements : {environment_ids}
+Animations : {animation_ids}
+Caméra : {camera_ids}
+Éclairage : {lighting_ids}
+Audio : {audio_ids}
+
+## MÉTADONNÉES SOURCE
+
+Fichier : {source_video}
+Durée : {duration_seconds}s | FPS : {fps} | Résolution : {resolution}
+
+## CONSIGNES
+
+1. Découpe la vidéo en scènes logiques (changement de plan = nouvelle scène).
+2. Utilise UNIQUEMENT les IDs listés ci-dessus. Si un élément n'existe pas, utilise l'alternative la plus proche ou "generic_prop" / "none".
+3. Le mot-clé "none" remplace null — ne jamais renvoyer de valeur nulle.
+4. Timecodes en secondes avec 3 décimales (ex: 1.250, 3.750).
+5. Intensité faciale entre 0.0 et 1.0.
+6. Si le visage d'un personnage n'est pas visible dans un segment, mets low_visibility à true mais remplis quand même les champs expression/eyes/mouth avec une estimation contextuelle.
+7. Le champ requires_u02 dans production_notes doit être true si au moins un prop est utilisé dans les scènes, false sinon.
+
+## BLOC 1 — production_plan
+Plan de production complet avec metadata, scenes[], et production_notes.
+Chaque scène contient : characters, props, environment, camera, lighting, audio.
+
+## BLOC 2 — facial_animation
+Séquence d'animation faciale. sequence_id = nom du fichier source sans extension.
+Chaque segment couvre un intervalle temporel pour un personnage avec expression, intensité, yeux, bouche, apex_time (moment du pic d'émotion dans le segment).
+
+## BLOC 3 — motion_synthesis
+Un prompt textuel décrivant le mouvement global de la scène pour un moteur de synthèse de mouvement.
+Inclut durée, style de mouvement, et ratio d'image.
+
+Analyse la vidéo et remplis les 3 blocs. Le format est contraint par le schéma — concentre-toi sur le contenu."""
 
 
 # ============================================================================
@@ -382,115 +573,17 @@ def get_video_metadata(video_path: Path, logger: CortexLogger) -> dict:
 
 
 # ============================================================================
-# JSON VALIDATION
+# JSON EXTRACTION (FALLBACK)
 # ============================================================================
-
-def validate_json_output(json_data: dict, logger: CortexLogger) -> dict:
-    """Valide et corrige le JSON de sortie."""
-    
-    valid_ids = set()
-    
-    # Collect all valid IDs from arsenal
-    for category, content in IMPERIAL_ARSENAL.items():
-        if "items" in content:
-            for item in content["items"]:
-                valid_ids.add(item["id"])
-        if "categories" in content:
-            for cat_items in content["categories"].values():
-                for item in cat_items:
-                    valid_ids.add(item["id"])
-    
-    corrections = []
-    
-    def validate_id(id_value: str, context: str) -> str:
-        if id_value is None or id_value == "null":
-            return None
-        if id_value in valid_ids:
-            return id_value
-        # Auto-correct to generic_prop
-        corrections.append(f"{context}: '{id_value}' → 'generic_prop'")
-        return "generic_prop"
-    
-    # Validate scenes
-    if "scenes" in json_data:
-        for i, scene in enumerate(json_data["scenes"]):
-            # Validate characters
-            if "characters" in scene:
-                for char in scene["characters"]:
-                    if "character_id" in char:
-                        char["character_id"] = validate_id(
-                            char["character_id"], 
-                            f"Scene {i+1} character"
-                        )
-                    if "actions" in char:
-                        char["actions"] = [
-                            validate_id(a, f"Scene {i+1} action") or "idle"
-                            for a in char["actions"]
-                        ]
-            
-            # Validate props
-            if "props" in scene:
-                for prop in scene["props"]:
-                    if "prop_id" in prop:
-                        prop["prop_id"] = validate_id(
-                            prop["prop_id"],
-                            f"Scene {i+1} prop"
-                        )
-            
-            # Validate environment
-            if "environment" in scene and "environment_id" in scene["environment"]:
-                scene["environment"]["environment_id"] = validate_id(
-                    scene["environment"]["environment_id"],
-                    f"Scene {i+1} environment"
-                ) or "classic_baseplate"
-            
-            # Validate camera
-            if "camera" in scene and "style_id" in scene["camera"]:
-                scene["camera"]["style_id"] = validate_id(
-                    scene["camera"]["style_id"],
-                    f"Scene {i+1} camera"
-                ) or "static"
-            
-            # Validate lighting
-            if "lighting" in scene and "preset_id" in scene["lighting"]:
-                scene["lighting"]["preset_id"] = validate_id(
-                    scene["lighting"]["preset_id"],
-                    f"Scene {i+1} lighting"
-                ) or "daylight"
-            
-            # Validate audio
-            if "audio" in scene:
-                audio = scene["audio"]
-                if "music_id" in audio:
-                    audio["music_id"] = validate_id(audio["music_id"], f"Scene {i+1} music")
-                if "ambient_id" in audio:
-                    audio["ambient_id"] = validate_id(audio["ambient_id"], f"Scene {i+1} ambient")
-                if "sfx" in audio:
-                    audio["sfx"] = [
-                        validate_id(s, f"Scene {i+1} sfx") or "oof"
-                        for s in audio["sfx"] if s
-                    ]
-    
-    if corrections:
-        logger.warn(f"Auto-corrections appliquées: {len(corrections)}")
-        for c in corrections[:5]:
-            logger.debug(c)
-        if len(corrections) > 5:
-            logger.debug(f"... et {len(corrections) - 5} autres corrections")
-    
-    return json_data
-
 
 def extract_json_from_response(response_text: str, logger: CortexLogger) -> Optional[dict]:
     """Extrait et parse le JSON depuis la réponse Gemini."""
     
-    # Try direct parse first
     try:
         return json.loads(response_text)
     except json.JSONDecodeError:
         pass
     
-    # Try to find JSON in markdown code blocks
     patterns = [
         r'```json\s*([\s\S]*?)\s*```',
         r'```\s*([\s\S]*?)\s*```',
@@ -502,10 +595,8 @@ def extract_json_from_response(response_text: str, logger: CortexLogger) -> Opti
         for match in matches:
             try:
                 text = match if isinstance(match, str) else match[0]
-                # Find the JSON object
                 start = text.find('{')
                 if start != -1:
-                    # Find matching closing brace
                     depth = 0
                     for i, char in enumerate(text[start:], start):
                         if char == '{':
@@ -523,17 +614,199 @@ def extract_json_from_response(response_text: str, logger: CortexLogger) -> Opti
 
 
 # ============================================================================
-# GEMINI API
+# MOTOR STATUS — SUIVI DES MOTEURS
 # ============================================================================
 
-def call_gemini(
-    video_path: Path,
-    metadata: dict,
-    logger: CortexLogger,
-    max_retries: int = 3,
-    model_name: str = "gemini-2.5-flash"
-) -> Optional[dict]:
-    """Appelle Gemini pour analyser la vidéo avec retry logic."""
+class MotorStatus:
+    """Suivi de l'état de chaque moteur d'extraction."""
+    
+    MOTORS = [
+        "gemini_semantic", "audio_extraction", "fov_extraction",
+        "depth_anything", "sam_segmentation"
+    ]
+    
+    IMPACT_MAP = {
+        "gemini_semantic":  ["U01", "U02", "U03", "U04", "U05", "U06"],
+        "depth_anything":   ["U03"],
+        "sam_segmentation": ["U03"],
+        "audio_extraction": ["U06"],
+        "fov_extraction":   ["U04"],
+    }
+    
+    def __init__(self):
+        self.results = {
+            m: {"status": "pending", "output": None, "error": None}
+            for m in self.MOTORS
+        }
+    
+    def mark_success(self, motor: str, output_path: Optional[str] = None):
+        self.results[motor]["status"] = "success"
+        self.results[motor]["output"] = str(output_path) if output_path else None
+    
+    def mark_failed(self, motor: str, error: str):
+        self.results[motor]["status"] = "failed"
+        self.results[motor]["error"] = error
+    
+    def mark_partial(self, motor: str, done: int, total: int,
+                     output_path: Optional[str] = None):
+        self.results[motor]["status"] = "partial"
+        self.results[motor]["frames_done"] = done
+        self.results[motor]["frames_total"] = total
+        self.results[motor]["output"] = str(output_path) if output_path else None
+    
+    def get_flags(self) -> dict:
+        """Génère le bloc flags pour PRODUCTION_PLAN.JSON."""
+        failed = [m for m, r in self.results.items() if r["status"] == "failed"]
+        partial = [m for m, r in self.results.items() if r["status"] == "partial"]
+        return {
+            "all_motors_ok": len(failed) == 0 and len(partial) == 0,
+            "partial_failure": [
+                {
+                    "motor": m,
+                    "error": self.results[m]["error"],
+                    "impact": self.IMPACT_MAP.get(m, [])
+                }
+                for m in failed
+            ],
+            "partial_success": [
+                {
+                    "motor": m,
+                    "frames_done": self.results[m].get("frames_done", 0),
+                    "frames_total": self.results[m].get("frames_total", 0)
+                }
+                for m in partial
+            ],
+            "manual_review_required": len(failed) > 0,
+            "warnings": []
+        }
+
+
+# ============================================================================
+# M2 — AUDIO EXTRACTION (FFmpeg)
+# ============================================================================
+
+def run_audio_extraction(video_path: Path, output_path: Path,
+                         logger: CortexLogger) -> bool:
+    """M2 — Extrait la piste audio via FFmpeg."""
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", str(video_path),
+        "-vn",
+        "-acodec", "pcm_s16le",
+        "-ar", "44100",
+        "-ac", "2",
+        str(output_path)
+    ]
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode == 0 and output_path.exists() and output_path.stat().st_size > 44:
+            logger.info(f"Audio extrait: {output_path} ({output_path.stat().st_size} bytes)")
+            return True
+        else:
+            logger.error(f"FFmpeg échoué: {result.stderr[:500]}")
+            return False
+    except FileNotFoundError:
+        logger.error("FFmpeg non trouvé. Installer: apt install ffmpeg")
+        return False
+    except subprocess.TimeoutExpired:
+        logger.error("FFmpeg timeout (120s)")
+        return False
+    except Exception as e:
+        logger.error(f"Erreur audio extraction: {e}")
+        return False
+
+
+# ============================================================================
+# M3 — FOV / RATIO EXTRACTION (OpenCV)
+# ============================================================================
+
+def run_fov_extraction(video_path: Path, output_path: Path,
+                       logger: CortexLogger) -> bool:
+    """M3 — Extrait FOV, ratio et métadonnées optiques."""
+    
+    if not CV2_AVAILABLE:
+        logger.error("OpenCV requis pour l'extraction FOV")
+        return False
+    
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        logger.error(f"Impossible d'ouvrir: {video_path}")
+        return False
+    
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS)) or 30
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    cap.release()
+    
+    g = gcd(width, height) if width > 0 and height > 0 else 1
+    ratio_w, ratio_h = width // g, height // g
+    ratio_str = f"{ratio_w}:{ratio_h}"
+    
+    standard_ratios = {"9:16": (9, 16), "16:9": (16, 9), "4:3": (4, 3), "1:1": (1, 1)}
+    best_ratio = min(
+        standard_ratios.keys(),
+        key=lambda r: abs(standard_ratios[r][0] / standard_ratios[r][1] - width / height)
+    ) if height > 0 else "16:9"
+    
+    estimated_fov = 70.0 if width > height else 60.0
+    
+    fov_data = {
+        "resolution": [width, height],
+        "ratio": best_ratio,
+        "ratio_raw": ratio_str,
+        "fps_source": fps,
+        "frame_count": frame_count,
+        "duration_seconds": round(frame_count / fps, 3) if fps > 0 else 0,
+        "estimated_fov_degrees": estimated_fov
+    }
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(fov_data, f, indent=2, ensure_ascii=False)
+    
+    logger.info(f"FOV extrait: {best_ratio}, {width}x{height}, {fps}fps")
+    return True
+
+
+# ============================================================================
+# M6 — DEPTH ANYTHING V2 [STUB]
+# ============================================================================
+
+def run_depth_anything(video_path: Path, output_dir: Path,
+                       logger: CortexLogger,
+                       model_path: Optional[Path] = None) -> bool:
+    """M6 — DepthAnything V2 [STUB — implémenté dans Task B]."""
+    logger.warn("MOTEUR DEPTH_ANYTHING: STUB — pas encore implémenté")
+    logger.warn("Ce moteur sera ajouté dans la prochaine mise à jour")
+    return False
+
+
+# ============================================================================
+# M7 — SAM SEGMENTATION [STUB]
+# ============================================================================
+
+def run_sam_segmentation(video_path: Path, output_path: Path,
+                         logger: CortexLogger,
+                         model_path: Optional[Path] = None) -> bool:
+    """M7 — SAM Segmentation [STUB — implémenté dans Task B]."""
+    logger.warn("MOTEUR SAM: STUB — pas encore implémenté")
+    logger.warn("Ce moteur sera ajouté dans la prochaine mise à jour")
+    return False
+
+
+# ============================================================================
+# M1 — GEMINI V2 (response_schema)
+# ============================================================================
+
+def call_gemini_v2(video_path: Path, metadata: dict, logger: CortexLogger,
+                   model_name: str = "gemini-2.0-flash",
+                   max_retries: int = 3) -> Optional[dict]:
+    """Appelle Gemini avec response_schema pour obtenir le Master JSON V2."""
     
     if not GENAI_AVAILABLE:
         logger.error("google-generativeai non installé")
@@ -546,17 +819,25 @@ def call_gemini(
     
     genai.configure(api_key=api_key)
     
-    # Prepare prompt with arsenal
-    arsenal_json = json.dumps(IMPERIAL_ARSENAL, indent=2, ensure_ascii=False)
-    prompt = SCENE_ANALYSIS_PROMPT.format(arsenal_json=arsenal_json)
+    prompt = MASTER_PROMPT.format(
+        character_ids=", ".join(CHARACTER_IDS),
+        prop_ids=", ".join(PROP_IDS),
+        environment_ids=", ".join(ENVIRONMENT_IDS),
+        animation_ids=", ".join(ANIMATION_IDS),
+        camera_ids=", ".join(CAMERA_IDS),
+        lighting_ids=", ".join(LIGHTING_IDS),
+        audio_ids=", ".join(AUDIO_IDS),
+        source_video=metadata.get("source_video", "unknown"),
+        duration_seconds=metadata.get("duration_seconds", 0),
+        fps=metadata.get("fps", 30),
+        resolution=metadata.get("resolution", "1920x1080"),
+    )
     
-    # Upload video
     logger.info(f"Upload vidéo vers Gemini: {video_path.name}")
     try:
         video_file = genai.upload_file(path=str(video_path))
         logger.info(f"Upload terminé: {video_file.uri}")
         
-        # Wait for processing
         while video_file.state.name == "PROCESSING":
             logger.debug("Traitement vidéo en cours...")
             time.sleep(2)
@@ -565,12 +846,10 @@ def call_gemini(
         if video_file.state.name == "FAILED":
             logger.error(f"Échec traitement vidéo: {video_file.state.name}")
             return None
-            
     except Exception as e:
         logger.error(f"Erreur upload: {e}")
         return None
     
-    # Call model with retry
     model = genai.GenerativeModel(model_name)
     
     for attempt in range(max_retries):
@@ -580,27 +859,29 @@ def call_gemini(
             response = model.generate_content(
                 [video_file, prompt],
                 generation_config=genai.GenerationConfig(
+                    response_mime_type="application/json",
+                    response_schema=RESPONSE_SCHEMA,
                     temperature=0.2,
-                    max_output_tokens=8192
-                )
+                    max_output_tokens=16384,
+                ),
             )
             
             if response.text:
                 logger.info("Réponse reçue, extraction JSON...")
-                json_data = extract_json_from_response(response.text, logger)
+                try:
+                    json_data = json.loads(response.text)
+                except json.JSONDecodeError:
+                    logger.warn("response_schema parse échoué, fallback extraction...")
+                    json_data = extract_json_from_response(response.text, logger)
                 
                 if json_data:
-                    # Inject metadata
-                    json_data["metadata"] = metadata
-                    # Validate and correct
-                    json_data = validate_json_output(json_data, logger)
-                    logger.info("JSON validé avec succès")
+                    logger.info("Master JSON V2 obtenu avec succès")
                     return json_data
                 else:
                     logger.warn(f"Tentative {attempt + 1}: JSON invalide")
             else:
                 logger.warn(f"Tentative {attempt + 1}: Réponse vide")
-                
+        
         except Exception as e:
             logger.error(f"Tentative {attempt + 1} échouée: {e}")
         
@@ -614,168 +895,333 @@ def call_gemini(
 
 
 # ============================================================================
-# OUTPUT
+# NORMALIZE TIMECODES
 # ============================================================================
 
-def finalize_output(
-    json_data: dict,
-    output_path: Path,
-    logger: CortexLogger,
-    dry_run: bool = False
-) -> bool:
-    """Finalise et écrit le fichier de sortie."""
+def normalize_timecodes(master_json: dict, logger: CortexLogger) -> dict:
+    """Force la cohérence temporelle entre les 3 blocs.
+    Les timecodes de production_plan.scenes sont la RÉFÉRENCE.
+    Les segments facial_animation sont RECALÉS dessus."""
     
-    if dry_run:
-        logger.info("=== MODE DRY-RUN ===")
-        logger.info(f"Output path: {output_path}")
-        logger.info("JSON preview:")
-        print(json.dumps(json_data, indent=2, ensure_ascii=False)[:2000])
-        if len(json.dumps(json_data)) > 2000:
-            print("... [truncated]")
-        return True
+    pp = master_json.get("production_plan", {})
+    fa = master_json.get("facial_animation", {})
+    ms = master_json.get("motion_synthesis", {})
+    scenes = pp.get("scenes", [])
+    segments = fa.get("segments", [])
+    
+    if not scenes:
+        logger.warn("Aucune scène dans production_plan — skip normalisation")
+        return master_json
+    
+    scene_boundaries = [
+        (s.get("timecode_start", 0), s.get("timecode_end", 0))
+        for s in scenes
+    ]
+    total_start = scene_boundaries[0][0]
+    total_end = scene_boundaries[-1][1]
+    total_duration = total_end - total_start
+    
+    for seg in segments:
+        t_start = seg.get("time_start", 0)
+        t_end = seg.get("time_end", 0)
+        midpoint = (t_start + t_end) / 2.0
+        
+        parent_scene = None
+        for sb_start, sb_end in scene_boundaries:
+            if sb_start <= midpoint <= sb_end:
+                parent_scene = (sb_start, sb_end)
+                break
+        
+        if parent_scene is None:
+            dists = [(abs(midpoint - (s + e) / 2), (s, e)) for s, e in scene_boundaries]
+            parent_scene = min(dists, key=lambda x: x[0])[1]
+        
+        seg["time_start"] = round(max(seg["time_start"], parent_scene[0]), 3)
+        seg["time_end"] = round(min(seg["time_end"], parent_scene[1]), 3)
+        
+        if seg["time_start"] >= seg["time_end"]:
+            seg["time_end"] = round(seg["time_start"] + 0.1, 3)
+        
+        apex = seg.get("apex_time", seg["time_start"])
+        seg["apex_time"] = round(max(seg["time_start"], min(apex, seg["time_end"])), 3)
+    
+    segments.sort(key=lambda s: s["time_start"])
+    for i in range(len(segments) - 1):
+        if segments[i]["time_end"] > segments[i + 1]["time_start"]:
+            segments[i]["time_end"] = segments[i + 1]["time_start"]
+            if segments[i]["time_start"] >= segments[i]["time_end"]:
+                segments[i]["time_end"] = round(segments[i]["time_start"] + 0.001, 3)
+            segments[i]["apex_time"] = round(
+                max(segments[i]["time_start"],
+                    min(segments[i]["apex_time"], segments[i]["time_end"])),
+                3
+            )
+    
+    if total_duration > 0 and ms.get("duration_seconds"):
+        ms_dur = ms["duration_seconds"]
+        if abs(ms_dur - total_duration) > 1.0:
+            logger.warn(f"motion_synthesis.duration_seconds recalé: {ms_dur} → {total_duration}")
+            ms["duration_seconds"] = round(total_duration, 3)
+    
+    logger.info(f"Timecodes normalisés: {len(segments)} segments, durée totale {total_duration:.3f}s")
+    return master_json
+
+
+# ============================================================================
+# VALIDATION — STRUCTURE (Niveau 2)
+# ============================================================================
+
+def validate_structure(master_json: dict, logger: CortexLogger) -> tuple:
+    """Niveau 2 — Vérifie que la structure est complète.
+    Retourne (is_valid: bool, errors: list[str])."""
+    
+    errors = []
+    
+    pp = master_json.get("production_plan")
+    if not pp:
+        errors.append("production_plan manquant")
+        return (False, errors)
+    
+    scenes = pp.get("scenes", [])
+    if not scenes:
+        errors.append("production_plan.scenes vide")
+    
+    for i, scene in enumerate(scenes):
+        sid = scene.get("scene_id", i + 1)
+        prefix = f"scene[{sid}]"
+        
+        for field in ["scene_id", "timecode_start", "timecode_end", "description",
+                       "characters", "environment", "camera", "lighting", "audio"]:
+            if field not in scene:
+                errors.append(f"{prefix}: champ '{field}' manquant")
+        
+        t_start = scene.get("timecode_start", 0)
+        t_end = scene.get("timecode_end", 0)
+        if t_start >= t_end:
+            errors.append(f"{prefix}: timecode_start ({t_start}) >= timecode_end ({t_end})")
+        
+        chars = scene.get("characters", [])
+        if not chars:
+            errors.append(f"{prefix}: aucun character")
+        
+        for j, ch in enumerate(chars):
+            cid = ch.get("character_id", "")
+            if cid and cid not in CHARACTER_IDS:
+                errors.append(f"{prefix}.characters[{j}]: ID inconnu '{cid}'")
+            for action in ch.get("actions", []):
+                if action not in ANIMATION_IDS:
+                    errors.append(f"{prefix}.characters[{j}].actions: ID inconnu '{action}'")
+        
+        for j, prop in enumerate(scene.get("props", [])):
+            pid = prop.get("prop_id", "")
+            if pid and pid not in PROP_IDS:
+                errors.append(f"{prefix}.props[{j}]: ID inconnu '{pid}'")
+        
+        env = scene.get("environment", {})
+        eid = env.get("environment_id", "")
+        if eid and eid not in ENVIRONMENT_IDS:
+            errors.append(f"{prefix}.environment: ID inconnu '{eid}'")
+        
+        cam = scene.get("camera", {})
+        csid = cam.get("style_id", "")
+        if csid and csid not in CAMERA_IDS:
+            errors.append(f"{prefix}.camera: ID inconnu '{csid}'")
+        
+        lit = scene.get("lighting", {})
+        lid = lit.get("preset_id", "")
+        if lid and lid not in LIGHTING_IDS:
+            errors.append(f"{prefix}.lighting: ID inconnu '{lid}'")
+        
+        aud = scene.get("audio", {})
+        for aid_field in ["music_id", "ambient_id"]:
+            aid = aud.get(aid_field, "")
+            if aid and aid not in AUDIO_IDS:
+                errors.append(f"{prefix}.audio.{aid_field}: ID inconnu '{aid}'")
+        for sfx in aud.get("sfx", []):
+            if sfx and sfx not in AUDIO_IDS:
+                errors.append(f"{prefix}.audio.sfx: ID inconnu '{sfx}'")
+    
+    fa = master_json.get("facial_animation")
+    if not fa:
+        errors.append("facial_animation manquant")
+    else:
+        segs = fa.get("segments", [])
+        if not segs:
+            errors.append("facial_animation.segments vide")
+        for k, seg in enumerate(segs):
+            prefix = f"facial_segment[{k}]"
+            for field in ["time_start", "time_end", "expression", "intensity"]:
+                if field not in seg:
+                    errors.append(f"{prefix}: champ '{field}' manquant")
+            intensity = seg.get("intensity", 0)
+            if not (0.0 <= intensity <= 1.0):
+                errors.append(f"{prefix}: intensity {intensity} hors [0.0, 1.0]")
+    
+    ms = master_json.get("motion_synthesis")
+    if not ms:
+        errors.append("motion_synthesis manquant")
+    elif not ms.get("prompt"):
+        errors.append("motion_synthesis.prompt vide")
+    
+    is_valid = len(errors) == 0
+    if errors:
+        logger.warn(f"Validation structure: {len(errors)} erreur(s)")
+        for e in errors[:10]:
+            logger.debug(f"  • {e}")
+    else:
+        logger.info("Validation structure: OK")
+    
+    return (is_valid, errors)
+
+
+# ============================================================================
+# VALIDATION — COMPLÉTUDE (Niveau 3)
+# ============================================================================
+
+def validate_completeness(master_json: dict, logger: CortexLogger) -> list:
+    """Niveau 3 — Cohérence croisée entre les blocs.
+    Retourne list[str] de warnings."""
+    
+    warnings = []
+    
+    pp = master_json.get("production_plan", {})
+    fa = master_json.get("facial_animation", {})
+    ms = master_json.get("motion_synthesis", {})
+    scenes = pp.get("scenes", [])
+    segments = fa.get("segments", [])
+    
+    if scenes:
+        total_start = scenes[0].get("timecode_start", 0)
+        total_end = scenes[-1].get("timecode_end", 0)
+        total_duration = total_end - total_start
+        
+        if total_duration > 0 and segments:
+            facial_coverage = sum(
+                s.get("time_end", 0) - s.get("time_start", 0)
+                for s in segments
+            )
+            coverage_pct = (facial_coverage / total_duration) * 100
+            if coverage_pct < 50:
+                warnings.append(
+                    f"Couverture faciale faible: {coverage_pct:.1f}% "
+                    f"({facial_coverage:.1f}s / {total_duration:.1f}s)"
+                )
+        
+        ms_dur = ms.get("duration_seconds", 0)
+        if total_duration > 0 and abs(ms_dur - total_duration) > 1.0:
+            warnings.append(
+                f"motion_synthesis.duration_seconds ({ms_dur}) != "
+                f"durée totale vidéo ({total_duration})"
+            )
+        
+        has_props = any(
+            prop.get("prop_id", "none") != "none"
+            for scene in scenes
+            for prop in scene.get("props", [])
+        )
+        requires_u02 = pp.get("production_notes", {}).get("requires_u02", False)
+        
+        if requires_u02 and not has_props:
+            warnings.append("requires_u02=true mais aucun prop détecté dans les scènes")
+        if not requires_u02 and has_props:
+            warnings.append("requires_u02=false mais des props sont présents dans les scènes")
+    
+    return warnings
+
+
+# ============================================================================
+# DISPATCHER — DÉCOUPE DU MASTER JSON
+# ============================================================================
+
+def dispatch_master_json(master_json: dict, output_dir: Path,
+                         motor_status: MotorStatus,
+                         logger: CortexLogger) -> dict:
+    """Découpe le Master JSON en 3 fichiers séparés + ajoute les flags."""
+    
+    output_dir.mkdir(parents=True, exist_ok=True)
+    written = {}
+    
+    # --- 1. PRODUCTION_PLAN.JSON ---
+    pp = master_json.get("production_plan", {})
+    pp["schema_version"] = "2.0"
+    pp["generated_at"] = datetime.now(timezone.utc).isoformat()
+    pp["flags"] = motor_status.get_flags()
+    
+    pp_path = output_dir / "PRODUCTION_PLAN.JSON"
+    with open(pp_path, 'w', encoding='utf-8') as f:
+        json.dump(pp, f, indent=2, ensure_ascii=False)
+    logger.info(f"Écrit: {pp_path} ({pp_path.stat().st_size} bytes)")
+    written["production_plan"] = str(pp_path)
+    
+    # --- 2. facial_animation.json ---
+    fa = master_json.get("facial_animation", {})
+    fa_path = output_dir / "facial_animation.json"
+    with open(fa_path, 'w', encoding='utf-8') as f:
+        json.dump(fa, f, indent=2, ensure_ascii=False)
+    logger.info(f"Écrit: {fa_path} ({fa_path.stat().st_size} bytes)")
+    written["facial_animation"] = str(fa_path)
+    
+    # --- 3. motion_synthesis_prompt.txt ---
+    ms = master_json.get("motion_synthesis", {})
+    ms_path = output_dir / "motion_synthesis_prompt.txt"
+    ms_text = ms.get("prompt", "")
+    ms_text += f"\nDuration: {ms.get('duration_seconds', 0)} seconds."
+    ms_text += f" Style: {ms.get('style', 'casual')}."
+    ms_text += f" Ratio: {ms.get('ratio', '16:9')}."
+    with open(ms_path, 'w', encoding='utf-8') as f:
+        f.write(ms_text)
+    logger.info(f"Écrit: {ms_path} ({ms_path.stat().st_size} bytes)")
+    written["motion_synthesis"] = str(ms_path)
+    
+    return written
+
+
+# ============================================================================
+# UPDATE FLAGS — POST-PIPELINE
+# ============================================================================
+
+def update_flags(pp_path: Path, motor_status: MotorStatus,
+                 logger: CortexLogger):
+    """Met à jour le bloc flags dans PRODUCTION_PLAN.JSON après toutes les phases."""
+    
+    if not pp_path.exists():
+        logger.warn(f"PRODUCTION_PLAN.JSON introuvable pour mise à jour flags: {pp_path}")
+        return
     
     try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(pp_path, 'r', encoding='utf-8') as f:
+            pp = json.load(f)
         
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(json_data, f, indent=2, ensure_ascii=False)
+        pp["flags"] = motor_status.get_flags()
         
-        logger.info(f"PRODUCTION_PLAN.JSON écrit: {output_path}")
-        logger.info(f"Taille: {output_path.stat().st_size} bytes")
+        with open(pp_path, 'w', encoding='utf-8') as f:
+            json.dump(pp, f, indent=2, ensure_ascii=False)
         
-        # Summary
-        if "scenes" in json_data:
-            logger.info(f"Scènes analysées: {len(json_data['scenes'])}")
-        if "production_notes" in json_data:
-            notes = json_data["production_notes"]
-            if "complexity_score" in notes:
-                logger.info(f"Score complexité: {notes['complexity_score']}/10")
-        
-        return True
-        
+        logger.info("Flags mis à jour dans PRODUCTION_PLAN.JSON")
     except Exception as e:
-        logger.error(f"Erreur écriture: {e}")
-        return False
+        logger.error(f"Erreur mise à jour flags: {e}")
 
 
 # ============================================================================
-# MAIN
+# DRY-RUN — MOCK MASTER JSON V2
 # ============================================================================
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="EXODUS V2 — CORTEX: Analyse vidéo → PRODUCTION_PLAN.JSON",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Exemples:
-  %(prog)s --drive-root /content/drive/MyDrive/EXODUS --input-video video.mp4
-  %(prog)s --drive-root ./EXODUS --input-video test.mp4 --dry-run
-  %(prog)s --drive-root /data/EXODUS --input-video source.mp4 --model gemini-2.0-flash
-        """
-    )
+def generate_mock_master_json(metadata: dict) -> dict:
+    """Génère un Master JSON V2 de test pour le mode dry-run."""
     
-    parser.add_argument(
-        "--drive-root",
-        type=str,
-        required=True,
-        help="Chemin racine EXODUS (contient 00_CORTEX_HQ/)"
-    )
+    duration = metadata.get("duration_seconds", 10)
+    mid = round(duration / 2, 3)
+    video_stem = Path(metadata.get("source_video", "test")).stem
     
-    parser.add_argument(
-        "--input-video",
-        type=str,
-        required=True,
-        help="Nom du fichier vidéo (cherché dans IN_VIDEO_SOURCE/)"
-    )
-    
-    parser.add_argument(
-        "--output-name",
-        type=str,
-        default=None,
-        help="Nom du fichier JSON de sortie (défaut: PRODUCTION_PLAN_<video>.json)"
-    )
-    
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="gemini-2.5-flash",
-        help="Modèle Gemini à utiliser (défaut: gemini-2.5-flash)"
-    )
-    
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Exécute sans appeler Gemini (test local)"
-    )
-    
-    parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Active les logs DEBUG"
-    )
-    
-    args = parser.parse_args()
-    
-    # Initialize logger
-    log_level = "DEBUG" if args.verbose else "INFO"
-    logger = CortexLogger(level=log_level)
-    
-    logger.info("=" * 60)
-    logger.info("EXODUS V2 — FRÉGATE 00: CORTEX HQ")
-    logger.info("=" * 60)
-    
-    # Resolve paths
-    drive_root = Path(args.drive_root).resolve()
-    cortex_dir = drive_root / "00_CORTEX_HQ"
-    input_dir = cortex_dir / "IN_VIDEO_SOURCE"
-    output_dir = cortex_dir / "OUT_PRODUCTION_PLAN"
-    
-    video_path = input_dir / args.input_video
-    
-    # Validate paths
-    if not drive_root.exists():
-        logger.error(f"Drive root non trouvé: {drive_root}")
-        sys.exit(1)
-    
-    if not video_path.exists():
-        # Try direct path
-        video_path = Path(args.input_video).resolve()
-        if not video_path.exists():
-            logger.error(f"Vidéo non trouvée: {args.input_video}")
-            logger.info(f"Chemins vérifiés:")
-            logger.info(f"  - {input_dir / args.input_video}")
-            logger.info(f"  - {video_path}")
-            sys.exit(1)
-    
-    logger.info(f"Vidéo source: {video_path}")
-    logger.info(f"Output dir: {output_dir}")
-    
-    # Get video metadata
-    metadata = get_video_metadata(video_path, logger)
-    
-    # Determine output filename
-    if args.output_name:
-        output_name = args.output_name
-    else:
-        video_stem = video_path.stem
-        output_name = f"PRODUCTION_PLAN_{video_stem}.json"
-    
-    output_path = output_dir / output_name
-    
-    # Dry run mode
-    if args.dry_run:
-        logger.info("Mode dry-run activé")
-        
-        # Generate mock output
-        mock_output = {
+    return {
+        "production_plan": {
             "metadata": metadata,
             "scenes": [
                 {
                     "scene_id": 1,
                     "timecode_start": 0.0,
-                    "timecode_end": 5.0,
-                    "description": "[DRY-RUN] Scène de test",
+                    "timecode_end": mid,
+                    "description": "[DRY-RUN] Scène d'ouverture",
                     "characters": [
                         {
                             "character_id": "bacon_hair",
@@ -803,47 +1249,344 @@ Exemples:
                         "adjustments": []
                     },
                     "audio": {
-                        "music_id": None,
+                        "music_id": "none",
                         "sfx": ["oof"],
-                        "ambient_id": None
+                        "ambient_id": "none"
+                    }
+                },
+                {
+                    "scene_id": 2,
+                    "timecode_start": mid,
+                    "timecode_end": round(duration, 3),
+                    "description": "[DRY-RUN] Scène d'action",
+                    "characters": [
+                        {
+                            "character_id": "bacon_hair",
+                            "role": "protagonist",
+                            "actions": ["run", "sword_slash"]
+                        },
+                        {
+                            "character_id": "noob",
+                            "role": "antagonist",
+                            "actions": ["idle", "death"]
+                        }
+                    ],
+                    "props": [
+                        {
+                            "prop_id": "linked_sword",
+                            "quantity": 1,
+                            "interaction": "held"
+                        }
+                    ],
+                    "environment": {
+                        "environment_id": "grass_terrain",
+                        "modifications": []
+                    },
+                    "camera": {
+                        "style_id": "follow",
+                        "movements": ["tracking du protagoniste"]
+                    },
+                    "lighting": {
+                        "preset_id": "dramatic",
+                        "adjustments": []
+                    },
+                    "audio": {
+                        "music_id": "action_electronic",
+                        "sfx": ["sword_hit", "oof"],
+                        "ambient_id": "none"
                     }
                 }
             ],
             "production_notes": {
-                "complexity_score": 3,
-                "estimated_render_hours": 1,
+                "complexity_score": 5,
+                "estimated_render_hours": 2,
                 "special_requirements": ["[DRY-RUN] Aucune analyse réelle effectuée"],
-                "warnings": ["Mode test uniquement"]
+                "warnings": ["Mode test uniquement"],
+                "requires_u02": True
             }
+        },
+        "facial_animation": {
+            "sequence_id": video_stem,
+            "segments": [
+                {
+                    "time_start": 0.0,
+                    "time_end": mid,
+                    "character_id": "bacon_hair",
+                    "expression": "neutral",
+                    "intensity": 0.3,
+                    "eyes": "focused_forward",
+                    "mouth": "closed_tight",
+                    "apex_time": round(mid / 2, 3),
+                    "low_visibility": False
+                },
+                {
+                    "time_start": mid,
+                    "time_end": round(duration, 3),
+                    "character_id": "bacon_hair",
+                    "expression": "determined",
+                    "intensity": 0.8,
+                    "eyes": "narrowed",
+                    "mouth": "closed_tight",
+                    "apex_time": round(mid + (duration - mid) * 0.7, 3),
+                    "low_visibility": False
+                }
+            ]
+        },
+        "motion_synthesis": {
+            "prompt": "Un personnage marche puis court vers un adversaire et effectue une attaque à l'épée.",
+            "duration_seconds": round(duration, 3),
+            "style": "dramatic",
+            "ratio": "16:9"
         }
+    }
+
+
+# ============================================================================
+# ORCHESTRATEUR — PIPELINE PRINCIPAL
+# ============================================================================
+
+def run_pipeline(args, logger: CortexLogger):
+    """Orchestrateur principal — exécute les 4 phases séquentiellement."""
+    
+    drive_root = Path(args.drive_root).resolve()
+    cortex_dir = drive_root / "00_CORTEX_HQ"
+    input_dir = cortex_dir / "IN_VIDEO_SOURCE"
+    output_dir = cortex_dir / "OUT_PRODUCTION_PLAN"
+    
+    video_path = input_dir / args.input_video
+    
+    if not drive_root.exists():
+        logger.error(f"Drive root non trouvé: {drive_root}")
+        sys.exit(1)
+    
+    if not video_path.exists():
+        video_path = Path(args.input_video).resolve()
+        if not video_path.exists():
+            logger.error(f"Vidéo non trouvée: {args.input_video}")
+            logger.info(f"Chemins vérifiés:")
+            logger.info(f"  - {input_dir / args.input_video}")
+            logger.info(f"  - {video_path}")
+            sys.exit(1)
+    
+    logger.info(f"Vidéo source: {video_path}")
+    logger.info(f"Output dir: {output_dir}")
+    
+    metadata = get_video_metadata(video_path, logger)
+    motor_status = MotorStatus()
+    
+    # =================================================================
+    # MODE DRY-RUN
+    # =================================================================
+    if args.dry_run:
+        logger.info("=== MODE DRY-RUN ===")
         
-        finalize_output(mock_output, output_path, logger, dry_run=True)
-        logger.info("Dry-run terminé avec succès")
+        master_json = generate_mock_master_json(metadata)
+        master_json = normalize_timecodes(master_json, logger)
+        
+        is_valid, errors = validate_structure(master_json, logger)
+        if not is_valid:
+            logger.warn(f"Mock validation: {errors}")
+        
+        warnings = validate_completeness(master_json, logger)
+        for w in warnings:
+            logger.warn(f"Cohérence: {w}")
+        
+        motor_status.mark_success("gemini_semantic")
+        motor_status.mark_success("audio_extraction")
+        motor_status.mark_success("fov_extraction")
+        motor_status.mark_failed("depth_anything", "Stub not implemented")
+        motor_status.mark_failed("sam_segmentation", "Stub not implemented")
+        
+        dispatch_master_json(master_json, output_dir, motor_status, logger)
+        update_flags(output_dir / "PRODUCTION_PLAN.JSON", motor_status, logger)
+        
+        logger.info("=== DRY-RUN TERMINÉ ===")
+        
+        flags = motor_status.get_flags()
+        logger.info("═══ RAPPORT FINAL ═══")
+        for m, r in motor_status.results.items():
+            icon = ("✅" if r["status"] == "success"
+                    else "🟡" if r["status"] == "partial"
+                    else "❌" if r["status"] == "failed"
+                    else "⏳")
+            logger.info(f"  {icon} {m}: {r['status']}")
+        
+        logger.info("MISSION ACCOMPLIE — CORTEX DRY-RUN TERMINÉ")
         sys.exit(0)
     
-    # Real execution
-    logger.info("Démarrage analyse Gemini...")
+    # =================================================================
+    # PHASE 1 — CPU (VRAM = 0)
+    # =================================================================
+    logger.info("═══ PHASE 1 — CPU ═══")
     
-    result = call_gemini(
-        video_path=video_path,
-        metadata=metadata,
-        logger=logger,
-        model_name=args.model
+    # M2: Audio
+    if not args.rerun or args.rerun == "audio_extraction":
+        audio_out = output_dir / "audio_source.wav"
+        audio_ok = run_audio_extraction(video_path, audio_out, logger)
+        if audio_ok:
+            motor_status.mark_success("audio_extraction", audio_out)
+        else:
+            motor_status.mark_failed("audio_extraction", "FFmpeg failed")
+    else:
+        logger.info("M2 Audio: skip (--rerun != audio_extraction)")
+    
+    # M3: FOV
+    if not args.rerun or args.rerun == "fov_extraction":
+        fov_out = output_dir / "camera_fov_ratio.json"
+        fov_ok = run_fov_extraction(video_path, fov_out, logger)
+        if fov_ok:
+            motor_status.mark_success("fov_extraction", fov_out)
+        else:
+            motor_status.mark_failed("fov_extraction", "OpenCV failed")
+    else:
+        logger.info("M3 FOV: skip (--rerun != fov_extraction)")
+    
+    # =================================================================
+    # PHASE 2 — API (VRAM = 0)
+    # =================================================================
+    logger.info("═══ PHASE 2 — API ═══")
+    
+    if not args.rerun or args.rerun == "gemini_semantic":
+        master_json = call_gemini_v2(
+            video_path, metadata, logger, model_name=args.model
+        )
+        
+        if master_json is None:
+            logger.error("FATAL: Gemini a échoué. Pipeline arrêté.")
+            motor_status.mark_failed("gemini_semantic", "Gemini returned None after retries")
+            update_flags(output_dir / "PRODUCTION_PLAN.JSON", motor_status, logger)
+            sys.exit(1)
+        
+        motor_status.mark_success("gemini_semantic")
+        
+        master_json = normalize_timecodes(master_json, logger)
+        
+        is_valid, errors = validate_structure(master_json, logger)
+        if not is_valid:
+            logger.error(f"Validation FATALE: {len(errors)} erreur(s)")
+            for e in errors[:10]:
+                logger.error(f"  • {e}")
+        
+        warnings = validate_completeness(master_json, logger)
+        for w in warnings:
+            logger.warn(f"Cohérence: {w}")
+        
+        dispatch_master_json(master_json, output_dir, motor_status, logger)
+    else:
+        logger.info("M1 Gemini: skip (--rerun != gemini_semantic)")
+    
+    # =================================================================
+    # PHASE 3 — GPU-A (DepthAnything)
+    # =================================================================
+    logger.info("═══ PHASE 3 — GPU-A (DepthAnything) ═══")
+    
+    if not args.rerun or args.rerun == "depth_anything":
+        depth_dir = output_dir / "DEPTH_MAP"
+        depth_dir.mkdir(parents=True, exist_ok=True)
+        depth_ok = run_depth_anything(video_path, depth_dir, logger)
+        if depth_ok:
+            motor_status.mark_success("depth_anything", depth_dir)
+        else:
+            motor_status.mark_failed("depth_anything", "Stub not implemented")
+    else:
+        logger.info("M6 DepthAnything: skip (--rerun != depth_anything)")
+    
+    # =================================================================
+    # PHASE 4 — GPU-B (SAM)
+    # =================================================================
+    logger.info("═══ PHASE 4 — GPU-B (SAM) ═══")
+    
+    if not args.rerun or args.rerun == "sam_segmentation":
+        sam_out = output_dir / "semantic_masks.json"
+        sam_ok = run_sam_segmentation(video_path, sam_out, logger)
+        if sam_ok:
+            motor_status.mark_success("sam_segmentation", sam_out)
+        else:
+            motor_status.mark_failed("sam_segmentation", "Stub not implemented")
+    else:
+        logger.info("M7 SAM: skip (--rerun != sam_segmentation)")
+    
+    # =================================================================
+    # FINALISATION
+    # =================================================================
+    update_flags(output_dir / "PRODUCTION_PLAN.JSON", motor_status, logger)
+    
+    flags = motor_status.get_flags()
+    logger.info("═══ RAPPORT FINAL ═══")
+    for m, r in motor_status.results.items():
+        icon = ("✅" if r["status"] == "success"
+                else "🟡" if r["status"] == "partial"
+                else "❌" if r["status"] == "failed"
+                else "⏳")
+        logger.info(f"  {icon} {m}: {r['status']}")
+    
+    if flags["all_motors_ok"]:
+        logger.info("TOUS LES MOTEURS OK")
+    else:
+        failed_count = len(flags["partial_failure"])
+        logger.warn(f"{failed_count} moteur(s) en échec — revue manuelle recommandée")
+    
+    logger.info("═══ MISSION ACCOMPLIE — CORTEX TERMINÉ ═══")
+
+
+# ============================================================================
+# CLI — MAIN
+# ============================================================================
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="EXODUS V2 — CORTEX: Orchestrateur 6-moteurs → Master JSON V2",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples:
+  %(prog)s --drive-root /content/drive/MyDrive/EXODUS --input-video video.mp4
+  %(prog)s --drive-root ./EXODUS --input-video test.mp4 --dry-run
+  %(prog)s --drive-root /data/EXODUS --input-video source.mp4 --model gemini-2.0-flash
+  %(prog)s --drive-root ./EXODUS --input-video video.mp4 --rerun audio_extraction
+        """
     )
     
-    if result:
-        success = finalize_output(result, output_path, logger)
-        if success:
-            logger.info("=" * 60)
-            logger.info("MISSION ACCOMPLIE — CORTEX TERMINÉ")
-            logger.info("=" * 60)
-            sys.exit(0)
-        else:
-            logger.error("Échec écriture fichier")
-            sys.exit(1)
-    else:
-        logger.error("Échec analyse Gemini")
-        sys.exit(1)
+    parser.add_argument(
+        "--drive-root", type=str, required=True,
+        help="Chemin racine EXODUS (contient 00_CORTEX_HQ/)"
+    )
+    parser.add_argument(
+        "--input-video", type=str, required=True,
+        help="Nom du fichier vidéo (cherché dans IN_VIDEO_SOURCE/)"
+    )
+    parser.add_argument(
+        "--output-name", type=str, default=None,
+        help="Nom du fichier JSON de sortie (défaut: PRODUCTION_PLAN.JSON)"
+    )
+    parser.add_argument(
+        "--model", type=str, default="gemini-2.0-flash",
+        help="Modèle Gemini à utiliser (défaut: gemini-2.0-flash)"
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Exécute sans appeler Gemini (test local)"
+    )
+    parser.add_argument(
+        "--rerun", type=str, default=None,
+        choices=["gemini_semantic", "audio_extraction", "fov_extraction",
+                 "depth_anything", "sam_segmentation"],
+        help="Relance un seul moteur sans retoucher les autres outputs"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true",
+        help="Active les logs DEBUG"
+    )
+    
+    args = parser.parse_args()
+    
+    log_level = "DEBUG" if args.verbose else "INFO"
+    logger = CortexLogger(level=log_level)
+    
+    logger.info("=" * 60)
+    logger.info("EXODUS V2 — FRÉGATE 00: CORTEX HQ — ORCHESTRATEUR V2")
+    logger.info("=" * 60)
+    
+    run_pipeline(args, logger)
 
 
 if __name__ == "__main__":
