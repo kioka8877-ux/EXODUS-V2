@@ -16,32 +16,32 @@
 - [ ] Déployer MARSHAL dans chaque CODEBASE/
 
 #### A2 — U00 Phase 1 CPU (VRAM = 0 GB)
-- [ ] M2 : Extraction audio FFmpeg → `audio_source.wav`
-- [ ] M3 : Extraction FOV/ratio OpenCV → `camera_fov_ratio.json`
+- [x] M2 : Extraction audio FFmpeg → `audio_source.wav` → PR #15
+- [x] M3 : Extraction FOV/ratio OpenCV → `camera_fov_ratio.json` → PR #15
 
 #### A3 — U00 Phase 2 API (VRAM = 0 GB)
-- [ ] M1 : Prompt Gemini enrichi + `response_schema` avec enum verrouillé
-- [ ] M1 : Dispatcher (Master JSON → 3 fichiers)
-- [ ] M4 : `facial_animation.json` (extrait par Dispatcher)
-- [ ] M5 : `motion_synthesis_prompt.txt` (extrait par Dispatcher)
-- [ ] Validation : `normalize_timecodes()`, `validate_structure()`, `validate_completeness()`
+- [x] M1 : Prompt Gemini enrichi + `response_schema` avec enum verrouillé → PR #15
+- [x] M1 : Dispatcher (Master JSON → 3 fichiers) → PR #15
+- [x] M4 : `facial_animation.json` (extrait par Dispatcher) → PR #15
+- [x] M5 : `motion_synthesis_prompt.txt` (extrait par Dispatcher) → PR #15
+- [x] Validation : `normalize_timecodes()`, `validate_structure()`, `validate_completeness()` → PR #15
 
 #### A4 — U00 Phase 3 GPU-A (VRAM ~3.5 GB)
-- [ ] M6 : DepthAnything V2 → `DEPTH_MAP/*.png`
-- [ ] Flush GPU vérifié (VRAM < 0.5 GB après destruction modèle)
+- [x] M6 : DepthAnything V2 → `DEPTH_MAP/*.png` → PR #16
+- [x] Flush GPU vérifié (VRAM < 0.5 GB après destruction modèle) → PR #16
 
 #### A5 — U00 Phase 4 GPU-B (VRAM ~4 GB)
-- [ ] M7 : SAM vit_h → `semantic_masks.json`
-- [ ] Flush GPU vérifié
+- [x] M7 : SAM vit_h → `semantic_masks.json` → PR #16
+- [x] Flush GPU vérifié → PR #16
 
 #### A6 — U00 Transverse
-- [ ] `MotorStatus` + `flags` dans le JSON final
-- [ ] Mode `--rerun <motor>`
-- [ ] Log VRAM (`vram_log.txt`)
-- [ ] MARSHAL Out-Check passé
-- [ ] Alignement documentaire v2.1 (TRACKING, PRD, VALIDATION)
+- [x] `MotorStatus` + `flags` dans le JSON final → PR #15
+- [x] Mode `--rerun <motor>` → PR #15
+- [x] Log VRAM (`vram_log.txt`) → PR #16
+- [x] MARSHAL Out-Check passé → PR #16
+- [x] Alignement documentaire v2.1 (TRACKING, PRD, VALIDATION) → PR #14
 
-- Statut : 🟡 12% (1/20 tâches — MARSHAL scellé)
+- Statut : ✅ 100% (MARSHAL + U00 scellés — PRs #12-#16)
 
 ### PHASE B : VIE & DÉCOR (Semaines 2-3)
 **Priorité : U01 + U03**
@@ -80,8 +80,8 @@
 MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [█░░░░░░░░░] 🟡 12%
-Phase courante : PHASE A (Cerveau & Logistique — MARSHAL scellé, U00 6-moteurs séquentiels en attente)
+Mutation V2 : [███░░░░░░░] 🟢 25%
+Phase courante : PHASE B (Vie & Décor — U01 prochaine cible)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes

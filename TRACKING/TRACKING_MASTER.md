@@ -4,7 +4,7 @@
 
 | # | Unité | Nom | Priorité | Conformité V2 | Statut Mutation | Bloqueur |
 |---|-------|-----|----------|----------------|-----------------|----------|
-| 0 | U00 | CORTEX HQ | 🔴 P0 | 16% | 🔴 BLOQUÉ | 6 moteurs séquentiels (CPU→API→GPU-A→GPU-B) à implémenter |
+| 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟢 SCELLÉ (PR #14-#16) | — |
 | 1 | U01 | ANIMATION ENGINE | 🔴 P0 | 10% | 🔴 BLOQUÉ | Paradigme à réécrire |
 | 2 | U02 | LOGISTICS DEPOT | 🟡 P2 | 70% | 🟡 EN ATTENTE | Bypass conditionnel |
 | 3 | U03 | SCENOGRAPHY DOCK | 🔴 P0 | 5% | 🔴 BLOQUÉ | Architecture à réécrire |
@@ -14,10 +14,10 @@
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [█░░░░░░░░░] 12% — MARSHAL scellé, U00 en attente
-Frégates conformes : 1/8 (MARSHAL)
-Phase courante : PHASE A (Cerveau & Logistique)
-Dernière frappe : PR #12 — MARSHAL (2026-02-26)
+Mutation V2 : [███░░░░░░░] 25% — MARSHAL + U00 scellés
+Frégates conformes : 2/8 (MARSHAL, U00)
+Phase courante : PHASE B (Vie & Décor — U01 prochaine cible)
+Dernière frappe : PR #16 — U00 GPU Motors (2026-02-26)
 
 ## LÉGENDE
 - 🔴 BLOQUÉ : Écart majeur, réécriture nécessaire
