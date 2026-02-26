@@ -114,11 +114,19 @@ Transmuter n'importe quelle vidéo virale en animation Roblox cinématique 4K/12
 
 **Key Technical Specs**
 - **ZÉRO EMOCA** — suppression totale de la dépendance EMOCA
-- 3 couches : Observation (données Gemini U00), Translation (émotion → 52 ARKit Shape Keys), Micro-Jitter (bruit procédural)
-- Courbes de Bézier pour transitions (pas d'interpolation linéaire)
-- Passage obligatoire par état "neutre" entre émotions opposées (ex: joie → neutre → colère)
-- Micro-Jitter : bruit procédural sur yeux et bouche (amplitude 0.01-0.03, fréquence 8-12Hz)
-- Rhubarb lip-sync : désactive les shape keys bouche pendant les segments de parole (priorité Rhubarb)
+- **Module fondation : `expression_schema.py`** (Bible Anatomique — 7 Piliers) :
+  - Pilier 1 : 15 EXPRESSION_PRESETS (joy, sadness, anger, fear, surprise, disgust, neutral, suspicious, determined, confused, pain, love, bored, excited, shocked) × 52 ARKit Shape Keys
+  - Pilier 2 : Matrice des Conflits (combinaisons anatomiques interdites)
+  - Pilier 3 : Table des Oppositions (passage obligatoire par neutre entre émotions antagonistes)
+  - Pilier 4 : Ranges Anatomiques (clampage esthétique Roblox)
+  - Pilier 5 : Courbes d'Intensité (scaling non-linéaire de l'intensity U00)
+  - Pilier 6 : Micro-Expressions Involontaires (presets blink/tics)
+  - Pilier 7 : EYE_PRESETS (9 états) + MOUTH_PRESETS (8 états) + Règle de fusion (expression base + overrides par zone)
+- **3 Leviers natifs Blender (Pareto 80/20)** :
+  - F-Curve Bézier natif : interpolation Bézier entre keyframes (zéro code custom)
+  - F-Curve Noise Modifier : Micro-Jitter sur yeux+bouche (amplitude 0.01-0.03, fréquence 8-12Hz, blend ADD)
+  - NLA Editor : layering multicouche (expression strip + eyes override strip + mouth override strip), influence = intensity
+- Rhubarb lip-sync (Phase 2) : NLA strip dédié, priorité bouche pendant parole
 - Export dual : `.blend` + `.abc` (Alembic cache)
 - Format JSON d'entrée : segments avec `time_start`, `time_end`, `expression`, `eyes`, `mouth`, `intensity`, `apex_time`
 
@@ -461,5 +469,5 @@ MARSHAL : vérifie chaque transfert (Out-Check → In-Check)
 - [TRANSFERS](./EXODUS_V2_TRANSFER_LOG.md) — Registre des flux
 
 > **Loi du Béton** : Pas de fichier, pas d'existence. Chaque spécification ci-dessus doit se traduire en code traçable par commit.
-<!-- v2.1 — Post-Mutation Alignement -->
+<!-- v2.2 — B1.1 Cathédrale de Chair -->
 

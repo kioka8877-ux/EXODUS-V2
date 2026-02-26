@@ -1,24 +1,46 @@
 # TRACKING – U01 ANIMATION ENGINE (Le Souffle)
 
 ## 1. OBJECTIF DE LA MUTATION (V2)
-Remplacer EMOCA par Emotional Intent Transfer. Gemini text → Python → 52 ARKit Shape Keys.
-Injection Micro-Jitter (bruit procédural yeux+bouche) + intégration Rhubarb lip-sync.
+Suppression totale d'EMOCA. Module fondation `expression_schema.py` (Bible Anatomique — 7 Piliers) qui définit le mapping complet des 52 ARKit Shape Keys.
+Emotional Intent Transfer via `facial_animation.json` généré par U00 (Gemini text → segments émotionnels).
+3 leviers natifs Blender (Pareto 80/20) : F-Curve Bézier (interpolation), F-Curve Noise Modifier (Micro-Jitter yeux+bouche), NLA Editor (layering multicouche expression + eyes override + mouth override).
+Injection Micro-Jitter via F-Curve Noise Modifier natif Blender (pas numpy custom).
+Rhubarb lip-sync (Phase 2, futur — NLA strip dédié, priorité bouche pendant parole).
 Export dual : `.blend` + `.abc` (Alembic cache).
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
-- **Écarts constatés** : Paradigme actuel (EMOCA mathématique) incompatible V2. `facial_extractor.py` (355 lignes) à réécrire. `blender_fusion.py` et `sync_engine.py` impactés.
-- **Goulot d'étranglement** : Mapping complet des expressions textuelles vers les 52 ARKit Shape Keys
-- **Risque VRAM/RAM** : MOYEN — Blender headless (~2-4GB)
+- **Écarts constatés** : Paradigme EMOCA incompatible V2. `facial_extractor.py` (355 lignes) à réécrire. Nouveau module `expression_schema.py` à créer. `blender_fusion.py` à adapter pour NLA + F-Curve Noise. `sync_engine.py` à simplifier (plus de sync audio/marqueur vidéo).
+- **Goulot d'étranglement** : Mapping complet expressions textuelles (15 émotions + 9 états yeux + 8 états bouche) vers 52 ARKit Shape Keys avec règle de fusion
+- **Risque VRAM/RAM** : MOYEN — Blender headless (~2-4GB). RÉDUIT grâce à suppression EMOCA (0 GB GPU pour facial extraction)
 
 ## 3. PLAN D'ACTION (BACKLOG)
-- [ ] Supprimer toute dépendance EMOCA
-- [ ] Créer le dictionnaire emotion→shape keys (52 ARKit)
-- [ ] Implémenter courbes de Bézier pour transitions
-- [ ] Ajouter passage par "neutre" entre émotions opposées
-- [ ] Implémenter Micro-Jitter (bruit procédural yeux+bouche)
-- [ ] Intégrer Rhubarb lip-sync
-- [ ] Gérer conflit lip-sync/expressions (priorité Rhubarb pour bouche)
+
+**Phase B1.1 — expression_schema.py (Bible Anatomique)**
+- [ ] Pilier 1 : 15 EXPRESSION_PRESETS × 52 ARKit Shape Keys (joy, sadness, anger, fear, surprise, disgust, neutral, suspicious, determined, confused, pain, love, bored, excited, shocked)
+- [ ] Pilier 2 : Matrice des Conflits (combinaisons anatomiques interdites : mouthSmile+mouthFrown, eyeBlink+eyeWide, jawOpen+mouthClose)
+- [ ] Pilier 3 : Table des Oppositions (émotions antagonistes obligeant passage par neutre : joy↔sadness, joy↔anger, anger↔fear, surprise↔bored, love↔disgust)
+- [ ] Pilier 4 : Ranges Anatomiques (clampage esthétique Roblox : jaw max 0.8, tongueOut max 0.5)
+- [ ] Pilier 5 : Courbes d'Intensité (scaling : linear, quadratic, ease-in-out — intensity U00 ≠ multiplication brute)
+- [ ] Pilier 6 : Micro-Expressions Involontaires (presets blink/tics pour briser la rigidité)
+- [ ] Pilier 7 : EYE_PRESETS (9 états : focused_forward, looking_left, looking_right, looking_up, looking_down, narrowed, wide_open, closed, winking) + MOUTH_PRESETS (8 états : closed_tight, slightly_open, wide_open, smiling, frowning, pursed_lips, shouting, neutral) + Règle de fusion (expression base + eyes override zone oculaire + mouth override zone buccale)
+- [ ] Rapport de validation : démonstration blocage "Expression Hérétique" (intensité > 1.0, conflit shape keys)
+- [ ] Marshal In-Check passé sur expression_schema.py
+
+**Phase B1.2 — Réécriture Pipeline (consommateurs du schema)**
+- [ ] Supprimer toute dépendance EMOCA (zéro import EMOCA dans tout U01)
+- [ ] Réécrire `facial_extractor.py` : lecture `facial_animation.json` → application presets du schema
+- [ ] Adapter `blender_fusion.py` : NLA strips pour layering (expression + eyes override + mouth override)
+- [ ] Levier Blender : F-Curve Bézier natif (zéro code custom Bézier — `handle_right_type = 'AUTO_CLAMPED'`)
+- [ ] Levier Blender : F-Curve Noise Modifier pour Micro-Jitter (strength=0.01-0.03, scale≈8-12Hz, blend_type='ADD')
+- [ ] Levier Blender : NLA strips pour layering multicouche (influence keyframable = intensity)
+- [ ] Simplifier `sync_engine.py` (aligner timecodes JSON sur FBX, supprimer sync audio/marqueur vidéo)
+- [ ] Adapter `EXO_01_TRANSMUTATION.py` (nouveau flow I/O : lire facial_animation.json, supprimer check EMOCA)
+- [ ] Mettre à jour les notebooks (EXO_01_CONTROL.ipynb, EXO_01_PRODUCTION.ipynb)
 - [ ] Export dual .blend + .abc
+
+**Phase B1.3 — Rhubarb Lip-Sync (Futur)**
+- [ ] Intégrer Rhubarb lip-sync (NLA strip dédié, priorité sur zone bouche)
+- [ ] Gérer conflit lip-sync/expressions (désactive shape keys bouche pendant parole)
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
@@ -26,8 +48,11 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 | - | - | 🔴 | - | - |
 
 ## 5. MÉTRIQUES ET VALIDATION
-- Consommation VRAM Max : À mesurer (cible < 4GB)
+- Consommation VRAM Max : À mesurer (cible < 4GB — RÉDUIT vs V1 car zéro EMOCA)
 - Temps d'exécution moyen : À mesurer
+- [ ] expression_schema.py : test "Expression Hérétique" passé
+- [ ] expression_schema.py : 15 expressions + 9 yeux + 8 bouche = 32 presets complets
+- [ ] Marshal In-Check passé
 - [ ] Marshal Out-Check passé
 - [ ] Validation Souveraine
 
@@ -38,3 +63,5 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 - [MASTER](./TRACKING_MASTER.md) — Vue d'ensemble
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
+
+<!-- v2.2 — B1.1 Cathédrale de Chair -->
