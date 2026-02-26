@@ -4,7 +4,7 @@
 ║                 FRÉGATE 01_TRANSMUTATION — EXODUS SYSTEM                     ║
 ║                    Fusion Corps + Visage → Alembic                           ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Version: 2.0.0                                                              ║
+║  Version: 2.1.0                                                              ║
 ║  Mission: Fusionner body FBX + Emotional Intent Transfer → Baked Alembic    ║
 ║  Stack: expression_schema.py + Blender 4.0 Headless + Bézier natif         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -17,6 +17,8 @@ INPUTS REQUIS (fournis par l'Empereur):
     - body_motion.fbx : Mouvement corps (MoCap Pro)
     - facial_animation.json : Segments émotionnels (produit par U00 CORTEX)
     - actor_model.blend : Avatar Roblox riggé (DynamicHead)
+    - audio_source.wav : (optionnel) Audio dialogue pour lip-sync Rhubarb
+    - dialogue.txt : (optionnel) Texte du dialogue pour meilleure précision
     
 OUTPUT:
     - ACTOR_XX.blend : Master file avec armature active
@@ -31,7 +33,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-TRANSMUTATION_VERSION = "2.0.0"
+TRANSMUTATION_VERSION = "2.1.0"
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
 BLENDER_SUBDIR = "blender-4.0.0-linux-x64"
@@ -75,9 +77,20 @@ def check_ai_models(drive_root: Path, logger: TransmutationLogger) -> dict:
         sys.exit(1)
 
     logger.success("Blender 4.0 vérifié")
-    return {
+
+    result = {
         "blender": str(blender_path),
     }
+
+    rhubarb_path = ai_models_path / "rhubarb" / "rhubarb"
+    if rhubarb_path.exists():
+        logger.success("Rhubarb lip-sync trouvé")
+        result["rhubarb"] = str(rhubarb_path)
+    else:
+        logger.warn("Rhubarb non trouvé (lip-sync désactivé)")
+        result["rhubarb"] = None
+
+    return result
 
 
 def translate_facial_data(
@@ -106,6 +119,30 @@ def translate_facial_data(
     return blender_data
 
 
+def generate_lip_sync_data(
+    audio_path: str,
+    dialogue_path: str,
+    output_path: str,
+    fps: int,
+    rhubarb_path: str,
+    logger: TransmutationLogger
+) -> dict:
+    """Génère les données lip-sync via RhubarbBridge."""
+    logger.info("Génération lip-sync Rhubarb en cours...")
+
+    from rhubarb_bridge import RhubarbBridge
+
+    bridge = RhubarbBridge(rhubarb_path=rhubarb_path)
+    lip_sync_data = bridge.generate_lip_sync_data(audio_path, dialogue_path, fps=fps)
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(lip_sync_data, f, indent=2)
+
+    n_cues = len(lip_sync_data["lip_sync_segments"])
+    logger.success(f"Lip-sync généré: {n_cues} cues")
+    return lip_sync_data
+
+
 def run_blender_fusion(
     blender_path: str,
     body_fbx: str,
@@ -114,7 +151,8 @@ def run_blender_fusion(
     output_abc: str,
     sync_offset: int,
     intensity_mode: str,
-    logger: TransmutationLogger
+    logger: TransmutationLogger,
+    lip_sync_json_path: str = None
 ) -> bool:
     """
     Exécute Blender en mode headless pour la fusion.
@@ -136,6 +174,9 @@ def run_blender_fusion(
         "--sync-offset", str(sync_offset),
         "--intensity-mode", intensity_mode,
     ]
+
+    if lip_sync_json_path:
+        cmd.extend(["--lip-sync-json", lip_sync_json_path])
 
     logger.debug(f"Commande: {' '.join(cmd)}")
 
@@ -178,6 +219,10 @@ Exemples:
     parser.add_argument('--intensity-mode', choices=['linear', 'quadratic', 'ease_in_out'],
                         default='ease_in_out',
                         help='Mode d\'interpolation d\'intensité (défaut: ease_in_out)')
+    parser.add_argument('--audio', default=None,
+                        help='Audio WAV pour lip-sync Rhubarb (optionnel, cherché dans IN_CORTEX_JSON/)')
+    parser.add_argument('--dialogue', default=None,
+                        help='Fichier texte du dialogue pour Rhubarb (optionnel)')
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='Logs détaillés')
     parser.add_argument('--dry-run', action='store_true',
@@ -243,6 +288,32 @@ Exemples:
         logger=logger,
     )
 
+    # Lip-sync (optionnel)
+    lip_sync_json_path = None
+    if args.audio:
+        audio_path = Path(args.audio)
+        if not audio_path.is_absolute():
+            audio_path = cortex_json_dir / args.audio
+
+        if not audio_path.exists():
+            logger.warn(f"Audio non trouvé: {audio_path} — lip-sync ignoré")
+        elif not ai_paths.get("rhubarb"):
+            logger.warn("Rhubarb non installé — lip-sync ignoré")
+        else:
+            dialogue_path = None
+            if args.dialogue:
+                dp = Path(args.dialogue)
+                if not dp.is_absolute():
+                    dp = cortex_json_dir / args.dialogue
+                if dp.exists():
+                    dialogue_path = str(dp)
+
+            lip_sync_json_path = str(output_dir / f"{args.output_name}_lipsync.json")
+            generate_lip_sync_data(
+                str(audio_path), dialogue_path, lip_sync_json_path, fps=30,
+                rhubarb_path=ai_paths["rhubarb"], logger=logger
+            )
+
     success = run_blender_fusion(
         ai_paths["blender"],
         str(body_path),
@@ -252,6 +323,7 @@ Exemples:
         args.sync_offset,
         args.intensity_mode,
         logger,
+        lip_sync_json_path=lip_sync_json_path,
     )
 
     if not success:

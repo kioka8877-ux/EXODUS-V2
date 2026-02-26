@@ -414,6 +414,71 @@ MOUTH_PRESETS: Dict[str, Dict[str, float]] = {
 
 
 # =============================================================================
+# PILIER 8 — LIP-SYNC VISEMES (Rhubarb → ARKit MOUTH_KEYS)
+# =============================================================================
+
+LIP_SYNC_VISEMES: Dict[str, Dict[str, float]] = {
+    "X": _mouth({}),  # Silence — bouche neutre
+
+    "A": _mouth({  # MBP fermé (M, B, P)
+        "mouthClose": 0.7,
+        "mouthPressLeft": 0.6, "mouthPressRight": 0.6,
+        "mouthRollLower": 0.1, "mouthRollUpper": 0.1,
+    }),
+
+    "B": _mouth({  # Légèrement ouvert (consonnes)
+        "jawOpen": 0.15,
+        "mouthLowerDownLeft": 0.1, "mouthLowerDownRight": 0.1,
+        "mouthStretchLeft": 0.1, "mouthStretchRight": 0.1,
+    }),
+
+    "C": _mouth({  # Ouvert (AA, AH, AW)
+        "jawOpen": 0.5,
+        "mouthLowerDownLeft": 0.3, "mouthLowerDownRight": 0.3,
+        "mouthUpperUpLeft": 0.15, "mouthUpperUpRight": 0.15,
+        "mouthStretchLeft": 0.2, "mouthStretchRight": 0.2,
+    }),
+
+    "D": _mouth({  # Grand ouvert (AE, EH)
+        "jawOpen": 0.65,
+        "mouthLowerDownLeft": 0.4, "mouthLowerDownRight": 0.4,
+        "mouthStretchLeft": 0.35, "mouthStretchRight": 0.35,
+        "mouthUpperUpLeft": 0.2, "mouthUpperUpRight": 0.2,
+    }),
+
+    "E": _mouth({  # Arrondi (AO, OW)
+        "jawOpen": 0.35,
+        "mouthFunnel": 0.5,
+        "mouthPucker": 0.2,
+        "mouthLowerDownLeft": 0.2, "mouthLowerDownRight": 0.2,
+    }),
+
+    "F": _mouth({  # Pincé (OO, UW, W)
+        "jawOpen": 0.1,
+        "mouthPucker": 0.7,
+        "mouthFunnel": 0.35,
+        "mouthRollLower": 0.1,
+    }),
+
+    "G": _mouth({  # Lèvre inférieure rentrée (F, V)
+        "jawOpen": 0.1,
+        "mouthRollLower": 0.5,
+        "mouthUpperUpLeft": 0.2, "mouthUpperUpRight": 0.2,
+        "mouthShrugUpper": 0.15,
+    }),
+
+    "H": _mouth({  # Langue visible (L, TH)
+        "jawOpen": 0.25,
+        "tongueOut": 0.3,
+        "mouthLowerDownLeft": 0.15, "mouthLowerDownRight": 0.15,
+        "mouthStretchLeft": 0.1, "mouthStretchRight": 0.1,
+    }),
+}
+
+VALID_VISEMES: List[str] = ["X", "A", "B", "C", "D", "E", "F", "G", "H"]
+
+
+# =============================================================================
 # ENUMS DE VALIDATION
 # =============================================================================
 
@@ -450,6 +515,7 @@ class ExpressionSchema:
         self.opposing_emotions: List[Tuple[str, str]] = list(OPPOSING_EMOTIONS)
         self.anatomical_ranges: Dict[str, Tuple[float, float]] = dict(ANATOMICAL_RANGES)
         self.micro_expression_presets: Dict[str, dict] = dict(MICRO_EXPRESSION_PRESETS)
+        self.lip_sync_visemes: Dict[str, Dict[str, float]] = dict(LIP_SYNC_VISEMES)
 
     # -----------------------------------------------------------------
     # Extensibilité — injection de presets
@@ -598,6 +664,16 @@ class ExpressionSchema:
     def get_micro_expression_presets(self) -> Dict[str, dict]:
         """Retourne une copie des presets de micro-expressions."""
         return dict(self.micro_expression_presets)
+
+    # -----------------------------------------------------------------
+    # PILIER 8 — Accès lip-sync visèmes
+    # -----------------------------------------------------------------
+
+    def get_viseme(self, shape_id: str) -> Dict[str, float]:
+        """Retourne les MOUTH_KEYS pour un visème Rhubarb (A-H, X)."""
+        if shape_id not in self.lip_sync_visemes:
+            raise ValueError(f"Visème inconnu : {shape_id}. Valides : {VALID_VISEMES}")
+        return dict(self.lip_sync_visemes[shape_id])
 
     # -----------------------------------------------------------------
     # PILIER 7 — Fusion expression + eyes + mouth
