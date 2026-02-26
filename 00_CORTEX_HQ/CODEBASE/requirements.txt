@@ -1,5 +1,15 @@
-# CORTEX - Dépendances minimales
+# CORTEX V2 — Dépendances
 # Installation: pip install -r requirements.txt
 
+# API
 google-generativeai>=0.8.0
+
+# Vision
 opencv-python-headless>=4.8.0
+
+# GPU engines (optionnel — requis pour Phase 3-4)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Note: DepthAnything V2 et SAM sont installés séparément
+# depuis leurs repos respectifs dans EXODUS_AI_MODELS/
