@@ -11,11 +11,11 @@
 | 4 | U04 | PHOTOGRAPHY WING | 🟡 P1 | 40% | 🟡 EN ATTENTE | fSpy + DOF + Shake |
 | 5 | U05 | ALCHEMIST LAB | 🟡 P1 | 50% | 🟡 EN ATTENTE | Match Color + Grain |
 | 6 | U06 | AIRCRAFT CARRIER | 🟢 P2 | 80% | 🟡 EN ATTENTE | Ratio lock + CRF |
-| M | MARSHAL | L'INTENDANT | 🔴 P0 | 0% | 🔴 BLOQUÉ | Module inexistant |
+| M | MARSHAL | L'INTENDANT | 🔴 P0 | 100% | 🟢 SCELLÉ | - |
 
 ## PROGRESSION GLOBALE
 Mutation V2 : [░░░░░░░░░░] 0% — Aucune frégate conforme V2
-Frégates conformes : 0/8
+Frégates conformes : 1/8
 Phase courante : PHASE 0 (Fondation documentaire)
 
 ## LÉGENDE
