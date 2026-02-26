@@ -1,27 +1,14 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║           TRANSMUTATION ENGINE — Python Dependencies                         ║
+# ║           TRANSMUTATION ENGINE V2 — Python Dependencies                      ║
 # ╠══════════════════════════════════════════════════════════════════════════════╣
-# ║  Pour Colab: Ces packages sont pré-installés ou installés via pip            ║
-# ║  EMOCA doit être installé séparément (voir README_DEV.md)                    ║
+# ║  ZÉRO EMOCA — Emotional Intent Transfer via expression_schema.py            ║
+# ║  Blender 4.0 headless installé séparément sur le Drive                      ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-# Core ML/Deep Learning
-torch>=2.0.0
-torchvision>=0.15.0
+# Aucune dépendance externe requise pour le pipeline principal.
+# expression_schema.py et facial_extractor.py sont pure Python stdlib.
+# blender_fusion.py utilise bpy (fourni par Blender headless).
+# scipy reste disponible pour smoothing.py (module legacy, non utilisé en V2).
 
-# Numerical & Signal Processing
-numpy>=1.24.0
+# Legacy (optionnel, pour compatibilité smoothing.py)
 scipy>=1.10.0
-
-# Video Processing
-opencv-python-headless>=4.8.0
-
-# Configuration
-PyYAML>=6.0
-omegaconf>=2.3.0
-
-# Image Processing (pour prétraitement EMOCA)
-Pillow>=9.0.0
-
-# Utilities
-tqdm>=4.65.0

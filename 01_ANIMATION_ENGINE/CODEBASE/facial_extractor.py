@@ -1,355 +1,241 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║               FACIAL EXTRACTOR — EMOCA → 52 ARKit Blendshapes                ║
+║        FACIAL EXTRACTOR — Emotional Intent → 52 ARKit Shape Keys            ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Module d'extraction faciale via EMOCA/DECA.                                 ║
-║  Convertit vidéo → 52 blendshapes ARKit pour avatars Roblox DynamicHead.     ║
-║  AUCUN MEDIAPIPE - Utilise EMOCA exclusivement.                              ║
+║  Module de traduction émotionnelle via expression_schema.py (Bible          ║
+║  Anatomique).  Convertit facial_animation.json → 52 shape keys ARKit       ║
+║  pré-calculées pour Blender.                                                ║
+║  ZÉRO EMOCA — Pure Python stdlib + Bible Anatomique.                        ║
+║  Couche 1 (Observation) + Couche 2 (Translation) du pipeline V2.           ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
-import numpy as np
+import json
 from pathlib import Path
-from typing import List, Dict, Optional
-import cv2
+from typing import Dict, List, Optional, Tuple
 
-ARKIT_52_BLENDSHAPES = [
-    "eyeBlinkLeft", "eyeBlinkRight", "eyeLookDownLeft", "eyeLookDownRight",
-    "eyeLookInLeft", "eyeLookInRight", "eyeLookOutLeft", "eyeLookOutRight",
-    "eyeLookUpLeft", "eyeLookUpRight", "eyeSquintLeft", "eyeSquintRight",
-    "eyeWideLeft", "eyeWideRight",
-    "jawForward", "jawLeft", "jawRight", "jawOpen",
-    "mouthClose", "mouthFunnel", "mouthPucker", "mouthLeft", "mouthRight",
-    "mouthSmileLeft", "mouthSmileRight", "mouthFrownLeft", "mouthFrownRight",
-    "mouthDimpleLeft", "mouthDimpleRight", "mouthStretchLeft", "mouthStretchRight",
-    "mouthRollLower", "mouthRollUpper", "mouthShrugLower", "mouthShrugUpper",
-    "mouthPressLeft", "mouthPressRight", "mouthLowerDownLeft", "mouthLowerDownRight",
-    "mouthUpperUpLeft", "mouthUpperUpRight",
-    "browDownLeft", "browDownRight", "browInnerUp", "browOuterUpLeft", "browOuterUpRight",
-    "cheekPuff", "cheekSquintLeft", "cheekSquintRight",
-    "noseSneerLeft", "noseSneerRight",
-    "tongueOut"
+from expression_schema import (
+    ARKIT_52_BLENDSHAPES,
+    ExpressionSchema,
+    VALID_EXPRESSIONS,
+    VALID_EYE_STATES,
+    VALID_MOUTH_STATES,
+)
+
+REQUIRED_SEGMENT_FIELDS = [
+    "time_start", "time_end", "expression", "eyes", "mouth",
+    "intensity", "apex_time",
 ]
 
-FLAME_EXPRESSION_INDICES = {
-    "jaw_open": 0,
-    "jaw_sideways": 1,
-    "smile": 6,
-    "frown": 7,
-    "brow_raise": 1,
-    "brow_furrow": 2,
-    "eye_wide": 3,
-    "eye_squint": 4,
-    "cheek_puff": 8,
-    "nose_sneer": 9,
-    "mouth_pucker": 10,
-    "mouth_funnel": 11,
-}
 
+class EmotionalIntentTranslator:
+    """Traduit les segments émotionnels de U00 en shape key data pour Blender.
+    Couche 1 (Observation) + Couche 2 (Translation) du pipeline V2."""
 
-class EMOCAExtractor:
-    """
-    Extracteur facial utilisant EMOCA.
-    Convertit les paramètres FLAME en 52 blendshapes ARKit.
-    """
-    
-    def __init__(self, emoca_model_path: str):
-        self.model_path = Path(emoca_model_path)
-        self.model = None
-        self.device = None
-        self._load_model()
-    
-    def _load_model(self):
-        """Charge le modèle EMOCA."""
-        try:
-            import torch
-            import sys
-            
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            print(f"[EMOCA] Device: {self.device}")
-            
-            sys.path.insert(0, str(self.model_path.parent))
-            
-            from gdl.models.EMOCA import EMOCA
-            from omegaconf import OmegaConf
-            
-            cfg_path = self.model_path / "cfg.yaml"
-            ckpt_path = self.model_path / "model.ckpt"
-            
-            if not cfg_path.exists():
-                print(f"[EMOCA:WARN] Config non trouvée: {cfg_path}")
-                print("[EMOCA:WARN] Mode fallback activé - utilisation de valeurs simulées")
-                self.model = None
-                return
-            
-            cfg = OmegaConf.load(cfg_path)
-            self.model = EMOCA(cfg)
-            
-            checkpoint = torch.load(ckpt_path, map_location=self.device)
-            self.model.load_state_dict(checkpoint['state_dict'])
-            self.model.to(self.device)
-            self.model.eval()
-            
-            print("[EMOCA] Modèle chargé avec succès")
-            
-        except ImportError as e:
-            print(f"[EMOCA:WARN] Dépendances EMOCA manquantes: {e}")
-            print("[EMOCA:WARN] Mode fallback activé")
-            self.model = None
-        except Exception as e:
-            print(f"[EMOCA:WARN] Erreur chargement modèle: {e}")
-            print("[EMOCA:WARN] Mode fallback activé")
-            self.model = None
-    
-    def extract_arkit_from_video(
-        self, 
-        video_path: str,
-        start_frame: int = 0,
-        end_frame: int = -1
-    ) -> Dict:
-        """
-        Extrait les 52 blendshapes ARKit depuis une vidéo.
-        
-        Returns:
-            {
-                "fps": 30,
-                "total_frames": 300,
-                "frames": [
-                    {
-                        "frame": 0,
-                        "blendshapes": {"eyeBlinkLeft": 0.0, ...},
-                        "confidence": 0.95
-                    },
-                    ...
-                ]
-            }
-        """
-        cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            raise ValueError(f"Impossible d'ouvrir la vidéo: {video_path}")
-        
-        fps = int(cap.get(cv2.CAP_PROP_FPS))
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        
-        if end_frame < 0:
-            end_frame = total_frames
-        
-        result = {
-            "fps": fps,
-            "total_frames": total_frames,
-            "source_video": str(video_path),
-            "frames": []
-        }
-        
-        frame_idx = 0
-        processed = 0
-        
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            
-            if frame_idx < start_frame:
-                frame_idx += 1
-                continue
-            if frame_idx >= end_frame:
-                break
-            
-            flame_params = self._process_frame(frame)
-            arkit_values = self._flame_to_arkit(flame_params)
-            
-            result["frames"].append({
-                "frame": frame_idx,
-                "blendshapes": arkit_values,
-                "confidence": flame_params.get("confidence", 1.0)
-            })
-            
-            frame_idx += 1
-            processed += 1
-            
-            if processed % 100 == 0:
-                print(f"[EMOCA] Traité {processed} frames ({frame_idx}/{end_frame})")
-        
-        cap.release()
-        print(f"[EMOCA] Extraction complète: {processed} frames traitées")
-        return result
-    
-    def _process_frame(self, frame: np.ndarray) -> Dict:
-        """Traite une frame avec EMOCA et retourne les params FLAME."""
-        import torch
-        
-        if self.model is None:
-            return self._fallback_process(frame)
-        
-        try:
-            from gdl.datasets.FaceVideoDataModule import FaceVideoDataModule
-            from PIL import Image
-            
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            img = Image.fromarray(rgb_frame)
-            
-            input_tensor = self._preprocess_image(img)
-            input_tensor = input_tensor.to(self.device)
-            
-            with torch.no_grad():
-                output = self.model.encode(input_tensor)
-            
-            return {
-                "expression": output["expcode"].cpu().numpy().flatten(),
-                "jaw": output["jawpose"].cpu().numpy().flatten(),
-                "confidence": float(output.get("confidence", torch.tensor(1.0)).cpu())
-            }
-            
-        except Exception as e:
-            print(f"[EMOCA:DEBUG] Fallback pour frame: {e}")
-            return self._fallback_process(frame)
-    
-    def _preprocess_image(self, img) -> 'torch.Tensor':
-        """Prétraite l'image pour EMOCA."""
-        import torch
-        from torchvision import transforms
-        
-        transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                               std=[0.229, 0.224, 0.225])
-        ])
-        
-        tensor = transform(img).unsqueeze(0)
-        return tensor
-    
-    def _fallback_process(self, frame: np.ndarray) -> Dict:
-        """
-        Traitement fallback basé sur la luminosité/mouvement.
-        Utilisé quand EMOCA n'est pas disponible.
-        """
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        h, w = gray.shape
-        eye_region = gray[int(h*0.2):int(h*0.4), int(w*0.2):int(w*0.8)]
-        mouth_region = gray[int(h*0.6):int(h*0.9), int(w*0.3):int(w*0.7)]
-        
-        eye_variance = np.var(eye_region) / 1000.0
-        mouth_variance = np.var(mouth_region) / 1000.0
-        
-        expression = np.zeros(50)
-        expression[0] = np.clip(mouth_variance * 0.5, 0, 1)
-        expression[6] = np.clip(eye_variance * 0.3, 0, 1)
-        
-        jaw = np.zeros(3)
-        jaw[0] = np.clip(mouth_variance * 0.3, 0, 1)
-        
+    def __init__(self, schema: ExpressionSchema = None):
+        self.schema = schema or ExpressionSchema()
+
+    def load_facial_animation(self, json_path: str) -> dict:
+        """Charge et valide un facial_animation.json de U00."""
+        path = Path(json_path)
+        if not path.exists():
+            raise FileNotFoundError(f"facial_animation.json introuvable: {json_path}")
+
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        if "facial_animation" not in data:
+            raise ValueError("Clé 'facial_animation' absente du JSON")
+
+        segments = data["facial_animation"]
+        if not isinstance(segments, list) or len(segments) == 0:
+            raise ValueError("'facial_animation' doit être une liste non vide")
+
+        for i, seg in enumerate(segments):
+            for field in REQUIRED_SEGMENT_FIELDS:
+                if field not in seg:
+                    raise ValueError(f"Segment {i}: champ '{field}' manquant")
+
+            ok, errs = self.schema.validate_expression_request(
+                seg["expression"], seg["eyes"], seg["mouth"], seg["intensity"]
+            )
+            if not ok:
+                raise ValueError(f"Segment {i}: {errs}")
+
+            if seg["apex_time"] < seg["time_start"] or seg["apex_time"] > seg["time_end"]:
+                raise ValueError(
+                    f"Segment {i}: apex_time ({seg['apex_time']}) "
+                    f"hors bornes [{seg['time_start']}, {seg['time_end']}]"
+                )
+
+        return data
+
+    def translate_segment(self, segment: dict) -> dict:
+        """Traduit un segment émotionnel en 52 shape key values.
+        Utilise schema.fuse_expression() pour combiner expression + eyes + mouth.
+        Gère low_visibility: si True, force expression='neutral', intensity=0.2"""
+        expression = segment["expression"]
+        eyes = segment["eyes"]
+        mouth = segment["mouth"]
+        intensity = segment["intensity"]
+
+        if segment.get("low_visibility", False):
+            expression = "neutral"
+            intensity = min(0.2, intensity)
+
+        values = self.schema.fuse_expression(
+            expression_id=expression,
+            eye_id=eyes,
+            mouth_id=mouth,
+            intensity=intensity,
+        )
+
         return {
-            "expression": expression,
-            "jaw": jaw,
-            "confidence": 0.5
+            "values": values,
+            "time_start": segment["time_start"],
+            "time_end": segment["time_end"],
+            "apex_time": segment["apex_time"],
         }
-    
-    def _flame_to_arkit(self, flame_params: Dict) -> Dict[str, float]:
-        """Convertit les paramètres FLAME en 52 blendshapes ARKit."""
-        arkit = {key: 0.0 for key in ARKIT_52_BLENDSHAPES}
-        
-        exp = flame_params["expression"]
-        jaw = flame_params["jaw"]
-        
-        if len(exp) < 10:
-            exp = np.pad(exp, (0, 50 - len(exp)))
-        if len(jaw) < 3:
-            jaw = np.pad(jaw, (0, 3 - len(jaw)))
-        
-        arkit["jawOpen"] = float(np.clip(jaw[0] * 2.0, 0, 1))
-        arkit["jawLeft"] = float(np.clip(jaw[1] * 1.5, 0, 1))
-        arkit["jawRight"] = float(np.clip(-jaw[1] * 1.5, 0, 1))
-        arkit["jawForward"] = float(np.clip(jaw[2] if len(jaw) > 2 else 0, 0, 1))
-        
-        smile_val = float(exp[6]) if len(exp) > 6 else 0.0
-        arkit["mouthSmileLeft"] = float(np.clip(smile_val * 1.5, 0, 1))
-        arkit["mouthSmileRight"] = float(np.clip(smile_val * 1.5, 0, 1))
-        arkit["mouthFrownLeft"] = float(np.clip(-smile_val * 1.2, 0, 1))
-        arkit["mouthFrownRight"] = float(np.clip(-smile_val * 1.2, 0, 1))
-        
-        arkit["mouthPucker"] = float(np.clip(exp[10] if len(exp) > 10 else 0, 0, 1))
-        arkit["mouthFunnel"] = float(np.clip(exp[11] if len(exp) > 11 else 0, 0, 1))
-        arkit["mouthLeft"] = float(np.clip(exp[12] if len(exp) > 12 else 0, 0, 1))
-        arkit["mouthRight"] = float(np.clip(exp[13] if len(exp) > 13 else 0, 0, 1))
-        
-        mouth_open = arkit["jawOpen"]
-        arkit["mouthClose"] = float(np.clip(1.0 - mouth_open, 0, 1))
-        arkit["mouthLowerDownLeft"] = float(np.clip(mouth_open * 0.8, 0, 1))
-        arkit["mouthLowerDownRight"] = float(np.clip(mouth_open * 0.8, 0, 1))
-        arkit["mouthUpperUpLeft"] = float(np.clip(mouth_open * 0.4, 0, 1))
-        arkit["mouthUpperUpRight"] = float(np.clip(mouth_open * 0.4, 0, 1))
-        
-        brow_val = float(exp[1]) if len(exp) > 1 else 0.0
-        arkit["browInnerUp"] = float(np.clip(brow_val * 1.2, 0, 1))
-        arkit["browDownLeft"] = float(np.clip(-brow_val, 0, 1))
-        arkit["browDownRight"] = float(np.clip(-brow_val, 0, 1))
-        arkit["browOuterUpLeft"] = float(np.clip(brow_val * 0.8, 0, 1))
-        arkit["browOuterUpRight"] = float(np.clip(brow_val * 0.8, 0, 1))
-        
-        eye_val = float(exp[3]) if len(exp) > 3 else 0.0
-        squint_val = float(exp[4]) if len(exp) > 4 else 0.0
-        
-        arkit["eyeWideLeft"] = float(np.clip(eye_val, 0, 1))
-        arkit["eyeWideRight"] = float(np.clip(eye_val, 0, 1))
-        arkit["eyeSquintLeft"] = float(np.clip(squint_val, 0, 1))
-        arkit["eyeSquintRight"] = float(np.clip(squint_val, 0, 1))
-        
-        blink_val = float(exp[5]) if len(exp) > 5 else 0.0
-        arkit["eyeBlinkLeft"] = float(np.clip(blink_val, 0, 1))
-        arkit["eyeBlinkRight"] = float(np.clip(blink_val, 0, 1))
-        
-        arkit["eyeLookUpLeft"] = float(np.clip(exp[20] if len(exp) > 20 else 0, 0, 1))
-        arkit["eyeLookUpRight"] = float(np.clip(exp[20] if len(exp) > 20 else 0, 0, 1))
-        arkit["eyeLookDownLeft"] = float(np.clip(exp[21] if len(exp) > 21 else 0, 0, 1))
-        arkit["eyeLookDownRight"] = float(np.clip(exp[21] if len(exp) > 21 else 0, 0, 1))
-        arkit["eyeLookInLeft"] = float(np.clip(exp[22] if len(exp) > 22 else 0, 0, 1))
-        arkit["eyeLookInRight"] = float(np.clip(exp[23] if len(exp) > 23 else 0, 0, 1))
-        arkit["eyeLookOutLeft"] = float(np.clip(exp[24] if len(exp) > 24 else 0, 0, 1))
-        arkit["eyeLookOutRight"] = float(np.clip(exp[25] if len(exp) > 25 else 0, 0, 1))
-        
-        arkit["cheekPuff"] = float(np.clip(exp[8] if len(exp) > 8 else 0, 0, 1))
-        arkit["cheekSquintLeft"] = float(np.clip(squint_val * 0.5, 0, 1))
-        arkit["cheekSquintRight"] = float(np.clip(squint_val * 0.5, 0, 1))
-        
-        arkit["noseSneerLeft"] = float(np.clip(exp[9] if len(exp) > 9 else 0, 0, 1))
-        arkit["noseSneerRight"] = float(np.clip(exp[9] if len(exp) > 9 else 0, 0, 1))
-        
-        arkit["tongueOut"] = float(np.clip(exp[30] if len(exp) > 30 else 0, 0, 1))
-        
-        return arkit
-    
-    def export_to_json(self, data: Dict, output_path: str):
-        """Exporte les données faciales en JSON."""
-        import json
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
-        print(f"[EMOCA] Données exportées: {output_path}")
 
+    def translate_all(self, facial_data: dict, fps: int = 30) -> list:
+        """Traduit tous les segments en une liste de keyframe data.
+        Gère les transitions entre segments:
+        - Si deux segments consécutifs ont des émotions opposées
+          (via schema.requires_neutral_transition), insérer un segment neutre
+          intermédiaire.
+        - Retourne une liste de dicts prêts pour blender_fusion.py"""
+        segments = facial_data["facial_animation"]
+        translated: List[dict] = []
 
-def test_extractor(video_path: str, emoca_path: str):
-    """Test rapide de l'extracteur."""
-    extractor = EMOCAExtractor(emoca_path)
-    data = extractor.extract_arkit_from_video(video_path, end_frame=30)
-    
-    print(f"\nRésultat test:")
-    print(f"  FPS: {data['fps']}")
-    print(f"  Frames extraites: {len(data['frames'])}")
-    
-    if data['frames']:
-        first_frame = data['frames'][0]
-        print(f"  Exemple blendshapes (frame 0):")
-        for key, val in list(first_frame['blendshapes'].items())[:5]:
-            print(f"    {key}: {val:.3f}")
-    
-    return data
+        for i, seg in enumerate(segments):
+            if i > 0:
+                prev_expr = segments[i - 1].get("expression", "neutral")
+                if segments[i - 1].get("low_visibility", False):
+                    prev_expr = "neutral"
+                curr_expr = seg["expression"]
+                if seg.get("low_visibility", False):
+                    curr_expr = "neutral"
+
+                if self.schema.requires_neutral_transition(prev_expr, curr_expr):
+                    prev_end = segments[i - 1]["time_end"]
+                    curr_start = seg["time_start"]
+                    mid_time = (prev_end + curr_start) / 2.0
+                    neutral_seg = {
+                        "expression": "neutral",
+                        "eyes": "focused_forward",
+                        "mouth": "neutral",
+                        "intensity": 0.3,
+                        "time_start": prev_end,
+                        "time_end": curr_start,
+                        "apex_time": mid_time,
+                        "low_visibility": False,
+                    }
+                    neutral_data = self.translate_segment(neutral_seg)
+                    neutral_data["is_transition"] = True
+                    translated.append(neutral_data)
+
+            seg_data = self.translate_segment(seg)
+            seg_data["is_transition"] = False
+            translated.append(seg_data)
+
+        return translated
+
+    def generate_blender_data(self, facial_data: dict, fps: int = 30) -> dict:
+        """Point d'entrée principal. Retourne un dict structuré pour blender_fusion.py:
+        {
+            "fps": 30,
+            "segments": [
+                {
+                    "frame_start": 0,
+                    "frame_end": 75,
+                    "frame_apex": 36,
+                    "values": {52 ARKit keys},
+                    "is_transition": false
+                },
+                ...
+            ],
+            "micro_expressions": schema.get_micro_expression_presets()
+        }
+        """
+        translated = self.translate_all(facial_data, fps=fps)
+        segments: List[dict] = []
+
+        for seg in translated:
+            frame_start = int(round(seg["time_start"] * fps))
+            frame_end = int(round(seg["time_end"] * fps))
+            frame_apex = int(round(seg["apex_time"] * fps))
+            segments.append({
+                "frame_start": frame_start,
+                "frame_end": frame_end,
+                "frame_apex": frame_apex,
+                "values": seg["values"],
+                "is_transition": seg.get("is_transition", False),
+            })
+
+        return {
+            "fps": fps,
+            "segments": segments,
+            "micro_expressions": self.schema.get_micro_expression_presets(),
+        }
 
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) >= 3:
-        test_extractor(sys.argv[1], sys.argv[2])
-    else:
-        print("Usage: python facial_extractor.py <video_path> <emoca_model_path>")
+    print("=" * 60)
+    print("  EMOTIONAL INTENT TRANSLATOR — Test Standalone")
+    print("=" * 60)
+
+    sample_data = {
+        "sequence_id": "ACTOR_01",
+        "facial_animation": [
+            {
+                "time_start": 0.0,
+                "time_end": 2.5,
+                "expression": "determined",
+                "eyes": "focused_forward",
+                "mouth": "closed_tight",
+                "intensity": 0.8,
+                "apex_time": 1.2,
+                "low_visibility": False,
+            },
+            {
+                "time_start": 2.5,
+                "time_end": 5.0,
+                "expression": "joy",
+                "eyes": "narrowed",
+                "mouth": "smiling",
+                "intensity": 0.9,
+                "apex_time": 3.8,
+                "low_visibility": False,
+            },
+            {
+                "time_start": 5.0,
+                "time_end": 7.0,
+                "expression": "sadness",
+                "eyes": "looking_down",
+                "mouth": "frowning",
+                "intensity": 0.6,
+                "apex_time": 6.0,
+                "low_visibility": False,
+            },
+        ],
+    }
+
+    translator = EmotionalIntentTranslator()
+    blender_data = translator.generate_blender_data(sample_data, fps=30)
+
+    print(f"\nFPS: {blender_data['fps']}")
+    print(f"Segments: {len(blender_data['segments'])}")
+    print(f"Micro-expressions: {list(blender_data['micro_expressions'].keys())}")
+
+    for i, seg in enumerate(blender_data["segments"]):
+        tag = " [TRANSITION]" if seg["is_transition"] else ""
+        print(f"\n--- Segment {i}{tag} ---")
+        print(f"  Frames: {seg['frame_start']} -> {seg['frame_end']} (apex: {seg['frame_apex']})")
+        active_keys = {k: v for k, v in seg["values"].items() if v > 0.0}
+        print(f"  Active keys ({len(active_keys)}):")
+        for k, v in sorted(active_keys.items(), key=lambda x: -x[1]):
+            print(f"    {k:30s} = {v:.4f}")
+
+    print(f"\n{'=' * 60}")
+    print("  TEST COMPLET")
+    print(f"{'=' * 60}")

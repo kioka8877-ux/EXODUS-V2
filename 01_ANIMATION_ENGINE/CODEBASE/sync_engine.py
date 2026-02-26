@@ -1,257 +1,155 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    SYNC ENGINE — Body/Face Synchronization                   ║
+║              SYNC ENGINE V2 — Timecode / FBX Synchronization                ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Module de synchronisation body/face pour TRANSMUTATION.                      ║
-║  Supporte: manuel, marqueurs visuels, corrélation audio.                     ║
+║  Module de synchronisation timecodes JSON → frames FBX.                     ║
+║  ZÉRO vidéo — uniquement maths de timecodes et alignment FBX.              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
-import numpy as np
-from pathlib import Path
-from typing import Optional, Tuple, Dict
+from typing import List, Tuple, Dict
 import json
 
 
 class SyncEngine:
-    """Moteur de synchronisation body/face."""
-    
+    """Moteur de synchronisation timecodes/FBX V2."""
+
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
-    
+
     def log(self, msg: str):
         if self.verbose:
             print(f"[SYNC] {msg}")
-    
-    def calculate_offset(
-        self,
-        method: str = "manual",
-        manual_offset: int = 0,
-        marker_video: int = None,
-        marker_fbx: int = None,
-        video_path: str = None,
-        audio_path: str = None
-    ) -> int:
-        """
-        Calcule l'offset de synchronisation.
-        
-        Methods:
-            - "manual": Utilise manual_offset directement
-            - "marker": Calcule depuis les frames de référence
-            - "audio": Corrélation audio (nécessite scipy)
-        
-        Returns:
-            Offset en frames (positif = vidéo en avance sur FBX)
-        """
-        if method == "manual":
-            self.log(f"Mode manuel: offset = {manual_offset}")
-            return manual_offset
-        
-        elif method == "marker":
-            if marker_video is None or marker_fbx is None:
-                raise ValueError("marker_video et marker_fbx requis pour méthode 'marker'")
-            offset = marker_video - marker_fbx
-            self.log(f"Mode marqueur: video_frame={marker_video}, fbx_frame={marker_fbx}, offset={offset}")
-            return offset
-        
-        elif method == "audio":
-            if not video_path or not audio_path:
-                raise ValueError("video_path et audio_path requis pour méthode 'audio'")
-            return self._audio_correlation_sync(video_path, audio_path)
-        
-        return 0
-    
-    def _audio_correlation_sync(self, video_path: str, audio_path: str) -> int:
-        """
-        Synchronisation par corrélation croisée audio.
-        Extrait l'audio de la vidéo et calcule le décalage optimal.
-        """
-        self.log("Synchronisation audio en cours...")
-        
-        try:
-            from scipy.signal import correlate
-            from scipy.io import wavfile
-            import subprocess
-            import tempfile
-            import os
-            
-            with tempfile.TemporaryDirectory() as tmpdir:
-                video_audio = Path(tmpdir) / "video_audio.wav"
-                
-                cmd = [
-                    "ffmpeg", "-y", "-i", video_path,
-                    "-vn", "-acodec", "pcm_s16le",
-                    "-ar", "16000", "-ac", "1",
-                    str(video_audio)
-                ]
-                
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                if result.returncode != 0:
-                    self.log(f"FFmpeg erreur: {result.stderr}")
-                    return 0
-                
-                sr1, audio1 = wavfile.read(str(video_audio))
-                sr2, audio2 = wavfile.read(audio_path)
-                
-                if sr1 != sr2:
-                    self.log(f"Sample rates différents: {sr1} vs {sr2}")
-                    return 0
-                
-                audio1 = audio1.astype(np.float32) / 32768.0
-                audio2 = audio2.astype(np.float32) / 32768.0
-                
-                max_len = min(len(audio1), len(audio2), sr1 * 60)
-                audio1 = audio1[:max_len]
-                audio2 = audio2[:max_len]
-                
-                correlation = correlate(audio1, audio2, mode='full')
-                lag = np.argmax(correlation) - len(audio2) + 1
-                
-                offset_seconds = lag / sr1
-                offset_frames = int(offset_seconds * 30)
-                
-                self.log(f"Corrélation audio: lag={lag} samples, offset={offset_frames} frames")
-                return offset_frames
-            
-        except ImportError as e:
-            self.log(f"Dépendances manquantes pour sync audio: {e}")
-            return 0
-        except Exception as e:
-            self.log(f"Erreur sync audio: {e}")
-            return 0
-    
-    def validate_sync(
-        self, 
-        body_length: int, 
-        face_length: int, 
-        offset: int
-    ) -> Tuple[bool, str]:
-        """
-        Valide que la synchronisation est cohérente.
-        
-        Args:
-            body_length: Nombre de frames body
-            face_length: Nombre de frames faciales
-            offset: Offset calculé
-        
-        Returns:
-            (is_valid, message)
-        """
-        effective_start = max(0, offset)
-        effective_end = min(body_length, face_length + offset)
-        overlap = effective_end - effective_start
-        
-        if overlap < 30:
-            return False, f"Chevauchement insuffisant ({overlap} frames < 30 minimum)"
-        
-        if offset > face_length:
-            return False, "Offset trop grand - aucune frame faciale utilisable"
-        
-        if -offset > body_length:
-            return False, "Offset négatif trop grand - aucune frame body utilisable"
-        
-        coverage = overlap / max(body_length, face_length) * 100
-        
-        return True, f"Sync OK: {overlap} frames de chevauchement ({coverage:.1f}% couverture)"
-    
-    def get_frame_range(
-        self,
-        body_length: int,
-        face_length: int,
-        offset: int
-    ) -> Tuple[int, int]:
-        """
-        Calcule la plage de frames effective après synchronisation.
-        
-        Returns:
-            (start_frame, end_frame)
-        """
-        start = max(0, offset)
-        end = min(body_length, face_length + offset)
-        return start, end
-    
+
+    def timecodes_to_frames(self, segments: list, fps: int) -> list:
+        """Convertit les time_start/time_end/apex_time en numéros de frames."""
+        result = []
+        for seg in segments:
+            result.append({
+                **seg,
+                "frame_start": int(round(seg["time_start"] * fps)),
+                "frame_end": int(round(seg["time_end"] * fps)),
+                "frame_apex": int(round(seg["apex_time"] * fps)),
+            })
+        return result
+
+    def align_to_fbx(self, segments: list, fbx_frame_count: int, offset: int = 0) -> list:
+        """Clampe les segments aux bornes du FBX."""
+        result = []
+        for seg in segments:
+            fs = seg["frame_start"] + offset
+            fe = seg["frame_end"] + offset
+            fa = seg["frame_apex"] + offset
+
+            fs = max(0, min(fs, fbx_frame_count - 1))
+            fe = max(0, min(fe, fbx_frame_count - 1))
+            fa = max(fs, min(fa, fe))
+
+            if fs >= fe:
+                self.log(f"Segment ignoré (clamped hors bornes): frames {fs}-{fe}")
+                continue
+
+            result.append({
+                **seg,
+                "frame_start": fs,
+                "frame_end": fe,
+                "frame_apex": fa,
+            })
+        return result
+
+    def validate_timeline(self, segments: list) -> Tuple[bool, List[str]]:
+        """Vérifie que les timecodes sont croissants, pas de chevauchement,
+        apex dans les bornes."""
+        errors: List[str] = []
+
+        for i, seg in enumerate(segments):
+            ts = seg.get("time_start", 0)
+            te = seg.get("time_end", 0)
+            apex = seg.get("apex_time", 0)
+
+            if te <= ts:
+                errors.append(f"Segment {i}: time_end ({te}) <= time_start ({ts})")
+
+            if apex < ts or apex > te:
+                errors.append(
+                    f"Segment {i}: apex_time ({apex}) hors bornes [{ts}, {te}]"
+                )
+
+            if i > 0:
+                prev_end = segments[i - 1].get("time_end", 0)
+                if ts < prev_end:
+                    errors.append(
+                        f"Segment {i}: time_start ({ts}) chevauche segment {i-1} "
+                        f"(time_end={prev_end})"
+                    )
+
+        return (len(errors) == 0, errors)
+
     def create_sync_report(
         self,
         body_path: str,
-        video_path: str,
+        facial_json_path: str,
         offset: int,
-        body_length: int,
-        face_length: int
+        fbx_frame_count: int,
+        segment_count: int,
     ) -> Dict:
-        """
-        Génère un rapport de synchronisation.
-        """
-        is_valid, message = self.validate_sync(body_length, face_length, offset)
-        start, end = self.get_frame_range(body_length, face_length, offset)
-        
+        """Génère un rapport de synchronisation V2."""
         return {
             "inputs": {
                 "body_fbx": body_path,
-                "video": video_path
+                "facial_json": facial_json_path,
             },
             "sync": {
                 "offset_frames": offset,
-                "body_length": body_length,
-                "face_length": face_length,
-                "effective_start": start,
-                "effective_end": end,
-                "overlap_frames": end - start
+                "fbx_frame_count": fbx_frame_count,
+                "segment_count": segment_count,
             },
             "validation": {
-                "is_valid": is_valid,
-                "message": message
-            }
+                "status": "OK",
+            },
         }
 
 
-def calculate_sync_offset(
-    method: str = "manual",
-    manual_offset: int = 0,
-    marker_video: int = None,
-    marker_fbx: int = None,
-    video_path: str = None,
-    fbx_audio_path: str = None
-) -> int:
-    """
-    Fonction utilitaire pour calculer l'offset.
-    Wrapper autour de SyncEngine pour compatibilité.
-    """
-    engine = SyncEngine(verbose=True)
-    return engine.calculate_offset(
-        method=method,
-        manual_offset=manual_offset,
-        marker_video=marker_video,
-        marker_fbx=marker_fbx,
-        video_path=video_path,
-        audio_path=fbx_audio_path
-    )
+def timecodes_to_frames(segments: list, fps: int) -> list:
+    """Fonction utilitaire. Wrapper autour de SyncEngine."""
+    return SyncEngine().timecodes_to_frames(segments, fps)
 
 
-def validate_sync(body_length: int, face_length: int, offset: int) -> Tuple[bool, str]:
+def validate_timeline(segments: list) -> Tuple[bool, List[str]]:
     """Fonction utilitaire de validation."""
-    engine = SyncEngine()
-    return engine.validate_sync(body_length, face_length, offset)
+    return SyncEngine().validate_timeline(segments)
 
 
 if __name__ == "__main__":
     engine = SyncEngine(verbose=True)
-    
-    print("\n=== Test Sync Engine ===")
-    
-    offset = engine.calculate_offset(method="marker", marker_video=150, marker_fbx=100)
-    print(f"Offset calculé: {offset}")
-    
-    is_valid, msg = engine.validate_sync(body_length=1000, face_length=900, offset=offset)
-    print(f"Validation: {msg}")
-    
-    start, end = engine.get_frame_range(body_length=1000, face_length=900, offset=offset)
-    print(f"Frame range: {start} - {end}")
-    
+
+    print("\n=== Test Sync Engine V2 ===")
+
+    test_segments = [
+        {"time_start": 0.0, "time_end": 2.5, "apex_time": 1.2, "expression": "determined"},
+        {"time_start": 2.5, "time_end": 5.0, "apex_time": 3.8, "expression": "joy"},
+        {"time_start": 5.0, "time_end": 7.0, "apex_time": 6.0, "expression": "sadness"},
+    ]
+
+    ok, errs = engine.validate_timeline(test_segments)
+    print(f"Validation timeline: {'OK' if ok else 'ERREURS'}")
+    for e in errs:
+        print(f"  {e}")
+
+    framed = engine.timecodes_to_frames(test_segments, fps=30)
+    for seg in framed:
+        print(f"  {seg['expression']}: frame {seg['frame_start']} -> {seg['frame_end']} (apex {seg['frame_apex']})")
+
+    aligned = engine.align_to_fbx(framed, fbx_frame_count=180, offset=0)
+    print(f"\nAligned to FBX (180 frames):")
+    for seg in aligned:
+        print(f"  {seg['expression']}: frame {seg['frame_start']} -> {seg['frame_end']} (apex {seg['frame_apex']})")
+
     report = engine.create_sync_report(
         body_path="test.fbx",
-        video_path="test.mp4",
-        offset=offset,
-        body_length=1000,
-        face_length=900
+        facial_json_path="facial_animation.json",
+        offset=0,
+        fbx_frame_count=180,
+        segment_count=len(test_segments),
     )
     print(f"\nRapport: {json.dumps(report, indent=2)}")
