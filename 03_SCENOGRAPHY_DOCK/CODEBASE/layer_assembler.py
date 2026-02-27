@@ -8,7 +8,7 @@
 ║                                                                              ║
 ║  Phase D1 : Dome + Shadow Catcher + World Sync                              ║
 ║  Phase D2 : Displacement Mesh (ACTIVE)                                       ║
-║  Phase D3 (stub) : PBR Swap + Glass — placeholders                          ║
+║  Phase D3 : PBR Swap + Glass (ACTIVE)                                        ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -27,6 +27,8 @@ from dome_builder import build_infinity_dome, apply_dome_material
 from shadow_catcher_builder import build_shadow_catcher
 from world_sync import setup_world_sync, setup_render_settings
 from displacement_builder import build_displacement_mesh
+from pbr_swap_builder import build_pbr_surfaces
+from glass_builder import build_glass_planes
 
 ASSEMBLER_VERSION = "2.0.0"
 
@@ -71,6 +73,23 @@ def _stamp_custom_properties(active_layers: str) -> None:
     scene["exodus_validated"] = False
     scene["exodus_layers"] = active_layers
     print(f"[ASSEMBLER] Custom properties stampées — layers={active_layers}")
+
+
+def _collect_glass_planes_info() -> List[Dict]:
+    glass_planes_info = []
+    for obj in bpy.data.objects:
+        if obj.name.startswith("glass_plane_"):
+            plane_info = {"z_offset": obj.location.z, "transmission": 0.0, "roughness": 1.0}
+            if obj.data.materials:
+                mat = obj.data.materials[0]
+                if mat.use_nodes:
+                    for node in mat.node_tree.nodes:
+                        if node.type == "BSDF_PRINCIPLED":
+                            plane_info["transmission"] = node.inputs["Transmission Weight"].default_value
+                            plane_info["roughness"] = node.inputs["Roughness"].default_value
+                            break
+            glass_planes_info.append(plane_info)
+    return glass_planes_info
 
 
 def _build_scene_report() -> Dict:
@@ -126,7 +145,7 @@ def _build_scene_report() -> Dict:
         "custom_properties": props,
         "displacement_mesh": dm_info,
         "shadow_catcher": sc_info,
-        "glass_planes": [],
+        "glass_planes": _collect_glass_planes_info(),
     }
 
 
@@ -151,9 +170,9 @@ def assemble_scene(
     Phase D2 active :
     - Couche B : Displacement Mesh — depth map displacement (ENV_TERRAIN)
 
-    Phase D3 (stub) :
-    - Couche C : PBR Swap — placeholder collection ENV_PBR
-    - Glass planes — placeholder collection ENV_GLASS
+    Phase D3 active :
+    - Couche C : PBR Swap — SAM masks → PBR materials (ENV_PBR)
+    - Reflectivity Hack : Glass BSDF planes (ENV_GLASS)
 
     Args:
         scene_data: Données de la scène depuis PRODUCTION_PLAN.
@@ -209,10 +228,18 @@ def assemble_scene(
         vram_profile=vram_profile,
     )
 
-    _ensure_collection("ENV_GLASS")
-    _ensure_collection("ENV_PBR")
+    # Phase D3 : PBR Swap + Reflectivity Hack
+    pbr_objects = build_pbr_surfaces(
+        collection_name="ENV_PBR",
+        semantic_masks_path=semantic_masks_path,
+    )
 
-    active_layers = "dome,shadow,world_sync,displacement"
+    glass_objects = build_glass_planes(
+        collection_name="ENV_GLASS",
+        semantic_masks_path=semantic_masks_path,
+    )
+
+    active_layers = "dome,shadow,world_sync,displacement,pbr,glass"
     _stamp_custom_properties(active_layers)
 
     try:
