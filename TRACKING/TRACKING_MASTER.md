@@ -6,7 +6,7 @@
 |---|-------|-----|----------|----------------|-----------------|----------|
 | 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟢 SCELLÉ (PR #14-#16) | — |
 | 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟢 SCELLÉ (PR #19-#23) | — |
-| 2 | U02 | LOGISTICS DEPOT | 🟡 P2 | 70% | 🟡 EN ATTENTE | Bypass conditionnel |
+| 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟢 SCELLÉ (PR #25) | — |
 | 3 | U03 | SCENOGRAPHY DOCK | 🔴 P0 | 5% | 🔴 BLOQUÉ | Architecture à réécrire |
 | 4 | U04 | PHOTOGRAPHY WING | 🟡 P1 | 40% | 🟡 EN ATTENTE | fSpy + DOF + Shake |
 | 5 | U05 | ALCHEMIST LAB | 🟡 P1 | 50% | 🟡 EN ATTENTE | Match Color + Grain |
@@ -14,10 +14,10 @@
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [████░░░░░░] 37% — MARSHAL + U00 + U01 scellés
-Frégates conformes : 3/8 (MARSHAL, U00, U01)
+Mutation V2 : [█████░░░░░] 50% — MARSHAL + U00 + U01 + U02 scellés
+Frégates conformes : 4/8 (MARSHAL, U00, U01, U02)
 Phase courante : PHASE B (Vie & Décor — U03 prochaine cible)
-Dernière frappe : PR #23 — U01 Documentation Armour (2026-02-27)
+Dernière frappe : PR #25 — U02 Bypass Conditionnel (2026-02-27)
 
 ## LÉGENDE
 - 🔴 BLOQUÉ : Écart majeur, réécriture nécessaire
@@ -30,4 +30,4 @@ Dernière frappe : PR #23 — U01 Documentation Armour (2026-02-27)
 - [VALIDATION](./EXODUS_V2_VALIDATION.md) | [RISKS](./EXODUS_V2_RISKS.md) | [TRANSFERS](./EXODUS_V2_TRANSFER_LOG.md)
 - [U00](./TRACKING_U00.md) | [U01](./TRACKING_U01.md) | [U02](./TRACKING_U02.md) | [U03](./TRACKING_U03.md) | [U04](./TRACKING_U04.md) | [U05](./TRACKING_U05.md) | [U06](./TRACKING_U06.md) | [MARSHAL](./TRACKING_MARSHAL.md)
 
-<!-- v2.2 — U01 SCELLÉ -->
+<!-- v2.3 — U02 SCELLÉ -->

@@ -70,7 +70,7 @@
 
 ### PHASE C : FINITION (Semaines 3-4)
 **Priorité : U02 + U04 + U05 + U06**
-- [ ] U02 : Ajouter bypass conditionnel (requires_u02)
+- [x] U02 : Ajouter bypass conditionnel (requires_u02)
 - [ ] U04 : Intégrer fSpy perspective lock (±5%)
 - [ ] U04 : Auto-DOF (Empty sur buste avatar)
 - [ ] U04 : Shake procédural (Noise modifier)
