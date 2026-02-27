@@ -35,7 +35,7 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 - [x] Levier Blender : NLA strips pour layering multicouche (influence keyframable = intensity)
 - [x] Simplifier `sync_engine.py` (aligner timecodes JSON sur FBX, supprimer sync audio/marqueur vidéo)
 - [x] Adapter `EXO_01_TRANSMUTATION.py` (nouveau flow I/O : lire facial_animation.json, supprimer check EMOCA)
-- [ ] Mettre à jour les notebooks (EXO_01_CONTROL.ipynb, EXO_01_PRODUCTION.ipynb)
+- [x] Mettre à jour les notebooks (EXO_01_CONTROL.ipynb, EXO_01_PRODUCTION.ipynb)
 - [x] Export dual .blend + .abc
 
 **Phase B1.3 — Rhubarb Lip-Sync (Futur)**
@@ -47,6 +47,7 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 |------|--------|--------|-------------|------------|
 | 2026-02-26 | expression_schema.py — Bible Anatomique (794 lignes, 7 Piliers) | ✅ | PR #19 | N/A (pure Python) |
 | 2026-02-26 | Pipeline V2 — facial_extractor + blender_fusion + sync_engine + TRANSMUTATION | ✅ | PR #20 | N/A (pure Python + bpy) |
+| 2026-02-27 | Notebooks V2 + README_DEV.md — Documentation Armour | ✅ | PR #XX | N/A (docs) |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : À mesurer (cible < 4GB — RÉDUIT vs V1 car zéro EMOCA)

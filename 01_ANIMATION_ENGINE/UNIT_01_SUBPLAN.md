@@ -1,151 +1,167 @@
-# 🔧 UNIT 01 — TRANSMUTATION ENGINE
+# UNIT 01 — TRANSMUTATION ENGINE V2
 
 ## Sub-Plan Technique
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                 FRÉGATE 01_TRANSMUTATION — TECHNICAL SUBPLAN                 ║
-║            Body Motion + Facial Capture → .blend (Master) + .abc             ║
+║                 FRÉGATE 01_TRANSMUTATION — TECHNICAL SUBPLAN V2               ║
+║     Body Motion + Emotional Intent Transfer → .blend (Master) + .abc         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ---
 
-## 🎯 Mission
+## Mission
 
-Fusionner des animations corporelles (FBX MoCap) avec des expressions faciales extraites par IA (EMOCA) pour produire des animations complètes exportées en Alembic (.abc).
+Fusionner des animations corporelles (FBX MoCap) avec des expressions faciales traduites par Emotional Intent Transfer (Bible Anatomique → 52 ARKit Shape Keys) pour produire des animations complètes exportées en dual .blend + .abc.
 
 ### Inputs
 | Type | Format | Source |
 |------|--------|--------|
-| Body Motion | `.fbx` | MoCap Pro / Rokoko / Mixamo |
-| Face Video | `.mp4` | iPhone / Webcam |
+| Body Motion | `.fbx` | SayMotion / Mixamo |
+| Facial Animation | `.json` | U00 CORTEX (Gemini → segments émotionnels) |
 | Actor Model | `.blend` | Avatar Roblox avec DynamicHead |
 
 ### Output
 | Type | Format | Destination |
 |------|--------|-------------|
-| Baked Animation (MAÎTRE) | `.blend` | U02 LOGISTICS (props attachment) |
-| Baked Animation (SECONDAIRE) | `.abc` | Preview / Backup |
-| Face Data | `.json` | Debug / Archive |
+| Animation Master | `.blend` | U02 LOGISTICS (props attachment) |
+| Animation Preview | `.abc` | Preview / Backup |
+| Translated Data | `.json` | Debug / Archive |
 
 ---
 
-## 🏗️ Architecture Pipeline
+## Architecture Pipeline V2
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         TRANSMUTATION PIPELINE                               │
+│                    TRANSMUTATION PIPELINE V2                                  │
+│                   Emotional Intent Transfer                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
-│  │   Video.mp4  │───▶│    EMOCA     │───▶│  face.json   │                  │
-│  │  (Facial)    │    │  Extraction  │    │ (52 ARKit)   │                  │
-│  └──────────────┘    └──────────────┘    └──────┬───────┘                  │
-│                                                  │                          │
-│  ┌──────────────┐                               ▼                          │
-│  │  Motion.fbx  │───────────────────────▶┌──────────────┐                  │
-│  │   (Body)     │                        │   BLENDER    │                  │
-│  └──────────────┘                        │   FUSION     │                  │
-│                                          │  (Headless)  │                  │
-│  ┌──────────────┐                        └──────┬───────┘                  │
-│  │ Avatar.blend │───────────────────────────────┘                          │
-│  │  (Rigged)    │                               │                          │
-│  └──────────────┘                               ▼                          │
-│                                          ┌──────────────┐                  │
-│                                          │ OUTPUT.blend │ ← MAÎTRE         │
-│                                          │  (Armature)  │                  │
-│                                          └──────┬───────┘                  │
-│                                                 │                          │
-│                                                 ▼                          │
-│                                          ┌──────────────┐                  │
-│                                          │  OUTPUT.abc  │ ← SECONDAIRE     │
-│                                          │  (Preview)   │                  │
-│                                          └──────────────┘                  │
+│  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐      │
+│  │  facial_animation │───▶│  Expression      │───▶│  52 ARKit        │      │
+│  │  .json (U00)      │    │  Schema (Bible)  │    │  Shape Keys      │      │
+│  └──────────────────┘    └──────────────────┘    └────────┬─────────┘      │
+│                                    │                       │                │
+│                                    ▼                       │                │
+│                          ┌──────────────────┐              │                │
+│                          │  Emotional Intent │              │                │
+│                          │  Translator       │──────────────┘                │
+│                          └──────────────────┘                               │
+│                                    │                                        │
+│  ┌──────────────────┐              ▼                                        │
+│  │  Motion.fbx      │───────▶┌──────────────────┐                          │
+│  │  (Body)          │        │   BLENDER FUSION  │                          │
+│  └──────────────────┘        │   NLA + Bézier +  │                          │
+│                              │   Noise Modifier  │                          │
+│  ┌──────────────────┐        └────────┬──────────┘                          │
+│  │  Avatar.blend    │────────────────┘│                                     │
+│  │  (Rigged)        │                 │                                     │
+│  └──────────────────┘                 ▼                                     │
+│                              ┌──────────────────┐                           │
+│                              │  OUTPUT.blend     │ ← MASTER                 │
+│                              │  (NLA + Armature) │                          │
+│                              └────────┬──────────┘                          │
+│                                       │                                     │
+│                                       ▼                                     │
+│                              ┌──────────────────┐                           │
+│                              │  OUTPUT.abc       │ ← PREVIEW                │
+│                              │  (Alembic Cache)  │                          │
+│                              └──────────────────┘                           │
+│                                                                             │
+│  ┌──────────────────┐  (optionnel)                                         │
+│  │  Audio.wav +     │───▶ Rhubarb Bridge ───▶ NLA Lip-Sync Strip           │
+│  │  Dialogue.txt    │                                                       │
+│  └──────────────────┘                                                       │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📦 Stack Technique
+## Stack Technique
 
 ### Core
 - **Python 3.10+** — Orchestration
 - **Blender 4.0** — Fusion et export (headless)
-- **EMOCA** — Extraction faciale 3D
+- **expression_schema.py** — Bible Anatomique (7 Piliers, 52 ARKit)
 
 ### Libraries
-- `torch` — Deep Learning (EMOCA)
-- `opencv-python` — Video processing
-- `scipy` — Savitzky-Golay filtering
-- `omegaconf` — Configuration EMOCA
+- `scipy` — Optionnel, legacy smoothing uniquement
+
+### Blender Natif (3 Leviers Pareto 80/20)
+- **F-Curve Bézier** — Interpolation (`AUTO_CLAMPED`)
+- **F-Curve Noise Modifier** — Micro-jitter yeux+bouche (strength=0.01-0.03, scale≈8-12Hz)
+- **NLA Editor** — Layering multicouche (expression + eyes override + mouth override)
 
 ---
 
-## 🗂️ Structure Dossiers
+## Structure Dossiers V2
 
 ```
 01_ANIMATION_ENGINE/
 ├── CODEBASE/
-│   ├── EXO_01_TRANSMUTATION.py    # Script principal (wrapper)
-│   ├── facial_extractor.py         # EMOCA → 52 ARKit
-│   ├── blender_fusion.py           # Blender headless fusion
-│   ├── sync_engine.py              # Synchronisation body/face
-│   ├── smoothing.py                # Savitzky-Golay filter
+│   ├── EXO_01_TRANSMUTATION.py    # Script principal (orchestrateur)
+│   ├── expression_schema.py        # Bible Anatomique (7 Piliers, 52 ARKit)
+│   ├── facial_extractor.py         # EmotionalIntentTranslator
+│   ├── blender_fusion.py           # Blender headless NLA + Bézier + Noise
+│   ├── sync_engine.py              # Synchronisation timecodes/FBX
+│   ├── rhubarb_bridge.py           # Lip-sync Rhubarb (optionnel)
+│   ├── smoothing.py                # LEGACY — non utilisé en V2
 │   ├── requirements.txt
-│   ├── EXO_01_CONTROL.ipynb        # Debug notebook
-│   └── EXO_01_PRODUCTION.ipynb     # Batch notebook
-├── IN_INPUTS/
-│   ├── body_motions/               # .fbx files
-│   ├── source_videos/              # .mp4 files
-│   └── actor_models/               # .blend files
-├── OUT_BAKED/
-│   └── *.abc                       # Outputs
-├── UNIT_01_SUBPLAN.md              # Ce fichier
-└── README_DEV.md                   # Guide développeur
+│   ├── EXO_01_CONTROL.ipynb        # Debug notebook V2
+│   └── EXO_01_PRODUCTION.ipynb     # Batch notebook V2
+├── IN_CORTEX_JSON/                  # facial_animation.json (de U00 CORTEX)
+├── IN_MIXAMO_BASE/                  # .fbx body motions (SayMotion/Mixamo)
+├── OUT_MOTION_DATA/                 # .blend (Master) + .abc (Preview)
+├── UNIT_01_SUBPLAN.md               # Ce fichier
+└── README_DEV.md                    # Guide développeur V2
 ```
 
 ---
 
-## 🔄 Workflow Détaillé
+## Workflow Détaillé
 
-### Phase 1: Extraction Faciale (EMOCA)
+### Phase 1: Emotional Intent Translation
 ```python
-# facial_extractor.py
-# Input: video.mp4
-# Output: face.json (52 ARKit blendshapes par frame)
+# facial_extractor.py — EmotionalIntentTranslator
+# Input: facial_animation.json (produit par U00 CORTEX)
+# Output: segments traduits en 52 ARKit Shape Keys
 
+# Format d'entrée (U00 CORTEX)
 {
-    "fps": 30,
-    "frames": [
+    "facial_animation": [
         {
-            "frame": 0,
-            "blendshapes": {
-                "eyeBlinkLeft": 0.0,
-                "mouthSmileLeft": 0.45,
-                ...
-            },
-            "confidence": 0.95
+            "time_start": 0.0,
+            "time_end": 2.5,
+            "expression": "determined",
+            "eyes": "focused_forward",
+            "mouth": "closed_tight",
+            "intensity": 0.8,
+            "apex_time": 1.2,
+            "low_visibility": false
         }
     ]
 }
+
+# Traduction via expression_schema.py (Bible Anatomique)
+# expression + eyes override (zone oculaire) + mouth override (zone buccale)
+# → 52 ARKit shape key values fusionnées
 ```
 
 ### Phase 2: Synchronisation
 ```python
-# sync_engine.py
-# Méthodes:
-# - manual: offset direct en frames
-# - marker: calcul depuis frames de référence (clap, etc.)
-# - audio: corrélation croisée audio (expérimental)
+# sync_engine.py — SyncEngine
+# Convertit timecodes JSON en numéros de frames
+# Aligne sur bornes FBX avec offset optionnel
+# Valide timeline (croissant, pas de chevauchement)
 
-offset = video_frame - fbx_frame
-# offset > 0: vidéo en avance
-# offset < 0: FBX en avance
+framed = sync.timecodes_to_frames(segments, fps=30)
+aligned = sync.align_to_fbx(framed, fbx_frame_count=180, offset=0)
 ```
 
-### Phase 3: Fusion Blender
+### Phase 3: Fusion Blender (NLA)
 ```python
 # blender_fusion.py
 # Exécuté via: blender --background --python blender_fusion.py -- [args]
@@ -153,38 +169,45 @@ offset = video_frame - fbx_frame
 # 1. Import FBX body motion
 # 2. Import Actor .blend
 # 3. Transfer body animation
-# 4. Apply facial shape keys
-# 5. Apply smoothing
-# 6. Export .blend MAÎTRE (avec armature pour U02)
-# 7. Export .abc SECONDAIRE (preview/backup)
-# 8. Cleanup armature FBX source
+# 4. Appliquer shape keys faciales via NLA strips multicouche :
+#    - Strip expression (base)
+#    - Strip eyes override (zone oculaire)
+#    - Strip mouth override (zone buccale)
+# 5. F-Curve Bézier (handle_right_type = 'AUTO_CLAMPED')
+# 6. F-Curve Noise Modifier (micro-jitter)
+# 7. (Optionnel) NLA Strip lip-sync Rhubarb
+# 8. Export .blend MASTER (avec armature pour U02)
+# 9. Export .abc PREVIEW (Alembic cache)
 ```
 
-### Phase 4: Smoothing
+### Phase 4: Lip-Sync (Optionnel)
 ```python
-# smoothing.py
-# Savitzky-Golay: préserve les peaks, supprime le jitter
-
-# Mode adaptatif:
-# - Mouvements lents → window=7
-# - Mouvements rapides → window=3 (préserve micro-expressions)
+# rhubarb_bridge.py — RhubarbBridge
+# Exécute Rhubarb CLI → mouth cues JSON
+# Convertit en segments NLA avec valeurs ARKit (LIP_SYNC_VISEMES)
+# NLA strip dédié, priorité sur zone bouche pendant parole
 ```
 
 ---
 
-## 🎚️ Paramètres Clés
+## Paramètres Clés
 
 | Paramètre | Default | Description |
 |-----------|---------|-------------|
+| `--drive-root` | — | Racine du Drive EXODUS (requis) |
+| `--body-fbx` | — | FBX body motion dans IN_MIXAMO_BASE/ (requis) |
+| `--facial-json` | — | JSON facial animation dans IN_CORTEX_JSON/ (requis) |
+| `--actor-blend` | — | Avatar .blend chemin absolu (requis) |
+| `--output-name` | TRANSMUTED_ACTOR | Nom des fichiers output |
 | `--sync-offset` | 0 | Offset sync en frames |
-| `--smooth-window` | 5 | Fenêtre Savitzky-Golay |
-| `--output-blend` | auto | Chemin .blend (auto = même nom que .abc) |
-| `--sync-marker` | — | Paire (video_frame, fbx_frame) |
+| `--intensity-mode` | ease_in_out | Courbe d'intensité (linear, quadratic, ease_in_out) |
+| `--audio` | — | Audio pour lip-sync Rhubarb (optionnel) |
+| `--dialogue` | — | Texte dialogue pour Rhubarb (optionnel) |
 | `--dry-run` | false | Validation sans exécution |
 
 ---
 
-## 📊 52 ARKit Blendshapes
+## 52 ARKit Blendshapes
 
 ### Eyes (14)
 `eyeBlinkLeft`, `eyeBlinkRight`, `eyeLookDownLeft`, `eyeLookDownRight`, `eyeLookInLeft`, `eyeLookInRight`, `eyeLookOutLeft`, `eyeLookOutRight`, `eyeLookUpLeft`, `eyeLookUpRight`, `eyeSquintLeft`, `eyeSquintRight`, `eyeWideLeft`, `eyeWideRight`
@@ -209,65 +232,68 @@ offset = video_frame - fbx_frame
 
 ---
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
-### EMOCA ne trouve pas de visage
-- Vérifier l'éclairage de la vidéo
-- Le visage doit être visible (pas de profil extrême)
-- Résolution minimum: 480p
+### Expression inconnue rejetée
+- Vérifier que l'expression est dans `VALID_EXPRESSIONS` (15 presets)
+- Vérifier que les yeux sont dans `VALID_EYE_STATES` (9 états)
+- Vérifier que la bouche est dans `VALID_MOUTH_STATES` (8 états)
 
-### Sync décalé
-- Utiliser `--sync-marker` avec un point de référence clair (clap)
-- Vérifier les FPS de la vidéo et du FBX
+### Transition abrupte entre émotions
+- Le translator insère automatiquement un segment neutre intermédiaire pour les émotions antagonistes
+- Vérifier via `schema.requires_neutral_transition(expr_a, expr_b)`
+
+### Shape keys manquantes sur l'avatar
+- L'avatar doit avoir les 52 ARKit shape keys exactes
+- `blender_fusion.py` crée automatiquement les keys manquantes (fallback)
 
 ### Blender crash
-- Vérifier que Blender 4.0 portable est bien installé
+- Vérifier que Blender 4.0 portable est installé dans `EXODUS_AI_MODELS/`
 - Vérifier les chemins absolus
 
-### Shape keys manquantes
-- L'avatar doit avoir les 52 ARKit shape keys
-- Utiliser le mode fallback qui crée les keys manquantes
+### Lip-sync non fonctionnel
+- Rhubarb est optionnel et doit être installé séparément
+- Le pipeline fonctionne sans lip-sync si `--audio` n'est pas spécifié
 
 ---
 
-## 📈 Performance
+## Performance
 
 | Étape | Temps estimé (1000 frames) |
 |-------|---------------------------|
-| EMOCA extraction | ~5 min (GPU) / ~20 min (CPU) |
-| Blender fusion | ~2 min |
+| Emotional Intent Translation | < 1 sec (pure Python) |
+| Blender fusion + NLA | ~2 min |
 | Export Alembic | ~1 min |
 
-**Total estimé**: 8-25 min par acteur selon hardware.
+**Total estimé** : ~3 min par acteur. RÉDUIT vs V1 (zéro GPU pour extraction faciale).
 
 ---
 
-## 🔗 Dépendances Externes
+## Dépendances Externes
 
 ### Sur Google Drive (EXODUS_AI_MODELS/)
 ```
 EXODUS_AI_MODELS/
 ├── blender-4.0.0-linux-x64/
 │   └── blender
-└── emoca/
-    ├── cfg.yaml
-    └── model.ckpt
+└── rhubarb/                    # Optionnel — lip-sync
+    └── rhubarb
 ```
 
 ---
 
-## ✅ Checklist Production
+## Checklist Production V2
 
-- [ ] Inputs validés (FBX, MP4, BLEND)
-- [ ] EMOCA modèle présent
+- [ ] Inputs validés (FBX dans IN_MIXAMO_BASE/, JSON dans IN_CORTEX_JSON/, .blend avatar)
 - [ ] Blender 4.0 installé
-- [ ] Sync offset calculé
+- [ ] Marshal check-in passé
+- [ ] Expression Schema testé (15 expressions + 9 yeux + 8 bouche)
 - [ ] Dry-run passé
-- [ ] Output .blend généré (MAÎTRE)
-- [ ] Output .abc généré (SECONDAIRE)
-- [ ] Validé dans Blender
+- [ ] Output .blend généré (MASTER) dans OUT_MOTION_DATA/
+- [ ] Output .abc généré (PREVIEW) dans OUT_MOTION_DATA/
+- [ ] Marshal check-out passé
 - [ ] Prêt pour U02 (LOGISTICS)
 
 ---
 
-*EXODUS SYSTEM — Frégate 01_TRANSMUTATION v1.0.0*
+*EXODUS SYSTEM — Frégate 01_TRANSMUTATION v2.0.0*
