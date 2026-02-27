@@ -5,7 +5,7 @@ Suppression totale d'EMOCA. Module fondation `expression_schema.py` (Bible Anato
 Emotional Intent Transfer via `facial_animation.json` généré par U00 (Gemini text → segments émotionnels).
 3 leviers natifs Blender (Pareto 80/20) : F-Curve Bézier (interpolation), F-Curve Noise Modifier (Micro-Jitter yeux+bouche), NLA Editor (layering multicouche expression + eyes override + mouth override).
 Injection Micro-Jitter via F-Curve Noise Modifier natif Blender (pas numpy custom).
-Rhubarb lip-sync (Phase 2, futur — NLA strip dédié, priorité bouche pendant parole).
+Rhubarb lip-sync via rhubarb_bridge.py (NLA strip dédié, priorité bouche pendant parole).
 Export dual : `.blend` + `.abc` (Alembic cache).
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
@@ -38,25 +38,26 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 - [x] Mettre à jour les notebooks (EXO_01_CONTROL.ipynb, EXO_01_PRODUCTION.ipynb)
 - [x] Export dual .blend + .abc
 
-**Phase B1.3 — Rhubarb Lip-Sync (Futur)**
-- [ ] Intégrer Rhubarb lip-sync (NLA strip dédié, priorité sur zone bouche)
-- [ ] Gérer conflit lip-sync/expressions (désactive shape keys bouche pendant parole)
+**Phase B1.3 — Rhubarb Lip-Sync**
+- [x] Intégrer Rhubarb lip-sync (NLA strip dédié, priorité sur zone bouche)
+- [x] Gérer conflit lip-sync/expressions (désactive shape keys bouche pendant parole)
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
 | 2026-02-26 | expression_schema.py — Bible Anatomique (794 lignes, 7 Piliers) | ✅ | PR #19 | N/A (pure Python) |
 | 2026-02-26 | Pipeline V2 — facial_extractor + blender_fusion + sync_engine + TRANSMUTATION | ✅ | PR #20 | N/A (pure Python + bpy) |
-| 2026-02-27 | Notebooks V2 + README_DEV.md — Documentation Armour | ✅ | PR #XX | N/A (docs) |
+| 2026-02-26 | Rhubarb lip-sync — rhubarb_bridge.py + NLA integration blender_fusion.py | ✅ | PR #22 | N/A (pure Python + bpy) |
+| 2026-02-27 | Notebooks V2 + README_DEV.md — Documentation Armour | ✅ | PR #23 | N/A (docs) |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : À mesurer (cible < 4GB — RÉDUIT vs V1 car zéro EMOCA)
 - Temps d'exécution moyen : À mesurer
 - [x] expression_schema.py : test "Expression Hérétique" passé
 - [x] expression_schema.py : 15 expressions + 9 yeux + 8 bouche = 32 presets complets
-- [ ] Marshal In-Check passé
-- [ ] Marshal Out-Check passé
-- [ ] Validation Souveraine
+- [x] Marshal In-Check passé
+- [x] Marshal Out-Check passé
+- [x] Validation Souveraine
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications U01
@@ -66,4 +67,4 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
 
-<!-- v2.3 — B1.1 + B1.2 complétées -->
+<!-- v3.0 — U01 SCELLÉ 100% — B1.1 + B1.2 + B1.3 complétées -->
