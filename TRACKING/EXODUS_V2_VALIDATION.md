@@ -65,9 +65,9 @@
 - [ ] Désactive shape keys bouche pendant segments de parole (priorité Rhubarb)
 
 ## U02 — LOGISTICS DEPOT
-- [ ] Lit `requires_u02` du PRODUCTION_PLAN.JSON
-- [ ] Skip complet si `requires_u02 == false`
-- [ ] Fonctionne normalement si `requires_u02 == true`
+- [x] Lit `requires_u02` du PRODUCTION_PLAN.JSON
+- [x] Skip complet si `requires_u02 == false`
+- [x] Fonctionne normalement si `requires_u02 == true`
 
 ## U03 — SCENOGRAPHY DOCK
 - [ ] N'utilise PAS McPrep (zéro import McPrep)

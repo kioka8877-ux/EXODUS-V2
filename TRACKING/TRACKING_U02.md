@@ -1,30 +1,43 @@
 # TRACKING – U02 LOGISTICS DEPOT (L'Armurerie)
 
 ## 1. OBJECTIF DE LA MUTATION (V2)
-Ajouter activation conditionnelle via `requires_u02` boolean du PRODUCTION_PLAN.JSON.
-Skip complet si pas de props détectés. MVP : pas d'améliorations complexes.
-Le workflow actuel (props_loader → socketing_engine → timeline_manager → final_baker) reste intact.
+Activation conditionnelle via `requires_u02` boolean du PRODUCTION_PLAN.JSON.
+Si `requires_u02 == false` : skip complet, copie directe acteur U01 → OUT_BAKED_ACTORS.
+Si `requires_u02 == true` : pipeline normal (props_loader → socketing_engine → timeline_manager → final_baker).
+Suppression de l'input fantôme IN_ROBLOX_AVATAR (l'avatar brut est consommé par U01 uniquement).
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
-- **Écarts constatés** : Le bypass conditionnel n'existe pas dans `EXO_02_LOGISTICS.py`. Le workflow actuel exécute toujours U02 sans condition.
-- **Goulot d'étranglement** : Faible — simple condition à ajouter
+- **Écarts constatés** : Bypass conditionnel manquant. IN_ROBLOX_AVATAR fantôme dans Marshal manifest. Documentation V1 non alignée.
+- **Goulot d'étranglement** : Faible — simple condition à ajouter + nettoyage manifest
 - **Risque VRAM/RAM** : FAIBLE
 
 ## 3. PLAN D'ACTION (BACKLOG)
-- [ ] Lire `requires_u02` du PRODUCTION_PLAN.JSON
-- [ ] Implémenter skip complet si `requires_u02 == false`
-- [ ] Tester le pipeline avec et sans props
+
+**Phase C1 — Bypass Conditionnel**
+- [x] Lire `requires_u02` du PRODUCTION_PLAN.JSON (production_notes.requires_u02)
+- [x] Implémenter skip complet si `requires_u02 == false` (copie directe + rapport SKIPPED)
+- [x] Tester le pipeline avec et sans props
+
+**Phase C2 — Nettoyage IN_ROBLOX_AVATAR**
+- [x] Supprimer IN_ROBLOX_AVATAR du manifest U02 dans EXO_MARSHAL.py
+- [x] Supprimer références IN_ROBLOX_AVATAR dans EXO_02_LOGISTICS.py
+- [x] Supprimer argument CLI --roblox-avatar
+- [x] Ajouter PRODUCTION_PLAN.JSON comme input required dans Marshal manifest
+
+**Phase C3 — Documentation V2**
+- [x] Mettre à jour notebooks (EXO_02_CONTROL.ipynb, EXO_02_PRODUCTION.ipynb)
+- [x] Mettre à jour README_DEV.md
+- [x] Mettre à jour UNIT_02_SUBPLAN.md
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
-| - | - | 🔴 | - | - |
+| 2026-02-27 | Bypass requires_u02 + suppression IN_ROBLOX_AVATAR + Docs V2 | ✅ | PR #25 | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
-- Consommation VRAM Max : À mesurer
-- Temps d'exécution moyen : À mesurer
-- [ ] Marshal Out-Check passé
-- [ ] Validation Souveraine
+- [x] Marshal In-Check passé
+- [x] Marshal Out-Check passé
+- [x] Validation Souveraine
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications U02
@@ -32,3 +45,5 @@ Le workflow actuel (props_loader → socketing_engine → timeline_manager → f
 - [MASTER](./TRACKING_MASTER.md) — Vue d'ensemble
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
+
+<!-- v2.0 — U02 SCELLÉ 100% -->
