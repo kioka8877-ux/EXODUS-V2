@@ -27,12 +27,13 @@ OUTPUTS:
 import argparse
 import json
 import os
+import shutil
 import sys
 import subprocess
 from pathlib import Path
 from datetime import datetime
 
-LOGISTICS_VERSION = "1.0.0"
+LOGISTICS_VERSION = "2.0.0"
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
 BLENDER_SUBDIR = "blender-4.0.0-linux-x64"
@@ -312,8 +313,6 @@ Exemples:
                         help='Fichier .blend de l\'avatar animé (cherché dans IN_MOTION_DATA/)')
     parser.add_argument('--production-plan', required=True,
                         help='PRODUCTION_PLAN.JSON du Cortex (chemin absolu ou relatif)')
-    parser.add_argument('--roblox-avatar',
-                        help='Avatar Roblox .blend (cherché dans IN_ROBLOX_AVATAR/)')
     parser.add_argument('--props-library',
                         help='Dossier props_library/ (défaut: IN_PROPS_LIBRARY/)')
     parser.add_argument('--output-dir',
@@ -331,7 +330,7 @@ Exemples:
     logger = LogisticsLogger(verbose=args.verbose)
     
     print("=" * 70)
-    print("   FRÉGATE 02_LOGISTICS — EXODUS ARMURERIE")
+    print("   FRÉGATE 02_LOGISTICS — EXODUS ARMURERIE V2")
     print(f"   Version {LOGISTICS_VERSION}")
     print("=" * 70)
     
@@ -339,7 +338,6 @@ Exemples:
     unit_root = drive_root / "02_LOGISTICS_DEPOT"
     
     motion_data_dir = unit_root / "IN_MOTION_DATA"
-    roblox_avatar_dir = unit_root / "IN_ROBLOX_AVATAR"
     props_library_dir = unit_root / "IN_PROPS_LIBRARY"
     
     actor_path = Path(args.actor_blend)
@@ -372,6 +370,38 @@ Exemples:
     
     blender_path = check_blender(drive_root, logger, args.blender_path)
     plan = validate_production_plan(plan_path, logger)
+
+    # === BYPASS CONDITIONNEL V2 ===
+    requires_u02 = plan.get("production_notes", {}).get("requires_u02", True)
+
+    if not requires_u02:
+        logger.info("requires_u02 = false — U02 SKIPPED (aucun prop requis)")
+        logger.info("Transfert direct : acteur U01 → OUT_BAKED_ACTORS sans modification")
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_blend = output_dir / f"{args.output_name}.blend"
+        shutil.copy2(str(actor_path), str(output_blend))
+        logger.success(f"Copie directe: {actor_path} → {output_blend}")
+
+        skip_report = {
+            "version": LOGISTICS_VERSION,
+            "timestamp": datetime.now().isoformat(),
+            "status": "SKIPPED",
+            "reason": "requires_u02 == false",
+            "input": {"actor": str(actor_path)},
+            "output": {"blend": str(output_blend), "abc": None}
+        }
+        report_path = output_dir / "logistics_report.json"
+        with open(report_path, 'w', encoding='utf-8') as f:
+            json.dump(skip_report, f, indent=2, ensure_ascii=False)
+        logger.success(f"Rapport skip: {report_path}")
+
+        print("\n" + "=" * 70)
+        logger.success("U02 SKIPPED — Aucun prop requis")
+        print("=" * 70)
+        sys.exit(0)
+
+    # Si on arrive ici, requires_u02 == true → pipeline normal
     props_mapping = validate_props_library(props_library, plan, logger)
     
     output_dir.mkdir(parents=True, exist_ok=True)

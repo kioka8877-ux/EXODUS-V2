@@ -1,15 +1,15 @@
-# SOUS-PLAN TECHNIQUE — UNITÉ 02: LOGISTICS DEPOT
+# SOUS-PLAN TECHNIQUE — UNITÉ 02: LOGISTICS DEPOT V2
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║              FRÉGATE 02_LOGISTICS — PLAN TECHNIQUE COMPLET                   ║
+║              FRÉGATE 02_LOGISTICS — PLAN TECHNIQUE V2                          ║
 ║                        Armurerie de la Flotte EXODUS                          ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ## Mission
 
-Assembler les avatars Roblox animés (de U01) avec leurs props selon les instructions du PRODUCTION_PLAN.JSON (de U00 Cortex). Produire des fichiers Alembic équipés prêts pour le rendu.
+Attacher les props (armes, objets) sur l'acteur animé de U01, selon les instructions du PRODUCTION_PLAN.JSON (de U00 Cortex). Bypass conditionnel si `requires_u02 == false`. Produire des fichiers Alembic équipés prêts pour le rendu.
 
 ---
 
@@ -35,16 +35,16 @@ Assembler les avatars Roblox animés (de U01) avec leurs props selon les instruc
 │   ├── timeline_manager.py      # Gestion visibilité keyframes
 │   ├── final_baker.py           # Export Alembic/Blend
 │   ├── requirements.txt         # Dépendances Python
-│   ├── EXO_02_CONTROL.ipynb     # Notebook debug
-│   └── EXO_02_PRODUCTION.ipynb  # Notebook batch
-├── IN_LOGISTICS/
-│   ├── actor_animated.blend     # Input: Avatar animé (de U01)
-│   ├── PRODUCTION_PLAN.JSON     # Input: Instructions (de U00)
-│   └── props_library/           # Arsenal d'objets
-│       ├── gun_pistol.glb
-│       ├── phone_smartphone.glb
-│       └── generic_prop.glb     # Placeholder
-├── OUT_EQUIPPED/
+│   ├── EXO_02_CONTROL.ipynb     # Notebook debug V2
+│   └── EXO_02_PRODUCTION.ipynb  # Notebook batch V2
+├── IN_MOTION_DATA/
+│   ├── actor_animated.blend     # Input: Acteur animé (de U01)
+│   └── PRODUCTION_PLAN.JSON     # Input: Instructions (de U00)
+├── IN_PROPS_LIBRARY/
+│   ├── gun_pistol.glb
+│   ├── phone_smartphone.glb
+│   └── generic_prop.glb         # Placeholder
+├── OUT_BAKED_ACTORS/
 │   ├── actor_equipped.abc       # Output: Alembic final
 │   ├── actor_equipped.blend     # Output: Backup éditable
 │   └── logistics_report.json    # Output: Rapport
@@ -58,7 +58,7 @@ Assembler les avatars Roblox animés (de U01) avec leurs props selon les instruc
 
 ### 1. actor_animated.blend (de U01)
 
-Avatar Roblox avec:
+Acteur animé avec:
 - Mesh riggé
 - Armature active avec bones nommés
 - Animation bakée sur timeline
@@ -100,7 +100,7 @@ Dossier contenant les props au format:
 ### 1. actor_equipped.abc
 
 Fichier Alembic contenant:
-- Tous les meshes (avatar + props)
+- Tous les meshes (acteur + props)
 - Animations avec props attachés
 - Transformations évaluées
 
@@ -116,10 +116,19 @@ Backup éditable avec:
 Rapport de production:
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "status": "SUCCESS",
   "attachments": [...],
   "logs": [...]
+}
+```
+
+En mode bypass:
+```json
+{
+  "version": "2.0.0",
+  "status": "SKIPPED",
+  "reason": "requires_u02 == false"
 }
 ```
 
@@ -127,13 +136,24 @@ Rapport de production:
 
 ## Pipeline Technique
 
+### Phase 0: Bypass Check (V2)
+
+```
+EXO_02_LOGISTICS.py
+    └── Charger PRODUCTION_PLAN.JSON
+    └── Lire production_notes.requires_u02
+    └── Si false:
+        └── Copier acteur U01 → OUT_BAKED_ACTORS/
+        └── Générer logistics_report.json (status: SKIPPED)
+        └── Exit 0
+```
+
 ### Phase 1: Validation
 
 ```
 EXO_02_LOGISTICS.py
     └── Valider chemins inputs
-    └── Charger PRODUCTION_PLAN.JSON
-    └── Scanner props_library
+    └── Scanner IN_PROPS_LIBRARY/
     └── Vérifier Blender disponible
 ```
 
@@ -258,8 +278,10 @@ Si l'export Alembic échoue:
 - [x] Backup Blend avec textures packées
 - [x] Rapport JSON détaillé
 - [x] Mode dry-run pour validation
-- [x] Notebook debug (EXO_02_CONTROL)
-- [x] Notebook batch (EXO_02_PRODUCTION)
+- [x] Notebook debug V2 (EXO_02_CONTROL)
+- [x] Notebook batch V2 (EXO_02_PRODUCTION)
+- [x] Bypass conditionnel requires_u02
+- [x] Rapport skip (status: SKIPPED)
 
 ---
 
@@ -273,11 +295,12 @@ Si l'export Alembic échoue:
 
 ---
 
-## Statut: 🟡 EN FORGE
+## Statut: 🟢 SCELLÉ
 
-**Date début forge**: 2026-02-03
+**Version**: v2.0.0
+**Date scellement**: 2026-02-27
 **Maître de Forge**: Vulkan
 
 ---
 
-*EXODUS SYSTEM — Frégate 02_LOGISTICS v1.0.0*
+*EXODUS SYSTEM — Frégate 02_LOGISTICS v2.0.0*
