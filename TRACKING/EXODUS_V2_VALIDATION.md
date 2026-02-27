@@ -71,12 +71,17 @@
 
 ## U03 — SCENOGRAPHY DOCK
 - [ ] N'utilise PAS McPrep (zéro import McPrep)
-- [ ] Couche A : Infinity Dome (demi-sphère avec texture vidéo)
-- [ ] Couche B : Displacement Mesh (plan subdivisé + Displace modifier + depth maps)
-- [ ] Couche C : PBR Swap (masques SAM → matériaux PBR)
-- [ ] Shadow Catcher activé sur le sol
-- [ ] Reflectivity Hack (plans Glass BSDF sur surfaces vitrées)
-- [ ] World Sync (HDRi aligné sur exposition source)
+- [ ] scene_schema.py définit collections, objets, world settings
+- [ ] validate_scene() passé sur chaque environment.blend produit
+- [ ] Custom properties présentes (.blend contient exodus_schema_version, exodus_frigate)
+- [ ] Couche A : Infinity Dome (demi-sphère UV + texture vidéo source)
+- [ ] Couche B : Displacement Mesh (plan 128×128 + Displace modifier + depth maps)
+- [ ] Anti-ghosting : depth maps nettoyées via SAM masks avant displacement
+- [ ] VRAM cap : max_subdivisions paramétrable (cible < 6GB)
+- [ ] Couche C : PBR Swap zones PROCHES uniquement (SAM labels → PBR presets)
+- [ ] Shadow Catcher = plan SÉPARÉ (is_shadow_catcher=True, distinct du displacement mesh)
+- [ ] Reflectivity Hack : plans Glass BSDF avec Z-offset 0.01m (anti z-fighting)
+- [ ] World Sync : Strength du World Shader aligné sur exposition vidéo source
 
 ## U04 — PHOTOGRAPHY WING
 - [ ] Perspective lock via fSpy ou tracker Blender (mouvement ±5% max)

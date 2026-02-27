@@ -46,26 +46,46 @@
 ### PHASE B : VIE & DÉCOR (Semaines 2-3)
 **Priorité : U01 + U03**
 
-#### B1.1 — expression_schema.py (Bible Anatomique) ← CIBLE COURANTE
-- [ ] U01 : Créer `expression_schema.py` — 7 Piliers (15 expressions, 9 yeux, 8 bouche, conflits, oppositions, ranges, intensité)
-- [ ] U01 : Rapport validation "Expression Hérétique"
-- [ ] U01 : Marshal In-Check passé
+#### B1.1 — expression_schema.py (Bible Anatomique) ✅ SCELLÉ
+- [x] U01 : Créer expression_schema.py — PR #19
+- [x] U01 : Rapport validation "Expression Hérétique" — PR #19
+- [x] U01 : Marshal In-Check passé — PR #19
 
-#### B1.2 — Réécriture Pipeline U01
-- [ ] U01 : Supprimer EMOCA, réécrire `facial_extractor.py` (Emotional Intent Transfer)
-- [ ] U01 : Adapter `blender_fusion.py` (NLA + F-Curve Noise + Bézier natif)
-- [ ] U01 : Simplifier `sync_engine.py`, adapter `EXO_01_TRANSMUTATION.py`
-- [ ] U01 : Mettre à jour notebooks
+#### B1.2 — Réécriture Pipeline U01 ✅ SCELLÉ
+- [x] U01 : Supprimer EMOCA, réécrire facial_extractor.py — PR #20
+- [x] U01 : Adapter blender_fusion.py (NLA + F-Curve Noise + Bézier natif) — PR #20
+- [x] U01 : Simplifier sync_engine.py, adapter EXO_01_TRANSMUTATION.py — PR #20
+- [x] U01 : Mettre à jour notebooks — PR #23
 
-#### B1.3 — Rhubarb Lip-Sync (Futur)
-- [ ] U01 : Intégrer Rhubarb lip-sync (NLA strip, priorité bouche)
+#### B1.3 — Rhubarb Lip-Sync ✅ SCELLÉ
+- [x] U01 : Intégrer Rhubarb lip-sync (NLA strip, priorité bouche) — PR #22
+- Statut : ✅ 100% SCELLÉ (PR #19-#23)
 
-#### B2 — U03 Scenography (Tri-Layer)
-- [ ] U03 : Supprimer McPrep, implémenter Tri-Layer System
-- [ ] U03 : Couche A — Infinity Dome (video texture on half-sphere)
-- [ ] U03 : Couche B — Displacement Mesh (depth maps → Displace)
-- [ ] U03 : Couche C — PBR Swap (SAM masks → PBR materials)
-- [ ] U03 : Shadow Catcher + Reflectivity Hack + World Sync
+#### B2 — U03 Scenography (Tri-Layer System)
+
+##### B2.0 — scene_schema.py (Contrat de Scène)
+- [ ] Créer scene_schema.py — Collections, objets, World settings, validate_scene()
+- [ ] Custom properties .blend (exodus_schema_version, exodus_frigate)
+
+##### B2.1 — Phase D1 (Quick Wins)
+- [ ] Couche A — Infinity Dome (demi-sphère + texture vidéo)
+- [ ] Shadow Catcher (plan séparé)
+- [ ] World Sync (exposition alignée)
+- [ ] Supprimer props_placer.py + environment_builder.py
+
+##### B2.2 — Phase D2 (Core technique)
+- [ ] Couche B — Displacement Mesh (128×128 + Displace + depth maps)
+- [ ] Anti-ghosting (nettoyage depth maps via SAM)
+- [ ] VRAM cap (max_subdivisions)
+
+##### B2.3 — Phase D3 (Polish)
+- [ ] Couche C — PBR Swap zones proches (SAM → PBR)
+- [ ] Reflectivity Hack (Glass BSDF + Z-offset 0.01m)
+- [ ] Refactor pbr_applicator.py + hdri_manager.py
+
+##### B2.4 — Documentation
+- [ ] Notebooks V2 + README_DEV.md + UNIT_03_SUBPLAN.md
+
 - Statut : 🔴 0%
 
 ### PHASE C : FINITION (Semaines 3-4)
@@ -92,8 +112,8 @@
 MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [███░░░░░░░] 🟢 25%
-Phase courante : PHASE B (Vie & Décor — U01 prochaine cible)
+Mutation V2 : [█████░░░░░] 🟢 50% — MARSHAL + U00 + U01 + U02 scellés
+Phase courante : PHASE B2 (Décor — U03 Tri-Layer System)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -103,4 +123,4 @@ Phase courante : PHASE B (Vie & Décor — U01 prochaine cible)
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.2 — B1.1 Cathédrale de Chair -->
+<!-- v2.4 — U03 TRACKING PREP -->
