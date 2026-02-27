@@ -7,7 +7,7 @@
 ║    blender --background --python layer_assembler.py -- [args]               ║
 ║                                                                              ║
 ║  Phase D1 : Dome + Shadow Catcher + World Sync                              ║
-║  Phase D2 (stub) : Displacement Mesh — placeholder                          ║
+║  Phase D2 : Displacement Mesh (ACTIVE)                                       ║
 ║  Phase D3 (stub) : PBR Swap + Glass — placeholders                          ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
@@ -26,6 +26,7 @@ if str(SCRIPT_DIR) not in sys.path:
 from dome_builder import build_infinity_dome, apply_dome_material
 from shadow_catcher_builder import build_shadow_catcher
 from world_sync import setup_world_sync, setup_render_settings
+from displacement_builder import build_displacement_mesh
 
 ASSEMBLER_VERSION = "2.0.0"
 
@@ -55,35 +56,6 @@ def _clear_scene() -> None:
         bpy.data.collections.remove(coll)
 
     print("[ASSEMBLER] Scène vidée")
-
-
-def _create_displacement_placeholder() -> bpy.types.Object:
-    """
-    Crée un displacement_mesh placeholder pour passer la validation scene_schema.
-
-    Phase D2 remplacera ce stub par la vraie géométrie depth-map.
-    - Plan 1x1 avec Displace modifier vide
-    - Texture type simulée via custom property
-    """
-    coll = _ensure_collection("ENV_TERRAIN")
-
-    bpy.ops.mesh.primitive_plane_add(size=1.0, location=(0, 0, -0.01))
-    mesh_obj = bpy.context.active_object
-    mesh_obj.name = "displacement_mesh"
-
-    disp_mod = mesh_obj.modifiers.new(name="Displace", type="DISPLACE")
-    disp_tex = bpy.data.textures.new("depth_placeholder", type="IMAGE")
-    disp_mod.texture = disp_tex
-
-    mesh_obj["exodus_texture_type"] = "DEPTH_MAP_PNG"
-    mesh_obj["exodus_stub"] = True
-
-    for existing_coll in mesh_obj.users_collection:
-        existing_coll.objects.unlink(mesh_obj)
-    coll.objects.link(mesh_obj)
-
-    print("[ASSEMBLER] displacement_mesh placeholder créé (D2 stub)")
-    return mesh_obj
 
 
 def _stamp_custom_properties(active_layers: str) -> None:
@@ -129,14 +101,16 @@ def _build_scene_report() -> Dict:
         if key in scene:
             props[key] = scene[key]
 
-    dm_info = {"subdivisions": 128, "has_displace_modifier": False, "texture_type": ""}
+    dm_info = {"subdivisions": 0, "has_displace_modifier": False, "texture_type": ""}
     dm_obj = bpy.data.objects.get("displacement_mesh")
     if dm_obj:
         for mod in dm_obj.modifiers:
             if mod.type == "DISPLACE":
                 dm_info["has_displace_modifier"] = True
-                break
+            if mod.type == "SUBSURF":
+                dm_info["subdivisions"] = 2 ** mod.levels
         dm_info["texture_type"] = dm_obj.get("exodus_texture_type", "")
+        dm_info["exodus_stub"] = dm_obj.get("exodus_stub", False)
 
     sc_info = {"is_shadow_catcher": False, "visible_camera": True, "visible_diffuse": True}
     sc_obj = bpy.data.objects.get("shadow_catcher")
@@ -174,8 +148,8 @@ def assemble_scene(
     - World Sync (world_sync)
     - Custom Properties exodus_*
 
-    Phase D2 (stub) :
-    - Couche B : Displacement Mesh — placeholder collection ENV_TERRAIN
+    Phase D2 active :
+    - Couche B : Displacement Mesh — depth map displacement (ENV_TERRAIN)
 
     Phase D3 (stub) :
     - Couche C : PBR Swap — placeholder collection ENV_PBR
@@ -228,12 +202,17 @@ def assemble_scene(
 
     setup_render_settings(engine="CYCLES", samples=128)
 
-    _create_displacement_placeholder()
+    displacement_obj = build_displacement_mesh(
+        collection_name="ENV_TERRAIN",
+        depth_map_dir=depth_map_dir,
+        semantic_masks_path=semantic_masks_path,
+        vram_profile=vram_profile,
+    )
 
     _ensure_collection("ENV_GLASS")
     _ensure_collection("ENV_PBR")
 
-    active_layers = "dome,shadow,world_sync"
+    active_layers = "dome,shadow,world_sync,displacement"
     _stamp_custom_properties(active_layers)
 
     try:
