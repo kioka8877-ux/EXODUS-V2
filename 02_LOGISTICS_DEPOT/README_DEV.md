@@ -1,10 +1,10 @@
-# 🛠️ README DEV — LOGISTICS DEPOT
+# 🛠️ README DEV — LOGISTICS DEPOT V2
 
 ## Guide Développeur
 
 ```
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║              FRÉGATE 02_LOGISTICS — DEVELOPER GUIDE                          ║
+║              FRÉGATE 02_LOGISTICS — DEVELOPER GUIDE V2                       ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ```
 
@@ -43,6 +43,8 @@ python EXO_02_LOGISTICS.py \
     -v
 ```
 
+> **Note V2**: Si `requires_u02 == false` dans le PRODUCTION_PLAN.JSON, le pipeline skip automatiquement et copie directement l'acteur U01 vers OUT_BAKED_ACTORS/.
+
 ---
 
 ## 📦 Installation Blender 4.0
@@ -73,17 +75,19 @@ python EXO_02_LOGISTICS.py [OPTIONS]
 
 # Required
 --drive-root PATH         Racine du Drive EXODUS
---actor-blend FILE        Actor .blend animé (de U01)
---production-plan FILE    PRODUCTION_PLAN.JSON du Cortex
+--actor-blend FILE        Actor .blend animé (de U01, cherché dans IN_MOTION_DATA/)
+--production-plan FILE    PRODUCTION_PLAN.JSON du Cortex (cherché dans IN_MOTION_DATA/)
 
 # Optional
---props-library PATH      Dossier props_library/ (défaut: IN_LOGISTICS/props_library)
---output-dir PATH         Dossier output (défaut: OUT_EQUIPPED/)
+--props-library PATH      Dossier props (défaut: IN_PROPS_LIBRARY/)
+--output-dir PATH         Dossier output (défaut: OUT_BAKED_ACTORS/)
 --output-name NAME        Nom output (défaut: actor_equipped)
 --blender-path PATH       Chemin custom vers Blender
 -v, --verbose             Logs détaillés
 --dry-run                 Validation sans exécution
 ```
+
+> **Bypass conditionnel**: Si `requires_u02 == false` dans le PRODUCTION_PLAN.JSON (`production_notes.requires_u02`), le pipeline skip automatiquement — l'acteur est copié directement, un `logistics_report.json` avec `"status": "SKIPPED"` est généré.
 
 ### Exemples
 
@@ -335,6 +339,10 @@ for att in report['attachments']:
 
 ## 📊 Performance Tips
 
+### Bypass mode
+
+Quand `requires_u02 == false`, le pipeline skip en < 1 sec (copie directe de l'acteur sans lancer Blender).
+
 ### Optimiser les Props
 
 1. Utilisez GLB plutôt que FBX (import plus rapide)
@@ -372,10 +380,10 @@ Utiliser `EXO_02_PRODUCTION.ipynb` pour traiter plusieurs acteurs en séquence.
 ## 📁 Output Format
 
 ### Dual Export
-Le pipeline génère deux outputs:
+Le pipeline génère les outputs dans `OUT_BAKED_ACTORS/`:
 
 ```
-OUT_EQUIPPED/
+OUT_BAKED_ACTORS/
 ├── actor_equipped.abc       # Alembic avec props
 ├── actor_equipped.blend     # Backup éditable
 └── logistics_report.json    # Rapport détaillé
@@ -394,7 +402,7 @@ OUT_EQUIPPED/
 ### Rapport JSON
 ```json
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "timestamp": "2026-02-03T12:00:00",
   "status": "SUCCESS",
   "attachments": [
@@ -406,6 +414,17 @@ OUT_EQUIPPED/
       "resolved": true
     }
   ]
+}
+```
+
+### Rapport Skip (bypass)
+```json
+{
+  "version": "2.0.0",
+  "status": "SKIPPED",
+  "reason": "requires_u02 == false",
+  "input": {"actor": "actor_animated.blend"},
+  "output": {"blend": "actor_equipped.blend", "abc": null}
 }
 ```
 
@@ -421,6 +440,15 @@ OUT_EQUIPPED/
 
 ## 📝 Changelog
 
+### v2.0.0
+- Bypass conditionnel `requires_u02` — skip automatique si aucun prop requis
+- Suppression de l'input `IN_ROBLOX_AVATAR` (artéfact V1 inutilisé)
+- Ajout `PRODUCTION_PLAN.JSON` comme input required dans le manifest Marshal
+- Dossiers renommés: `IN_MOTION_DATA/`, `IN_PROPS_LIBRARY/`, `OUT_BAKED_ACTORS/`
+- Rapport skip avec `"status": "SKIPPED"` pour traçabilité
+- Notebooks CONTROL et PRODUCTION réécrits V2 avec bypass check et Marshal
+- Version bump CLI + banner V2
+
 ### v1.0.0
 - Initial release
 - Socket-based attachment system
@@ -431,4 +459,4 @@ OUT_EQUIPPED/
 
 ---
 
-*EXODUS SYSTEM — Frégate 02_LOGISTICS v1.0.0*
+*EXODUS SYSTEM — Frégate 02_LOGISTICS v2.0.0*

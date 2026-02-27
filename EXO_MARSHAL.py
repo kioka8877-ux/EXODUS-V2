@@ -61,10 +61,8 @@ MANIFEST = {
         "folder": "02_LOGISTICS_DEPOT",
         "in": {
             "IN_MOTION_DATA": [
-                {"pattern": "*.blend", "required": True, "min_count": 1, "description": "Animated actor from U01"}
-            ],
-            "IN_ROBLOX_AVATAR": [
-                {"pattern": "*.blend", "required": True, "min_count": 1, "description": "Roblox avatar model"}
+                {"pattern": "*.blend", "required": True, "min_count": 1, "description": "Animated actor from U01"},
+                {"pattern": "PRODUCTION_PLAN.JSON", "required": True, "validate": "json", "description": "Production plan from U00"}
             ],
             "IN_PROPS_LIBRARY": [
                 {"pattern": "*", "required": False, "description": "Props assets (optional based on requires_u02)"}
