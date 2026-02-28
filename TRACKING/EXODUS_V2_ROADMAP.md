@@ -91,10 +91,26 @@
 ### PHASE C : FINITION (Semaines 3-4)
 **Priorité : U02 + U04 + U05 + U06**
 - [x] U02 : Ajouter bypass conditionnel (requires_u02)
-- [ ] U04 : Intégrer fSpy perspective lock (±5%)
-- [ ] U04 : Auto-DOF (Empty sur buste avatar)
-- [ ] U04 : Shake procédural (Noise modifier)
-- [ ] U04 : Volume Scatter + lampes invisibles
+#### C1 — U04 Architecture (Documentation)
+- [ ] ARCHITECTURE_U04.md (note technique split A/B)
+- [ ] Mise à jour TRACKING_U04.md, TRACKING_MASTER.md
+- Statut : 🟢 EN COURS
+
+#### C2 — U04-A Director (Configuration .blend)
+- [ ] camera_schema.py (Bible Optique — fondation)
+- [ ] fspy_tracker.py (Pilier A — Perspective Lock ±5%)
+- [ ] auto_dof.py (Pilier B — Empty sur buste avatar)
+- [ ] Réécrire shake → Noise modifier (Pilier C)
+- [ ] apply_atmosphere() + invisible lamps (Pilier D)
+- [ ] check_frustum() (Alerte frustum)
+- [ ] render_forge.py (config Cycles — PAS de rendu)
+- [ ] Câblage EXO_04_PHOTOGRAPHY.py
+- Statut : 🟡 EN ATTENTE (après C1)
+
+#### C3 — U04-B Darkroom (Rendu — PLANIFIÉ)
+- [ ] Brainstorming infrastructure (Colab/Cloud/Local)
+- [ ] Implémentation batch rendering
+- Statut : 🔴 PLANIFIÉ (après C2)
 - [ ] U05 : Match Color (alignement histogramme)
 - [ ] U05 : Film Grain matching (extraction grain source)
 - [ ] U05 : Bloom/Glow bleed
@@ -123,4 +139,4 @@ Phase courante : PHASE B2 (Décor — U03 Tri-Layer System)
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.4 — U03 TRACKING PREP -->
+<!-- v2.5 — U04 Split A/B -->

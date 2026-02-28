@@ -8,7 +8,7 @@
 | 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟢 SCELLÉ (PR #19-#23) | — |
 | 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟢 SCELLÉ (PR #25) | — |
 | 3 | U03 | SCENOGRAPHY DOCK | 🔴 P0 | 5% | 🔴 BLOQUÉ | Architecture à réécrire |
-| 4 | U04 | PHOTOGRAPHY WING | 🟡 P1 | 40% | 🟡 EN ATTENTE | fSpy + DOF + Shake |
+| 4 | U04 | PHOTOGRAPHY WING | 🟡 P1 | 40% | 🟡 U04-A EN ATTENTE | Split A/B documenté. fSpy + DOF + Shake + Atmosphere |
 | 5 | U05 | ALCHEMIST LAB | 🟡 P1 | 50% | 🟡 EN ATTENTE | Match Color + Grain |
 | 6 | U06 | AIRCRAFT CARRIER | 🟢 P2 | 80% | 🟡 EN ATTENTE | Ratio lock + CRF |
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
@@ -16,8 +16,8 @@
 ## PROGRESSION GLOBALE
 Mutation V2 : [█████░░░░░] 50% — MARSHAL + U00 + U01 + U02 scellés
 Frégates conformes : 4/8 (MARSHAL, U00, U01, U02)
-Phase courante : PHASE B (Vie & Décor — U03 prochaine cible)
-Dernière frappe : PR #25 — U02 Bypass Conditionnel (2026-02-27)
+Phase courante : PHASE C (Finition — U04-A prochaine cible)
+Dernière frappe : Architecture U04 split A/B documentée
 
 ## LÉGENDE
 - 🔴 BLOQUÉ : Écart majeur, réécriture nécessaire
@@ -30,4 +30,4 @@ Dernière frappe : PR #25 — U02 Bypass Conditionnel (2026-02-27)
 - [VALIDATION](./EXODUS_V2_VALIDATION.md) | [RISKS](./EXODUS_V2_RISKS.md) | [TRANSFERS](./EXODUS_V2_TRANSFER_LOG.md)
 - [U00](./TRACKING_U00.md) | [U01](./TRACKING_U01.md) | [U02](./TRACKING_U02.md) | [U03](./TRACKING_U03.md) | [U04](./TRACKING_U04.md) | [U05](./TRACKING_U05.md) | [U06](./TRACKING_U06.md) | [MARSHAL](./TRACKING_MARSHAL.md)
 
-<!-- v2.3 — U02 SCELLÉ -->
+<!-- v2.4 — U04 Architecture Split A/B -->
