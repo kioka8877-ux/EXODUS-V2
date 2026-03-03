@@ -7,11 +7,11 @@
 
 | Unité | Nom | Statut | Date Scellage |
 |-------|-----|--------|---------------|
-| U00 | CORTEX HQ | 🟢 SCELLÉE | 2026-02-02 |
-| U01 | ANIMATION ENGINE | ⚪ EN ATTENTE | - |
-| U02 | LOGISTICS DEPOT | 🟡 EN FORGE | - |
-| U03 | SCENOGRAPHY DOCK | ⚪ EN ATTENTE | - |
-| U04 | PHOTOGRAPHY WING | ⚪ EN ATTENTE | - |
+| U00 | CORTEX HQ | 🟢 SCELLÉE | 2026-02-26 |
+| U01 | ANIMATION ENGINE | 🟢 SCELLÉE | 2026-02-27 |
+| U02 | LOGISTICS DEPOT | 🟢 SCELLÉE | 2026-02-27 |
+| U03 | SCENOGRAPHY DOCK | 🟢 SCELLÉE | 2026-02-28 |
+| U04 | PHOTOGRAPHY WING | 🟡 EN FORGE | - |
 | U05 | ALCHEMIST LAB | ⚪ EN ATTENTE | - |
 | U06 | AIRCRAFT CARRIER | ⚪ EN ATTENTE | - |
 
@@ -25,14 +25,20 @@
 |------|-------|-------|--------|------------|
 | 2026-02-02 | U00 | OMEGA | Frégate scellée | ✅ |
 | 2026-02-03 | U02 | ALPHA | Forge initiée — Armurerie | ⏳ |
+| 2026-02-26 | MARSHAL | OMEGA | Fantôme scellé | ✅ |
+| 2026-02-26 | U00 | OMEGA | 6 moteurs opérationnels | ✅ |
+| 2026-02-27 | U01 | OMEGA | Bible Anatomique + Pipeline + Rhubarb | ✅ |
+| 2026-02-27 | U02 | OMEGA | Bypass conditionnel + nettoyage | ✅ |
+| 2026-02-28 | U03 | OMEGA | Tri-Layer System complet (D0-D4) | ✅ |
+| 2026-03-03 | U04 | ALPHA | Architecture split A/B documentée | ⏳ |
 
 ---
 
 ## COMPTEUR DE GUERRE
 
 ```
-Progression: [██░░░░░░░░] 1/7 Unités Scellées (14%)
-En Forge:    [█░░░░░░░░░] 1/7 Unités (U02)
+Progression: [██████░░░░] 5/8 Unités Scellées (63%)
+En Forge:    [█░░░░░░░░░] 1/8 Unités (U04)
 Objectif: 100% Flotte Opérationnelle
 ```
 
