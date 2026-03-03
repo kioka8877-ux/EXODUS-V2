@@ -19,8 +19,16 @@ import argparse
 import json
 import sys
 import math
-import random
 from pathlib import Path
+from camera_schema import (
+    CAMERA_STYLES,
+    VALID_CAMERA_STYLES,
+    DEFAULT_CAMERA_STYLE,
+    MOVEMENT_SPEEDS,
+    CUT_PRESETS,
+    SHAKE_PRESETS,
+    DEFAULT_SHAKE_PRESET,
+)
 
 try:
     import bpy
@@ -31,22 +39,6 @@ except ImportError:
     print("[CAMERA_DIRECTOR] Blender non disponible - mode test")
 
 
-CAMERA_STYLES = ["dolly", "orbit", "static", "handheld", "tracking"]
-DEFAULT_CAMERA_STYLE = "static"
-
-MOVEMENT_SPEEDS = {
-    "slow": 0.3,
-    "medium": 1.0,
-    "fast": 2.5
-}
-
-CUT_TYPES = {
-    "wide": {"fov": 60, "distance_mult": 2.5},
-    "medium": {"fov": 50, "distance_mult": 1.5},
-    "closeup": {"fov": 35, "distance_mult": 0.8},
-    "extreme_closeup": {"fov": 25, "distance_mult": 0.4},
-    "dutch_angle": {"fov": 45, "distance_mult": 1.2, "roll": 15}
-}
 
 
 class CameraDirector:
@@ -285,7 +277,7 @@ class CameraDirector:
         })
     
     def apply_style_handheld(self, config: dict, frame_start: int, frame_end: int):
-        """Style HANDHELD: micro-mouvements aléatoires (noise)."""
+        """Style HANDHELD: shake procédural via Noise modifier sur F-Curves rotation."""
         self.log("Application style: HANDHELD")
         
         if not BLENDER_AVAILABLE:
@@ -301,40 +293,25 @@ class CameraDirector:
             center[2] + bounds[2] * 0.3
         )
         
-        noise_amplitude = 0.05
-        noise_freq = 5
-        
-        for frame in range(frame_start, frame_end + 1, noise_freq):
-            offset = (
-                random.gauss(0, noise_amplitude),
-                random.gauss(0, noise_amplitude),
-                random.gauss(0, noise_amplitude * 0.5)
-            )
-            
-            pos = (
-                base_pos[0] + offset[0],
-                base_pos[1] + offset[1],
-                base_pos[2] + offset[2]
-            )
-            
-            self.camera_obj.location = pos
-            self.camera_obj.keyframe_insert(data_path="location", frame=frame)
-            
-            rot_offset = (
-                random.gauss(0, 0.005),
-                random.gauss(0, 0.005),
-                random.gauss(0, 0.002)
-            )
-            
-            self.camera_obj.rotation_euler = rot_offset
-            self.camera_obj.keyframe_insert(data_path="rotation_euler", frame=frame)
+        self.camera_obj.location = base_pos
+        self.camera_obj.keyframe_insert(data_path="location", frame=frame_start)
         
         self.setup_camera_constraints(track_target=True)
+        
+        # --- Shake preset from camera_schema ---
+        shake_name = config.get("shake_preset", DEFAULT_SHAKE_PRESET)
+        if shake_name not in SHAKE_PRESETS:
+            self.log(f"Shake preset '{shake_name}' inconnu, fallback '{DEFAULT_SHAKE_PRESET}'")
+            shake_name = DEFAULT_SHAKE_PRESET
+        shake = SHAKE_PRESETS[shake_name]
+        
+        # Apply Noise modifier on rotation_euler F-Curves
+        self._apply_noise_shake(shake, frame_start, frame_end)
         
         self.set_fov(40)
         self.operations.append({
             "action": "style", "type": "handheld",
-            "base_pos": base_pos, "noise": noise_amplitude,
+            "base_pos": base_pos, "shake_preset": shake_name,
             "frames": [frame_start, frame_end]
         })
     
@@ -399,11 +376,52 @@ class CameraDirector:
                     keyframe.handle_left_type = 'AUTO_CLAMPED'
                     keyframe.handle_right_type = 'AUTO_CLAMPED'
     
+    def _apply_noise_shake(self, shake_preset: dict, frame_start: int, frame_end: int):
+        """Applique un Noise modifier sur les F-Curves de rotation/location."""
+        if not BLENDER_AVAILABLE or not self.camera_obj:
+            return
+        
+        # Ensure animation data exists
+        if not self.camera_obj.animation_data:
+            self.camera_obj.animation_data_create()
+        if not self.camera_obj.animation_data.action:
+            self.camera_obj.animation_data.action = bpy.data.actions.new(
+                name=f"{self.camera_obj.name}_Action"
+            )
+        
+        action = self.camera_obj.animation_data.action
+        
+        for axis_path in shake_preset["axes"]:
+            # rotation_euler has 3 channels (X, Y, Z)
+            num_channels = 3
+            for channel_idx in range(num_channels):
+                # Find or create the F-Curve
+                fcurve = action.fcurves.find(axis_path, index=channel_idx)
+                if fcurve is None:
+                    fcurve = action.fcurves.new(data_path=axis_path, index=channel_idx)
+                    # Insert a base keyframe so the fcurve exists
+                    fcurve.keyframe_points.insert(frame_start, 0.0)
+                
+                # Add Noise modifier
+                noise_mod = fcurve.modifiers.new(type='NOISE')
+                noise_mod.strength = shake_preset["strength"]
+                noise_mod.scale = shake_preset["scale"]
+                noise_mod.phase = shake_preset["phase"] + channel_idx * 33.0
+                noise_mod.offset = shake_preset["offset"]
+                noise_mod.depth = shake_preset["depth"]
+                noise_mod.use_restricted_range = True
+                noise_mod.frame_start = float(frame_start)
+                noise_mod.frame_end = float(frame_end)
+                noise_mod.blend_in = 10.0
+                noise_mod.blend_out = 10.0
+        
+        self.debug(f"Noise shake appliqué: axes={shake_preset['axes']}, strength={shake_preset['strength']}")
+    
     def apply_style(self, style: str, config: dict, frame_start: int, frame_end: int):
         """Applique le style caméra demandé."""
         style = style.lower()
         
-        if style not in CAMERA_STYLES:
+        if style not in VALID_CAMERA_STYLES:
             self.log(f"Style '{style}' inconnu, fallback vers 'static'")
             style = "static"
         
@@ -420,6 +438,108 @@ class CameraDirector:
             self.apply_style_handheld(config, frame_start, frame_end)
         elif style == "tracking":
             self.apply_style_tracking(config, frame_start, frame_end)
+        elif style == "matchmove":
+            self.apply_style_matchmove(config, frame_start, frame_end)
+    
+    def apply_style_matchmove(self, config: dict, frame_start: int, frame_end: int):
+        """Style MATCHMOVE: reproduit la caméra source via fSpy perspective lock."""
+        self.log("Application style: MATCHMOVE")
+        
+        if not BLENDER_AVAILABLE:
+            return
+        
+        from fspy_tracker import FspyTracker
+        
+        json_path = config.get("fov_json_path", None)
+        if not json_path:
+            self.log("ERREUR: fov_json_path requis pour le style matchmove")
+            return
+        
+        tracker = FspyTracker(verbose=self.verbose)
+        result = tracker.process(self.camera_obj, json_path)
+        
+        # Position camera at scene center, looking at target
+        center = self.get_scene_center()
+        bounds = self.get_scene_bounds()
+        distance = max(bounds) * 2.0
+        
+        self.camera_obj.location = (
+            center[0] + distance * 0.7,
+            center[1] - distance * 0.7,
+            center[2] + distance * 0.3
+        )
+        
+        self.setup_camera_constraints(track_target=True)
+        
+        self.operations.append({
+            "action": "style", "type": "matchmove",
+            "fspy_result": result,
+            "frames": [frame_start, frame_end]
+        })
+    
+    def check_frustum(self) -> dict:
+        """Vérifie si l'avatar (armature/mesh principal) est dans le champ de la caméra.
+        Retourne un dict avec 'in_frustum' bool et 'details'."""
+        if not BLENDER_AVAILABLE or not self.camera_obj:
+            return {"in_frustum": True, "details": "Blender indisponible — check simulé"}
+        
+        scene = bpy.context.scene
+        cam = self.camera_obj
+        
+        # Find the main subject (armature or actor mesh)
+        subject = None
+        for obj in bpy.data.objects:
+            if obj.type == 'ARMATURE':
+                subject = obj
+                break
+        if subject is None:
+            for obj in bpy.data.objects:
+                if obj.type == 'MESH' and 'actor' in obj.name.lower():
+                    subject = obj
+                    break
+        
+        if subject is None:
+            self.log("WARN: Aucun sujet trouvé pour le frustum check")
+            return {"in_frustum": True, "details": "no_subject_found"}
+        
+        # Get subject center in camera normalized coords
+        subject_world = subject.matrix_world.translation
+        cam_matrix = cam.matrix_world.normalized().inverted()
+        subject_cam = cam_matrix @ subject_world
+        
+        # Check if behind camera (negative Z in camera space = in front)
+        if subject_cam.z > 0:
+            self.log(f"ALERTE FRUSTUM: '{subject.name}' est DERRIÈRE la caméra!")
+            return {"in_frustum": False, "details": "behind_camera", "subject": subject.name}
+        
+        # Project to normalized device coordinates
+        cam_data = cam.data
+        frame = cam_data.view_frame(scene=scene)
+        frame = [cam_matrix @ (cam.matrix_world @ v) for v in frame]
+        
+        # Simple bounds check using angle
+        half_fov = cam_data.angle / 2
+        angle_to_subject = math.atan2(
+            math.sqrt(subject_cam.x**2 + subject_cam.y**2),
+            abs(subject_cam.z)
+        )
+        
+        margin = 1.2  # 20% margin
+        in_frustum = angle_to_subject < (half_fov * margin)
+        
+        if not in_frustum:
+            self.log(f"ALERTE FRUSTUM: '{subject.name}' est HORS CHAMP!")
+        else:
+            self.debug(f"Frustum OK: '{subject.name}' dans le champ")
+        
+        result = {
+            "in_frustum": in_frustum,
+            "subject": subject.name,
+            "angle_to_subject_deg": math.degrees(angle_to_subject),
+            "half_fov_deg": math.degrees(half_fov),
+        }
+        self.operations.append({"action": "check_frustum", **result})
+        return result
     
     def get_operations(self) -> list:
         return self.operations
