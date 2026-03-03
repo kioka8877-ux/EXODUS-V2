@@ -4,9 +4,10 @@
 ║             EXO_04_PHOTOGRAPHY — CINÉMATIQUE DE LA FLOTTE EXODUS             ║
 ║              Tracking Caméra + Éclairage Cinématique Automatisés             ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Version: 1.0.0                                                              ║
+║  Version: 2.0.0                                                              ║
 ║  Mission: Configurer caméras et lumières selon PRODUCTION_PLAN.JSON          ║
 ║  Stack: Blender 4.0 Headless + Keyframe Animation + Light Rigs              ║
+║  V2: fSpy Perspective Lock, Auto-DOF, Noise Shake, Volume Scatter           ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 LOI D'ISOLATION DES SILOS:
@@ -32,7 +33,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-PHOTOGRAPHY_VERSION = "1.0.0"
+PHOTOGRAPHY_VERSION = "2.0.0"
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
 BLENDER_SUBDIR = "blender-4.0.0-linux-x64"
@@ -189,7 +190,12 @@ def run_blender_photography(
     scene_config: dict,
     output_dir: str,
     scene_id: str,
-    logger: PhotographyLogger
+    logger: PhotographyLogger,
+    camera_fov_json: str = None,
+    preset: str = "production",
+    no_atmosphere: bool = False,
+    no_dof: bool = False,
+    shake_preset: str = "handheld",
 ) -> bool:
     """
     Exécute Blender en mode headless pour configurer caméra et éclairage.
@@ -203,6 +209,13 @@ def run_blender_photography(
         logger.error(f"Script camera_director introuvable: {director_script}")
         return False
     
+    scene_config["_v2_options"] = {
+        "camera_fov_json": camera_fov_json,
+        "preset": preset,
+        "no_atmosphere": no_atmosphere,
+        "no_dof": no_dof,
+        "shake_preset": shake_preset,
+    }
     scene_config_json = json.dumps(scene_config)
     
     cmd = [
@@ -322,6 +335,18 @@ Exemples:
                         help='Logs détaillés')
     parser.add_argument('--dry-run', action='store_true',
                         help='Valider les chemins sans exécuter')
+    parser.add_argument('--camera-fov-json',
+                        help='Chemin vers camera_fov_ratio.json (U00) pour fSpy perspective lock')
+    parser.add_argument('--preset', default='production',
+                        choices=['production', 'preview'],
+                        help='Preset de rendu Cycles (défaut: production)')
+    parser.add_argument('--no-atmosphere', action='store_true',
+                        help='Désactiver Volume Scatter + lampes invisibles')
+    parser.add_argument('--no-dof', action='store_true',
+                        help='Désactiver Auto-DOF')
+    parser.add_argument('--shake-preset', default='handheld',
+                        choices=['handheld', 'subtle', 'aggressive'],
+                        help='Preset de shake caméra (défaut: handheld)')
     
     args = parser.parse_args()
     logger = PhotographyLogger(verbose=args.verbose)
@@ -403,7 +428,12 @@ Exemples:
             scene,
             str(output_dir),
             str(scene_id),
-            logger
+            logger,
+            camera_fov_json=args.camera_fov_json,
+            preset=args.preset,
+            no_atmosphere=args.no_atmosphere,
+            no_dof=args.no_dof,
+            shake_preset=args.shake_preset,
         )
         results[scene_id] = success
     
@@ -419,6 +449,10 @@ Exemples:
     if total_failed == len(results) and len(results) > 0:
         logger.error("Toutes les scènes ont échoué")
         sys.exit(1)
+    
+    logger.info(f"Pipeline V2: preset={args.preset}, fov_json={'yes' if args.camera_fov_json else 'no'}, "
+                f"dof={'off' if args.no_dof else 'on'}, atmosphere={'off' if args.no_atmosphere else 'on'}, "
+                f"shake={args.shake_preset}")
     
     print("\n" + "=" * 70)
     logger.success(f"PHOTOGRAPHIE COMPLÈTE")

@@ -10,24 +10,24 @@ Fidélité cinématographique — la caméra 3D doit reproduire la caméra sourc
 - **U04-B (Darkroom)** : Lance le rendu batch. ~15-45h. Output = frames EXR/PNG. PLANIFIÉ.
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
-- **Écarts constatés** : `camera_director.py` existe mais manque fSpy integration, DOF automatique, shake procédural (utilise random.gauss au lieu de Noise modifier). `lighting_rig.py` manque Volume Scatter + lampes invisibles. Presets dupliqués entre `camera_director.py` et `cuts_engine.py`.
+- **Écarts constatés** : TOUS CORRIGÉS par U04-A.
 - **Goulot d'étranglement** : Rendu GPU (résolu par séparation A/B)
 - **Risque VRAM/RAM** : FAIBLE (U04-A ne fait pas de rendu)
-- **Fondation manquante** : Pas de `camera_schema.py` (Bible Optique) — les presets sont éparpillés et dupliqués.
+- **Fondation** : `camera_schema.py` (Bible Optique) — source unique de vérité pour presets.
 
 ## 3. PLAN D'ACTION (BACKLOG)
 
-### U04-A — DIRECTOR (Configuration .blend)
-- [ ] `camera_schema.py` — Bible Optique (fondation, Python pur, zéro Blender, self_test)
-- [ ] `fspy_tracker.py` — Pilier A : Perspective Lock fSpy ±5%
-- [ ] `auto_dof.py` — Pilier B : Empty parenté au buste avatar → DOF automatique
-- [ ] Réécrire shake `camera_director.py` — Pilier C : Noise modifier (remplacer random.gauss)
-- [ ] `lighting_rig.py` : apply_atmosphere() + place_invisible_lamps() — Pilier D
-- [ ] `camera_director.py` : check_frustum() — Alerte avatar hors champ
-- [ ] `render_forge.py` — Config Cycles + passes + résolution (PAS de rendu)
-- [ ] Centraliser presets dans `camera_schema.py` (supprimer duplication CUT_TYPES/CUT_PRESETS)
-- [ ] Câbler `EXO_04_PHOTOGRAPHY.py` (nouveaux modules + arguments CLI)
-- [ ] Mettre à jour documentation (UNIT_04_SUBPLAN.md, README_DEV.md)
+### U04-A — DIRECTOR (Configuration .blend) ✅ SCELLÉ
+- [x] `camera_schema.py` — Bible Optique (533 lignes, 8 piliers, self_test 7/7) — PR #34
+- [x] `fspy_tracker.py` — Pilier A : Perspective Lock fSpy ±5% — PR #35
+- [x] `auto_dof.py` — Pilier B : Empty parenté au buste avatar → DOF automatique — PR #35
+- [x] `render_forge.py` — Config Cycles + passes + résolution (PAS de rendu) — PR #35
+- [x] Réécrire shake `camera_director.py` — Pilier C : Noise modifier (random.gauss supprimé) — PR #36
+- [x] `lighting_rig.py` : apply_atmosphere() + place_invisible_lamps() — Pilier D — PR #36
+- [x] `camera_director.py` : check_frustum() + matchmove style — PR #36
+- [x] Centraliser presets dans `camera_schema.py` (duplication CUT_PRESETS/TRANSITION_TYPES supprimée) — PR #37
+- [x] Câbler `EXO_04_PHOTOGRAPHY.py` v2.0.0 (nouveaux modules + arguments CLI) — PR #37
+- [x] Mettre à jour documentation (UNIT_04_SUBPLAN.md, README_DEV.md) — PR #37
 
 ### U04-B — DARKROOM (Rendu — PLANIFIÉ, PAS DÉVELOPPÉ)
 - [ ] Brainstorming infrastructure rendu (Colab Pro / Cloud / Local)
@@ -38,13 +38,17 @@ Fidélité cinématographique — la caméra 3D doit reproduire la caméra sourc
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
-| - | Documents architecture (split A/B) | 🟢 | PR #XX | N/A |
+| - | Documents architecture (split A/B) | 🟢 | PR #32 | N/A |
+| - | camera_schema.py (Bible Optique, 533 lignes) | 🟢 | PR #34 | N/A |
+| - | fspy_tracker.py + auto_dof.py + render_forge.py | 🟢 | PR #35 | N/A |
+| - | camera_director.py (Noise shake + frustum) + lighting_rig.py (Volume Scatter) | 🟢 | PR #36 | N/A |
+| - | cuts_engine.py refactor + EXO_04 câblage + docs | 🟢 | PR #37 | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (U04-A ne rend pas)
 - Temps d'exécution moyen : ~30s (configuration .blend)
-- [ ] Marshal Out-Check passé (*.blend dans OUT_CAMERA_LOGIC/)
-- [ ] Validation Souveraine (5/5 critères VALIDATION.md)
+- [x] 5/5 critères VALIDATION.md satisfaits par U04-A
+- [ ] Marshal Out-Check passé (*.blend dans OUT_CAMERA_LOGIC/) — nécessite test intégration
 
 ## RÉFÉRENCES
 - [ARCHITECTURE U04](../04_PHOTOGRAPHY_WING/ARCHITECTURE_U04.md) — **Note technique split A/B**

@@ -6,7 +6,7 @@
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 Gère les transitions de caméra (cuts) définies dans le PRODUCTION_PLAN.
-Types supportés: wide, medium, closeup, extreme_closeup, dutch_angle
+Types supportés: wide, medium, closeup, extreme_closeup, dutch_angle, low_angle, high_angle, over_shoulder
 
 Usage (appelé par camera_director.py):
     cuts_engine = CutsEngine(camera_obj, target, verbose=True)
@@ -16,6 +16,11 @@ Usage (appelé par camera_director.py):
 import math
 import random
 from typing import Optional
+from camera_schema import (
+    CUT_PRESETS,
+    VALID_CUT_TYPES,
+    TRANSITION_TYPES,
+)
 
 try:
     import bpy
@@ -23,66 +28,6 @@ try:
     BLENDER_AVAILABLE = True
 except ImportError:
     BLENDER_AVAILABLE = False
-
-
-CUT_PRESETS = {
-    "wide": {
-        "fov": 60,
-        "distance_mult": 2.5,
-        "height_offset": 0.2,
-        "roll": 0
-    },
-    "medium": {
-        "fov": 50,
-        "distance_mult": 1.5,
-        "height_offset": 0.1,
-        "roll": 0
-    },
-    "closeup": {
-        "fov": 35,
-        "distance_mult": 0.8,
-        "height_offset": 0.05,
-        "roll": 0
-    },
-    "extreme_closeup": {
-        "fov": 25,
-        "distance_mult": 0.4,
-        "height_offset": 0.02,
-        "roll": 0
-    },
-    "dutch_angle": {
-        "fov": 45,
-        "distance_mult": 1.2,
-        "height_offset": 0.15,
-        "roll": 15
-    },
-    "low_angle": {
-        "fov": 50,
-        "distance_mult": 1.8,
-        "height_offset": -0.5,
-        "roll": 0
-    },
-    "high_angle": {
-        "fov": 50,
-        "distance_mult": 1.8,
-        "height_offset": 0.8,
-        "roll": 0
-    },
-    "over_shoulder": {
-        "fov": 40,
-        "distance_mult": 0.6,
-        "height_offset": 0.1,
-        "roll": 0,
-        "offset_x": 0.3
-    }
-}
-
-TRANSITION_TYPES = {
-    "cut": {"blend_frames": 0},
-    "smooth": {"blend_frames": 15},
-    "fast": {"blend_frames": 5},
-    "slow": {"blend_frames": 30}
-}
 
 
 class CutsEngine:
