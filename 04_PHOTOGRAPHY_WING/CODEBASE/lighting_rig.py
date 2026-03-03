@@ -15,6 +15,15 @@ Usage (appelé par camera_director.py):
 
 import math
 from typing import Optional, Tuple
+from camera_schema import (
+    LIGHTING_STYLES,
+    VALID_LIGHTING_STYLES,
+    DEFAULT_LIGHTING_STYLE,
+    COLOR_TEMPS,
+    NEON_COLORS,
+    DEFAULT_VOLUME_DENSITY,
+    DEFAULT_VOLUME_ANISOTROPY,
+)
 
 try:
     import bpy
@@ -24,30 +33,6 @@ except ImportError:
     BLENDER_AVAILABLE = False
 
 
-LIGHTING_STYLES = ["3point", "dramatic", "neon", "natural", "studio"]
-DEFAULT_LIGHTING_STYLE = "3point"
-
-COLOR_TEMPS = {
-    2700: (1.0, 0.76, 0.54),
-    3200: (1.0, 0.82, 0.65),
-    4000: (1.0, 0.88, 0.78),
-    5000: (1.0, 0.95, 0.90),
-    5500: (1.0, 0.98, 0.95),
-    6500: (0.95, 0.98, 1.0),
-    7500: (0.88, 0.94, 1.0),
-    9000: (0.80, 0.90, 1.0)
-}
-
-NEON_COLORS = {
-    "cyan": (0.0, 1.0, 1.0),
-    "magenta": (1.0, 0.0, 1.0),
-    "pink": (1.0, 0.4, 0.7),
-    "blue": (0.2, 0.4, 1.0),
-    "purple": (0.6, 0.2, 1.0),
-    "green": (0.2, 1.0, 0.4),
-    "orange": (1.0, 0.5, 0.1),
-    "red": (1.0, 0.1, 0.1)
-}
 
 
 class LightingRig:
@@ -415,7 +400,7 @@ class LightingRig:
         """Applique le style d'éclairage demandé."""
         style = style.lower()
         
-        if style not in LIGHTING_STYLES:
+        if style not in VALID_LIGHTING_STYLES:
             self.log(f"Style '{style}' inconnu, fallback vers '3point'")
             style = "3point"
         
@@ -434,6 +419,10 @@ class LightingRig:
             self.apply_style_studio(intensity, color_temp)
         
         self.log(f"Style '{style}' appliqué: intensity={intensity}, color_temp={color_temp}K")
+        
+        # Add atmosphere and invisible lamps
+        self.apply_atmosphere()
+        self.place_invisible_lamps()
     
     def animate_light(self, light_name: str, property_path: str, 
                       values: list, frames: list):
@@ -460,6 +449,116 @@ class LightingRig:
         
         self.debug(f"Animation ajoutée: {light_name}.{property_path}")
     
+    def apply_atmosphere(self, density: float = DEFAULT_VOLUME_DENSITY,
+                         anisotropy: float = DEFAULT_VOLUME_ANISOTROPY,
+                         color: tuple = (1.0, 1.0, 1.0)) -> None:
+        """Ajoute un Volume Scatter au World shader pour l'atmosphère cinématographique."""
+        self.log(f"Application atmosphère : density={density}, anisotropy={anisotropy}")
+        
+        if not BLENDER_AVAILABLE:
+            self.operations.append({
+                "action": "apply_atmosphere",
+                "density": density,
+                "anisotropy": anisotropy,
+                "simulated": True,
+            })
+            return
+        
+        world = bpy.context.scene.world
+        if world is None:
+            world = bpy.data.worlds.new("EXODUS_World")
+            bpy.context.scene.world = world
+        
+        world.use_nodes = True
+        tree = world.node_tree
+        
+        # Check if Volume Scatter already exists
+        vol_scatter = None
+        for node in tree.nodes:
+            if node.type == 'VOLUME_SCATTER':
+                vol_scatter = node
+                break
+        
+        if vol_scatter is None:
+            vol_scatter = tree.nodes.new(type='ShaderNodeVolumeScatter')
+            vol_scatter.location = (0, -300)
+        
+        vol_scatter.inputs['Color'].default_value = (*color, 1.0)
+        vol_scatter.inputs['Density'].default_value = density
+        vol_scatter.inputs['Anisotropy'].default_value = anisotropy
+        
+        # Connect to World Output volume input
+        output_node = None
+        for node in tree.nodes:
+            if node.type == 'OUTPUT_WORLD':
+                output_node = node
+                break
+        
+        if output_node is None:
+            output_node = tree.nodes.new(type='ShaderNodeOutputWorld')
+            output_node.location = (400, 0)
+        
+        # Connect Volume Scatter to Volume input of World Output
+        tree.links.new(vol_scatter.outputs['Volume'], output_node.inputs['Volume'])
+        
+        self.log("Volume Scatter connecté au World shader")
+        self.operations.append({
+            "action": "apply_atmosphere",
+            "density": density,
+            "anisotropy": anisotropy,
+            "color": color,
+        })
+    
+    def place_invisible_lamps(self, count: int = 3, energy: float = 50.0,
+                              color: tuple = (1.0, 1.0, 1.0)) -> None:
+        """Place des lampes invisibles (camera_ray=False) pour rehausser l'atmosphère
+        sans apparaître dans le rendu direct."""
+        self.log(f"Placement lampes invisibles : count={count}, energy={energy}")
+        
+        if not BLENDER_AVAILABLE:
+            self.operations.append({
+                "action": "place_invisible_lamps",
+                "count": count,
+                "energy": energy,
+                "simulated": True,
+            })
+            return
+        
+        r = self.scene_radius * 1.5
+        
+        for i in range(count):
+            angle = (i / count) * 2 * math.pi
+            height_offset = (i % 2) * r * 0.3
+            
+            pos = (
+                self.scene_center[0] + r * math.cos(angle),
+                self.scene_center[1] + r * math.sin(angle),
+                self.scene_center[2] + r * 0.5 + height_offset,
+            )
+            
+            light_obj = self.create_light(
+                f"EXODUS_Invisible_{i}",
+                'POINT',
+                pos,
+                energy=energy,
+                color=color,
+            )
+            
+            if light_obj and light_obj.data:
+                # Make invisible to camera ray (visible only for indirect/volume)
+                light_obj.visible_camera = False
+                light_obj.visible_diffuse = True
+                light_obj.visible_glossy = True
+                light_obj.visible_volume_scatter = True
+                self.debug(f"Lampe invisible placée : {light_obj.name}")
+        
+        self.operations.append({
+            "action": "place_invisible_lamps",
+            "count": count,
+            "energy": energy,
+            "color": color,
+        })
+    
     def get_operations(self) -> list:
         return self.operations
 
@@ -475,7 +574,7 @@ def test_lighting_rig():
     print(f"Couleurs néon: {list(NEON_COLORS.keys())}")
     
     print("\n--- Test application styles ---")
-    for style in LIGHTING_STYLES:
+    for style in VALID_LIGHTING_STYLES:
         print(f"\nStyle: {style}")
         rig.apply_style(style, intensity=1.0, color_temp=5500)
         print(f"  Opérations: {len(rig.operations)}")
