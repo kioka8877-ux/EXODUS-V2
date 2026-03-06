@@ -360,7 +360,7 @@ def run_pipeline(
     temp_dir.mkdir(parents=True, exist_ok=True)
     final_frames_dir = temp_dir / "final_frames"
     final_frames_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint_path = temp_dir / CHECKPOINT_FILENAME
+    checkpoint_path = output_dir / CHECKPOINT_FILENAME
 
     try:
         format_meta = parse_format_metadata(plan)
@@ -505,9 +505,15 @@ def run_pipeline(
             else:
                 final_chunk_frames = interpolated
 
+            # Déterminer si les frames sont des intermédiaires ou des originaux
+            frames_are_intermediate = (not args.no_rife and multiplier > 1) or needs_upscale
+
             for i, frame in enumerate(final_chunk_frames):
                 dest = final_frames_dir / f"frame_{global_frame_idx:08d}.png"
-                shutil.move(str(frame), str(dest))
+                if frames_are_intermediate:
+                    shutil.move(str(frame), str(dest))
+                else:
+                    shutil.copy2(str(frame), str(dest))
                 global_frame_idx += 1
 
             rife_output_dir_path = temp_dir / f"rife_chunk_{chunk_idx:04d}"
@@ -631,6 +637,11 @@ def run_pipeline(
             logger.success(f"Thumbnail: {thumbnail_path}")
         else:
             logger.warn("Génération thumbnail échouée (non bloquant)")
+
+        # Cleanup checkpoint on success
+        if checkpoint_path.exists():
+            checkpoint_path.unlink()
+            logger.debug("Checkpoint supprimé (pipeline terminé avec succès)")
 
         return True, pipeline_result
 

@@ -159,9 +159,19 @@ class FinalEncoder:
                         if "preset" in ep:
                             codec_config["preset"] = ep["preset"]
                         if "pix_fmt" in ep:
-                            codec_config["params"] = ["-pix_fmt", ep["pix_fmt"]] + [
-                                p for p in codec_config.get("params", []) if p != "-pix_fmt"
-                            ]
+                            # Remove existing -pix_fmt and its value (pair-aware filter)
+                            old_params = codec_config.get("params", [])
+                            filtered = []
+                            skip_next = False
+                            for p in old_params:
+                                if skip_next:
+                                    skip_next = False
+                                    continue
+                                if p == "-pix_fmt":
+                                    skip_next = True
+                                    continue
+                                filtered.append(p)
+                            codec_config["params"] = ["-pix_fmt", ep["pix_fmt"]] + filtered
                         if "tune" in ep:
                             codec_config["_tune"] = ep["tune"]
                         if "extra_params" in ep:
