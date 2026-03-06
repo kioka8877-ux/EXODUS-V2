@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                       UPSCALER — EXODUS CARRIER                              ║
-║                    Upscale vidéo 1080p → 4K (3840x2160)                      ║
+║                       UPSCALER — EXODUS CARRIER V2                           ║
+║                Upscale chunk-based frame-to-frame PNG→PNG                    ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Utilise Real-ESRGAN pour upscale de haute qualité (si disponible)          ║
-║  Fallback FFmpeg Lanczos pour performance                                    ║
+║  Travaille directement sur des frames PNG — aucune vidéo intermédiaire     ║
+║  lossy. Le fallback FFmpeg Lanczos traite image par image.                  ║
+║  ZÉRO libx264 dans ce module.                                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -13,12 +14,12 @@ import subprocess
 import shutil
 import json
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, List, Tuple, Dict
 
 
 class Upscaler:
-    """Upscaler vidéo via Real-ESRGAN ou FFmpeg."""
-    
+    """Upscaler de frames PNG via Real-ESRGAN ou FFmpeg Lanczos."""
+
     RESOLUTION_PRESETS = {
         "4K": (3840, 2160),
         "UHD": (3840, 2160),
@@ -26,7 +27,7 @@ class Upscaler:
         "1080p": (1920, 1080),
         "720p": (1280, 720)
     }
-    
+
     def __init__(
         self,
         model_path: Optional[str] = None,
@@ -37,20 +38,20 @@ class Upscaler:
         self.use_gpu = use_gpu
         self.verbose = verbose
         self._esrgan_available = self._check_esrgan_available()
-    
+
     def _log(self, msg: str):
         if self.verbose:
             print(f"[UPSCALER] {msg}")
-    
+
     def _check_esrgan_available(self) -> bool:
         """Vérifie si Real-ESRGAN est disponible."""
         if not self.model_path:
             return False
-        
+
         model_path = Path(self.model_path)
         if not model_path.exists():
             return False
-        
+
         try:
             import torch
             self._log(f"PyTorch disponible pour Real-ESRGAN, GPU: {torch.cuda.is_available()}")
@@ -58,9 +59,30 @@ class Upscaler:
         except ImportError:
             self._log("PyTorch non disponible, Real-ESRGAN désactivé")
             return False
-    
+
+    def get_frame_info(self, frame_path: Path) -> dict:
+        """Lit les dimensions d'une frame PNG via FFprobe."""
+        cmd = [
+            "ffprobe", "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=p=0",
+            str(frame_path)
+        ]
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            if result.returncode == 0 and result.stdout.strip():
+                parts = result.stdout.strip().split(',')
+                if len(parts) >= 2:
+                    return {"width": int(parts[0]), "height": int(parts[1])}
+        except Exception as e:
+            self._log(f"Erreur FFprobe: {e}")
+
+        return {"width": 0, "height": 0}
+
     def get_resolution(self, video_path: Path) -> Optional[Tuple[int, int]]:
-        """Récupère la résolution d'une vidéo."""
+        """Récupère la résolution d'une vidéo (gardé pour rétrocompatibilité)."""
         cmd = [
             "ffprobe", "-v", "error",
             "-select_streams", "v:0",
@@ -68,7 +90,7 @@ class Upscaler:
             "-of", "csv=p=0",
             str(video_path)
         ]
-        
+
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0 and result.stdout.strip():
@@ -77,140 +99,166 @@ class Upscaler:
                     return int(parts[0]), int(parts[1])
         except Exception as e:
             self._log(f"Erreur FFprobe: {e}")
-        
+
         return None
-    
-    def needs_upscale(
+
+    def needs_upscale_frames(
         self,
-        video_path: Path,
+        sample_frame: Path,
         target_width: int = 3840,
         target_height: int = 2160
     ) -> bool:
-        """Vérifie si une vidéo nécessite un upscale."""
-        resolution = self.get_resolution(video_path)
-        if not resolution:
+        """Vérifie si les frames nécessitent un upscale."""
+        info = self.get_frame_info(sample_frame)
+        if not info or info["width"] == 0:
             return False
-        
-        current_width, current_height = resolution
-        return current_width < target_width or current_height < target_height
-    
-    def upscale(
+        return info["width"] < target_width or info["height"] < target_height
+
+    def upscale_chunk(
         self,
-        input_video: Path,
-        output_video: Path,
+        input_frames: List[Path],
+        output_dir: Path,
         target_width: int = 3840,
         target_height: int = 2160,
-        scale_factor: int = 4
-    ) -> bool:
+    ) -> List[Path]:
+        """Upscale un chunk de frames.
+
+        Lit les PNG sources.
+        Écrit les PNG upscalées dans output_dir.
+        Ne crée AUCUNE vidéo intermédiaire.
         """
-        Upscale une vidéo vers la résolution cible.
-        
-        Args:
-            input_video: Vidéo source
-            output_video: Vidéo upscalée
-            target_width: Largeur cible
-            target_height: Hauteur cible
-            scale_factor: Facteur de scale pour Real-ESRGAN
-        
-        Returns:
-            True si succès
-        """
-        current_res = self.get_resolution(input_video)
-        if not current_res:
-            self._log("Impossible de lire la résolution source")
-            return False
-        
-        current_width, current_height = current_res
-        self._log(f"Source: {current_width}x{current_height} → Target: {target_width}x{target_height}")
-        
-        if current_width >= target_width and current_height >= target_height:
+        if not input_frames:
+            return []
+
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        sample_info = self.get_frame_info(input_frames[0])
+        current_w = sample_info.get("width", 0)
+        current_h = sample_info.get("height", 0)
+
+        self._log(f"Chunk: {len(input_frames)} frames, {current_w}x{current_h} → {target_width}x{target_height}")
+
+        if current_w >= target_width and current_h >= target_height:
             self._log("Résolution déjà suffisante, copie simple")
-            shutil.copy(input_video, output_video)
-            return True
-        
+            output_files = []
+            for i, frame in enumerate(input_frames):
+                out_path = output_dir / f"frame_{i:08d}.png"
+                shutil.copy2(str(frame), str(out_path))
+                output_files.append(out_path)
+            return output_files
+
         if self._esrgan_available:
-            success = self._upscale_esrgan(input_video, output_video, scale_factor)
-            if success:
-                return self._resize_to_target(output_video, output_video, target_width, target_height)
-            self._log("Real-ESRGAN échoué, fallback FFmpeg")
-        
-        return self._upscale_ffmpeg(input_video, output_video, target_width, target_height)
-    
-    def _upscale_esrgan(
+            result = self._upscale_chunk_esrgan(input_frames, output_dir, target_width, target_height)
+            if result:
+                return result
+            self._log("Real-ESRGAN échoué, fallback FFmpeg Lanczos")
+
+        return self._upscale_chunk_lanczos(input_frames, output_dir, target_width, target_height)
+
+    def _upscale_chunk_esrgan(
         self,
-        input_video: Path,
-        output_video: Path,
-        scale_factor: int
-    ) -> bool:
-        """Upscale via Real-ESRGAN (frame par frame)."""
+        input_frames: List[Path],
+        output_dir: Path,
+        target_width: int,
+        target_height: int
+    ) -> Optional[List[Path]]:
+        """Upscale via Real-ESRGAN frame par frame (PNG→PNG)."""
         try:
             import torch
             import numpy as np
             from PIL import Image
-            
+
             device = torch.device("cuda" if self.use_gpu and torch.cuda.is_available() else "cpu")
             self._log(f"Real-ESRGAN sur {device}")
-            
+
             model = self._load_esrgan_model(device)
             if model is None:
-                return False
-            
-            temp_dir = output_video.parent / "_temp_upscale"
-            temp_dir.mkdir(parents=True, exist_ok=True)
-            
-            try:
-                frames_dir = temp_dir / "frames"
-                upscaled_dir = temp_dir / "upscaled"
-                frames_dir.mkdir(exist_ok=True)
-                upscaled_dir.mkdir(exist_ok=True)
-                
-                self._log("Extraction frames...")
-                fps = self._extract_frames_with_fps(input_video, frames_dir)
-                
-                frame_files = sorted(frames_dir.glob("*.png"))
-                total_frames = len(frame_files)
-                self._log(f"Upscale de {total_frames} frames...")
-                
-                with torch.no_grad():
-                    for i, frame_path in enumerate(frame_files):
-                        if i % 100 == 0:
-                            self._log(f"  Frame {i}/{total_frames}")
-                        
-                        img = Image.open(frame_path).convert('RGB')
-                        img_np = np.array(img)
-                        
-                        upscaled = self._process_frame_esrgan(model, img_np, device)
-                        
-                        out_path = upscaled_dir / frame_path.name
-                        Image.fromarray(upscaled).save(out_path)
-                
-                self._log("Assemblage vidéo...")
-                self._frames_to_video(upscaled_dir, output_video, fps)
-                
-                return output_video.exists()
-                
-            finally:
-                if temp_dir.exists():
-                    shutil.rmtree(temp_dir, ignore_errors=True)
-                    
+                return None
+
+            output_files = []
+
+            with torch.no_grad():
+                for i, frame_path in enumerate(input_frames):
+                    if i % 100 == 0:
+                        self._log(f"  Upscale frame {i}/{len(input_frames)}")
+
+                    img = Image.open(frame_path).convert('RGB')
+                    img_np = np.array(img)
+
+                    upscaled = self._process_frame_esrgan(model, img_np, device)
+
+                    if upscaled.shape[1] != target_width or upscaled.shape[0] != target_height:
+                        upscaled_img = Image.fromarray(upscaled)
+                        upscaled_img = upscaled_img.resize((target_width, target_height), Image.LANCZOS)
+                        upscaled = np.array(upscaled_img)
+
+                    out_path = output_dir / f"frame_{i:08d}.png"
+                    Image.fromarray(upscaled).save(out_path)
+                    output_files.append(out_path)
+
+            self._log(f"Real-ESRGAN: {len(output_files)} frames upscalées")
+            return output_files
+
         except ImportError as e:
             self._log(f"Dépendance manquante pour Real-ESRGAN: {e}")
-            return False
+            return None
         except Exception as e:
             self._log(f"Erreur Real-ESRGAN: {e}")
-            return False
-    
+            return None
+
+    def _upscale_chunk_lanczos(
+        self,
+        input_frames: List[Path],
+        output_dir: Path,
+        target_width: int,
+        target_height: int
+    ) -> List[Path]:
+        """Upscale via FFmpeg Lanczos frame par frame (image→image, pas de vidéo)."""
+        self._log(f"FFmpeg Lanczos upscale → {target_width}x{target_height}")
+
+        output_files = []
+
+        for i, frame_path in enumerate(input_frames):
+            if i % 100 == 0 and i > 0:
+                self._log(f"  Lanczos frame {i}/{len(input_frames)}")
+
+            out_path = output_dir / f"frame_{i:08d}.png"
+
+            cmd = [
+                "ffmpeg", "-y",
+                "-i", str(frame_path),
+                "-vf", f"scale={target_width}:{target_height}:flags=lanczos",
+                str(out_path)
+            ]
+
+            try:
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                if result.returncode == 0 and out_path.exists():
+                    output_files.append(out_path)
+                else:
+                    self._log(f"Lanczos échoué pour {frame_path.name}: {result.stderr[-200:]}")
+                    shutil.copy2(str(frame_path), str(out_path))
+                    output_files.append(out_path)
+            except Exception as e:
+                self._log(f"Erreur Lanczos {frame_path.name}: {e}")
+                shutil.copy2(str(frame_path), str(out_path))
+                output_files.append(out_path)
+
+        self._log(f"Lanczos: {len(output_files)} frames upscalées")
+        return output_files
+
     def _load_esrgan_model(self, device):
         """Charge le modèle Real-ESRGAN."""
         try:
             import torch
-            
+
             model_path = Path(self.model_path)
-            
+
             try:
                 from basicsr.archs.rrdbnet_arch import RRDBNet
                 from realesrgan import RealESRGANer
-                
+
                 model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
                 upsampler = RealESRGANer(
                     scale=4,
@@ -225,15 +273,15 @@ class Upscaler:
                 return upsampler
             except ImportError:
                 pass
-            
+
             state_dict = torch.load(str(model_path), map_location=device)
             self._log("Modèle chargé directement (pas de wrapper RealESRGAN)")
             return state_dict
-            
+
         except Exception as e:
             self._log(f"Erreur chargement modèle: {e}")
             return None
-    
+
     def _process_frame_esrgan(self, model, img_np, device):
         """Traite une frame avec Real-ESRGAN."""
         try:
@@ -242,157 +290,35 @@ class Upscaler:
                 return output
         except Exception:
             pass
-        
+
         return img_np
-    
-    def _extract_frames_with_fps(self, video_path: Path, output_dir: Path) -> float:
-        """Extrait les frames et retourne le FPS."""
-        cmd_info = [
-            "ffprobe", "-v", "error",
-            "-select_streams", "v:0",
-            "-show_entries", "stream=r_frame_rate",
-            "-of", "csv=p=0",
-            str(video_path)
-        ]
-        
-        fps = 30.0
-        try:
-            result = subprocess.run(cmd_info, capture_output=True, text=True, timeout=30)
-            if result.returncode == 0:
-                fps_str = result.stdout.strip()
-                if '/' in fps_str:
-                    num, den = fps_str.split('/')
-                    fps = float(num) / float(den)
-                else:
-                    fps = float(fps_str)
-        except Exception:
-            pass
-        
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", str(video_path),
-            "-qscale:v", "2",
-            str(output_dir / "frame_%08d.png")
-        ]
-        subprocess.run(cmd, capture_output=True, timeout=600)
-        
-        return fps
-    
-    def _frames_to_video(self, frames_dir: Path, output_path: Path, fps: float):
-        """Assemble les frames en vidéo."""
-        cmd = [
-            "ffmpeg", "-y",
-            "-framerate", str(fps),
-            "-i", str(frames_dir / "frame_%08d.png"),
-            "-c:v", "libx264",
-            "-crf", "18",
-            "-pix_fmt", "yuv420p",
-            str(output_path)
-        ]
-        subprocess.run(cmd, capture_output=True, timeout=1200)
-    
-    def _resize_to_target(
-        self,
-        input_video: Path,
-        output_video: Path,
-        target_width: int,
-        target_height: int
-    ) -> bool:
-        """Redimensionne vers la résolution exacte cible."""
-        current_res = self.get_resolution(input_video)
-        if current_res and current_res[0] == target_width and current_res[1] == target_height:
-            return True
-        
-        temp_output = output_video.parent / f"_temp_resize_{output_video.name}"
-        
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", str(input_video),
-            "-vf", f"scale={target_width}:{target_height}:flags=lanczos",
-            "-c:v", "libx264",
-            "-crf", "18",
-            "-pix_fmt", "yuv420p",
-            str(temp_output)
-        ]
-        
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-            if result.returncode == 0 and temp_output.exists():
-                shutil.move(temp_output, output_video)
-                return True
-        except Exception as e:
-            self._log(f"Erreur resize: {e}")
-        
-        if temp_output.exists():
-            temp_output.unlink()
-        return False
-    
-    def _upscale_ffmpeg(
-        self,
-        input_video: Path,
-        output_video: Path,
-        target_width: int,
-        target_height: int
-    ) -> bool:
-        """
-        Upscale via FFmpeg avec filtre Lanczos (rapide mais qualité moindre).
-        """
-        self._log(f"FFmpeg Lanczos upscale → {target_width}x{target_height}")
-        
-        output_video.parent.mkdir(parents=True, exist_ok=True)
-        
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", str(input_video),
-            "-vf", f"scale={target_width}:{target_height}:flags=lanczos",
-            "-c:v", "libx264",
-            "-crf", "18",
-            "-preset", "slow",
-            "-pix_fmt", "yuv420p",
-            str(output_video)
-        ]
-        
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=600
-            )
-            
-            if result.returncode != 0:
-                self._log(f"FFmpeg upscale échoué: {result.stderr[-500:]}")
-                return False
-            
-            return output_video.exists()
-            
-        except subprocess.TimeoutExpired:
-            self._log("Timeout FFmpeg upscale")
-            return False
-        except Exception as e:
-            self._log(f"Erreur FFmpeg: {e}")
-            return False
 
 
 if __name__ == "__main__":
     import sys
-    
+
     if len(sys.argv) < 3:
-        print("Usage: python upscaler.py <input.mp4> <output.mp4> [width] [height] [model_path]")
-        print("  input.mp4: Vidéo source")
-        print("  output.mp4: Vidéo upscalée")
+        print("Usage: python upscaler.py <input_dir> <output_dir> [width] [height] [model_path]")
+        print("  input_dir: Dossier de frames PNG source")
+        print("  output_dir: Dossier de frames PNG upscalées")
         print("  width: Largeur cible (défaut: 3840)")
         print("  height: Hauteur cible (défaut: 2160)")
         print("  model_path: Chemin vers le modèle Real-ESRGAN (optionnel)")
         sys.exit(1)
-    
-    input_video = Path(sys.argv[1])
-    output_video = Path(sys.argv[2])
+
+    input_dir = Path(sys.argv[1])
+    output_dir = Path(sys.argv[2])
     target_width = int(sys.argv[3]) if len(sys.argv) > 3 else 3840
     target_height = int(sys.argv[4]) if len(sys.argv) > 4 else 2160
     model_path = sys.argv[5] if len(sys.argv) > 5 else None
-    
+
+    input_frames = sorted(input_dir.glob("*.png"))
+    if not input_frames:
+        print(f"Aucune frame PNG dans {input_dir}")
+        sys.exit(1)
+
     upscaler = Upscaler(model_path=model_path, verbose=True)
-    success = upscaler.upscale(input_video, output_video, target_width, target_height)
-    
-    sys.exit(0 if success else 1)
+    result = upscaler.upscale_chunk(input_frames, output_dir, target_width, target_height)
+
+    print(f"Frames upscalées: {len(result)}")
+    sys.exit(0 if result else 1)
