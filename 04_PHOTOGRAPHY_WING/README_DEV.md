@@ -26,9 +26,12 @@ Configurer automatiquement caméras et lumières dans Blender selon les instruct
 │   ├── cuts_engine.py             # Système de cuts (imports depuis camera_schema)
 │   ├── lighting_rig.py            # Rigs éclairage + Volume Scatter + lampes invisibles
 │   ├── keyframe_animator.py       # Animation caméra par keyframes + easing
+│   ├── darkroom_render.py            # U04-B : Script Blender headless chunk rendering
+│   ├── EXO_04_DARKROOM.py           # U04-B : Orchestrateur CLI Python pur
 │   ├── requirements.txt
 │   ├── EXO_04_CONTROL.ipynb       # Notebook debug/test
-│   └── EXO_04_PRODUCTION.ipynb    # Notebook production
+│   ├── EXO_04_PRODUCTION.ipynb    # Notebook production
+│   └── EXO_04_DARKROOM.ipynb        # U04-B : Notebook Colab rendu batch
 ├── IN_VIDEO_SOURCE/
 │   └── camera_fov_ratio.json      # Métadonnées caméra source (U00)
 ├── IN_SCENE_REF/
@@ -36,9 +39,11 @@ Configurer automatiquement caméras et lumières dans Blender selon les instruct
 │   ├── actor_equipped.blend       # Avatar équipé de U02 (optionnel)
 │   └── PRODUCTION_PLAN.JSON       # Plan de production de U00
 ├── OUT_CAMERA_LOGIC/
-│   ├── scene_ready_*.blend        # Scènes prêtes au rendu
+│   ├── scene_ready_*.blend        # Scènes prêtes au rendu (U04-A)
+│   ├── render_*.png               # Frames rendues (U04-B, PNG 16-bit 1080p)
 │   ├── camera_data_*.json         # Export données caméra
-│   └── photography_report.json    # Rapport de production
+│   ├── photography_report.json    # Rapport de production (U04-A)
+│   └── darkroom_report.json       # Rapport de rendu (U04-B)
 ├── ARCHITECTURE_U04.md            # Note technique split A/B
 ├── README_DEV.md                  # Cette documentation
 └── UNIT_04_SUBPLAN.md             # Sous-plan technique
@@ -69,7 +74,19 @@ Configurer automatiquement caméras et lumières dans Blender selon les instruct
           └────┬────┘────────────────────────────────┘
                ▼
     ┌────────────────────┐
-    │ EXO_04_PHOTOGRAPHY │  ← CLI Wrapper (orchestre tout)
+    │ EXO_04_PHOTOGRAPHY │  ← CLI Wrapper U04-A (orchestre config)
+    │ .py                │
+    └────────────────────┘
+               │
+               ▼
+    ┌────────────────────┐
+    │ darkroom_render    │  ← Blender headless chunk rendering
+    │ .py                │
+    └────────────────────┘
+               │
+               ▼
+    ┌────────────────────┐
+    │ EXO_04_DARKROOM    │  ← CLI Wrapper U04-B (orchestre rendu)
     │ .py                │
     └────────────────────┘
 ```
@@ -181,7 +198,64 @@ Crée un Empty parenté au bone du buste de l'avatar. La caméra Blender utilise
 
 ### 6. render_forge.py (Config Cycles)
 
-Configure le moteur de rendu Cycles (samples, passes, résolution, denoising) SANS lancer de rendu. Deux presets : `production` (4K, 256 samples) et `preview` (1080p, 64 samples).
+Configure le moteur de rendu Cycles (samples, passes, résolution, denoising) SANS lancer de rendu. Trois presets : `production` (4K, 256 samples), `darkroom` (1080p, 128 samples), et `preview` (1080p, 64 samples).
+
+### 6b. darkroom_render.py (U04-B — Rendu Blender headless)
+
+Script exécuté DANS Blender headless pour le rendu batch chunk-based. Approche ATOM-IC : rend en 1080p @ 128 samples + OIDN, U06 Real-ESRGAN upscale ensuite → 4K.
+
+**Usage :**
+```bash
+blender --background scene_ready_1.blend --python darkroom_render.py -- \
+    --output-dir /path/to/OUT_CAMERA_LOGIC \
+    --chunk-size 300 \
+    --preset darkroom \
+    --resume -v
+```
+
+**Format de sortie :** `render_XXXXXXXX.png` — PNG 16-bit 1080p RGB. Compatible U05 `scan_render_frames()`.
+
+**Checkpoint system :**
+- Fichier `darkroom_checkpoint.json` dans `output_dir` (PAS dans un temp_dir)
+- Sauvegardé à chaque fin de chunk (300 frames)
+- Supprimé on success — survit on crash → `--resume` reprend au bon frame
+- Format : version, blend_file, preset, next_frame, total_frames, chunk_size, timestamp
+
+**Performances estimées (GPU T4) :**
+- 3-8s/frame en 1080p @ 128 samples
+- ~2-4h pour 60s de vidéo (1800 frames @ 30fps)
+- ~1.5 GB d'output (PNG 16-bit)
+
+### 6c. EXO_04_DARKROOM.py (U04-B — Orchestrateur CLI)
+
+Script Python pur (PAS Blender) qui orchestre le rendu en lançant `darkroom_render.py` dans Blender headless.
+
+```bash
+# Dry-run (plan de rendu)
+python EXO_04_DARKROOM.py \
+    --drive-root /path/to/DRIVE_EXODUS_V2 \
+    --project-name MY_PROJECT \
+    --dry-run -v
+
+# Rendu avec auto-resume
+python EXO_04_DARKROOM.py \
+    --drive-root /path/to/DRIVE_EXODUS_V2 \
+    --project-name MY_PROJECT \
+    --chunk-size 300 \
+    --preset darkroom \
+    --resume -v
+```
+
+**Arguments :**
+- `--drive-root` (requis) : Racine du Drive EXODUS
+- `--project-name` (requis) : Nom du projet
+- `--blend-file` : Chemin direct vers .blend (override auto-detection)
+- `--blender-path` : Chemin vers Blender (default: `blender`)
+- `--chunk-size` : Frames par chunk (default: 300)
+- `--preset` : Preset de rendu (default: `darkroom`)
+- `--resume` : Reprendre depuis checkpoint
+- `--dry-run` : Afficher le plan sans rendre
+- `--verbose, -v` : Logs détaillés
 
 ### 7. cuts_engine.py (Cuts Automatiques)
 
@@ -356,10 +430,10 @@ environment.blend    PRODUCTION_PLAN.JSON + camera_fov_ratio.json
       scene_ready_*.blend  (~200 MB, ~30s)
                │
                ▼
-        [U04-B DARKROOM]   (PLANIFIÉ)
+        [U04-B DARKROOM]   (ATOM-IC : 1080p + OIDN)
                │
                ▼
-        frames.exr / .png  (~36 GB, ~15-45h)
+        frames_1080p.png   (~1.5 GB, ~2-4h)
                │
                ▼
         U05 (Alchemist Lab)
