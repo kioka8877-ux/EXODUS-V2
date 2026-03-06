@@ -21,26 +21,28 @@ Bloom/Glow bleed, Sharpness transfer.
 - [x] `alchemist_schema.py` — 7 piliers, 5 pipeline presets, classe AlchemistSchema, self_test 8/8
 - [x] Dossier `IN_SOURCE_REF/` créé (.gitkeep)
 
-### Task B — Match Color + Grain Matcher (les 85% du look)
-- [ ] `match_color.py` — Histogram Specification en espace LAB (OpenCV)
+### Task B — Match Color + Grain Matcher ✅ (PR #40)
+- [x] `match_color.py` — Histogram Specification en espace LAB (OpenCV)
     - Histogramme de référence par scène (anti-flicker, ~20 frames échantillonnées)
     - Blend avec intensité configurable
-- [ ] `grain_matcher.py` — Extraction grain source + application procédurale
+- [x] `grain_matcher.py` — Extraction grain source + application procédurale
     - Calibration par scène (~10 frames, bilateral filter decomposition)
     - Grain procédural calibré sur stats source (np.random.normal)
 
-### Task C — Bloom + Sharpness + Orchestrateur CLI + Docs
-- [ ] `bloom_engine.py` — Luminance threshold → Gaussian blur → additive blend
-- [ ] `sharpness_transfer.py` — Laplacian variance matching + Gaussian blur/unsharp mask
-- [ ] Rewrite `EXO_05_ALCHEMIST.py` v2.0.0 — Pipeline OpenCV, CLI avec --preset, extraction frames source via cv2.VideoCapture
-- [ ] Mise à jour `requirements.txt` (numpy, opencv-python-headless, Pillow, tqdm)
-- [ ] Mise à jour `README_DEV.md`
-- [ ] Mise à jour `UNIT_05_SUBPLAN.md`
+### Task C — Bloom + Sharpness + Orchestrateur CLI + Docs ✅ (PR #41)
+- [x] `bloom_engine.py` — Luminance threshold → Gaussian blur → additive blend
+- [x] `sharpness_transfer.py` — Laplacian variance matching + Gaussian blur/unsharp mask
+- [x] Rewrite `EXO_05_ALCHEMIST.py` v2.0.0 — Pipeline OpenCV, CLI avec --preset, extraction frames source via cv2.VideoCapture
+- [x] Mise à jour `requirements.txt` (numpy, opencv-python-headless, Pillow, tqdm)
+- [x] Mise à jour `README_DEV.md`
+- [x] Mise à jour `UNIT_05_SUBPLAN.md`
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
 | 2026-03-06 | alchemist_schema.py (Bible Alchimique, 479 lignes, self_test 8/8) + IN_SOURCE_REF/ | 🟢 | PR #38 | N/A (Python pur) |
+| 2026-03-06 | match_color.py (305 lignes, histogram LAB) + grain_matcher.py (317 lignes, bilateral decomposition) | 🟢 | PR #40 | N/A (CPU) |
+| 2026-03-06 | bloom_engine.py + sharpness_transfer.py + EXO_05_ALCHEMIST.py v2.0.0 + requirements.txt + README_DEV.md + UNIT_05_SUBPLAN.md | 🟢 | PR #41 | N/A (CPU) |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (CPU processing — OpenCV + Pillow)
@@ -62,11 +64,11 @@ Bloom/Glow bleed, Sharpness transfer.
 | alchemist_report.json | .json | — | ~20 KB |
 
 ### Critères VALIDATION.md
-- [ ] Match Color par alignement histogramme (pas de LUT)
-- [ ] Film Grain matching (extraction du grain de la vidéo source)
-- [ ] Bloom/Glow bleed (hautes lumières bavent sur le décor)
-- [ ] Flou de transfert (avatar pas "trop net" vs grain source)
-- [ ] Output : .png 16 bits
+- [x] Match Color par alignement histogramme (pas de LUT)
+- [x] Film Grain matching (extraction du grain de la vidéo source)
+- [x] Bloom/Glow bleed (hautes lumières bavent sur le décor)
+- [x] Flou de transfert (avatar pas "trop net" vs grain source)
+- [x] Output : .png 16 bits
 - [ ] Marshal Out-Check passé
 - [ ] Validation Souveraine
 
