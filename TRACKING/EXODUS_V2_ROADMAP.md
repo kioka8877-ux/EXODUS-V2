@@ -111,9 +111,14 @@
 - [ ] Brainstorming infrastructure (Colab/Cloud/Local)
 - [ ] Implémentation batch rendering
 - Statut : 🔴 PLANIFIÉ (après C2)
-- [ ] U06 : Ratio lock strict (métadonnées U00)
-- [ ] U06 : Forcer H.265 CRF 16-18
-- Statut : 🔴 0%
+
+#### C5 — U06 Aircraft Carrier (Pipeline Frame-Based V2) ✅
+- [x] carrier_schema.py (Bible du Vaisseau-Mère — 6 piliers) — PR #45
+- [x] Pipeline frame-based ZÉRO lossy intermédiaire — PR #46
+- [x] 3 presets (AV1 distribution, H.265 fallback, ProRes master) — PR #46
+- [x] Checkpoint system + chunks 10s + ratio lock — PR #46
+- [x] Fix 3 bugs HIGH (destructive move, checkpoint nuke, pix_fmt) — PR #46
+- Statut : ✅ 100% SCELLÉ (PR #44-#46)
 
 #### C4 — U05 Alchemist Lab (Fusion Visuelle V2) ✅
 
@@ -143,8 +148,8 @@
 MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [███████░░░] 🟡 85% — MARSHAL + U00 + U01 + U02 + U03 + U04-A + U05 scellés
-Phase courante : PHASE C (Finition — U04-B Darkroom + U06 Aircraft Carrier restants)
+Mutation V2 : [█████████░] 🟢 95% — MARSHAL + U00 + U01 + U02 + U03 + U04-A + U05 + U06 scellés
+Phase courante : PHASE D (Scale — U04-B Darkroom + test end-to-end restants)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -154,4 +159,4 @@ Phase courante : PHASE C (Finition — U04-B Darkroom + U06 Aircraft Carrier res
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.7 — U05 SCELLÉ 100% (PR #38-#41) -->
+<!-- v2.8 — U06 SCELLÉ 100% (PR #44-#46) -->

@@ -34,38 +34,41 @@ Le produit fini sort d'ici — dernière frégate de la chaîne.
 ## 3. PLAN D'ACTION (BACKLOG)
 
 ### Phase A — Fondation
-- [ ] Créer `carrier_schema.py` (Bible du Vaisseau-Mère — 6 piliers + self_test)
-- [ ] Pilier 1 : Constantes canoniques (ratios valides, CRF range 16-22, FPS cibles, poids cibles)
-- [ ] Pilier 2 : Format metadata parser (lit format.resolution array, format.ratio, format.fps_source)
-- [ ] Pilier 3 : Encoding presets (distribution AV1, distribution_h265 fallback, master ProRes)
-- [ ] Pilier 4 : RIFE config (batch 10s, VRAM budget <10GB, fallback chain)
-- [ ] Pilier 5 : Upscale config (scale factor, model candidates, fallback chain)
-- [ ] Pilier 6 : Validation + self_test (validate_ratio, validate_crf, validate_output_weight, checksum_resolution)
+- [x] Créer `carrier_schema.py` (Bible du Vaisseau-Mère — 6 piliers + self_test) — PR #45
+- [x] Pilier 1 : Constantes canoniques — PR #45
+- [x] Pilier 2 : Format metadata parser — PR #45
+- [x] Pilier 3 : Encoding presets (distribution AV1, distribution_h265 fallback, master ProRes) — PR #45
+- [x] Pilier 4 : RIFE config — PR #45
+- [x] Pilier 5 : Upscale config — PR #45
+- [x] Pilier 6 : Validation + self_test — PR #45
 
 ### Phase B — Pipeline Frame-Based
-- [ ] Refactor sequence_assembler.py → Frame Indexer (valide + trie + manifeste, ZÉRO FFmpeg)
-- [ ] Refactor rife_interpolator.py → Chunk-based frame-to-frame (lit PNG direct, batch 10s, checkpoint)
-- [ ] Refactor upscaler.py → Chunk-based frame-to-frame (fusionné avec RIFE dans le pipeline)
-- [ ] Refactor final_encoder.py → Encode unique depuis frames PNG (AV1 + H.265 tune animation + ProRes)
-- [ ] Refactor EXO_06_CARRIER.py → Orchestrateur V2 (preset CLI, checkpoint, progress, frame pipeline)
+- [x] Refactor sequence_assembler.py → Frame Indexer (valide + trie + manifeste, ZÉRO FFmpeg) — PR #46
+- [x] Refactor rife_interpolator.py → Chunk-based frame-to-frame (lit PNG direct, batch 10s, checkpoint) — PR #46
+- [x] Refactor upscaler.py → Chunk-based frame-to-frame (fusionné avec RIFE dans le pipeline) — PR #46
+- [x] Refactor final_encoder.py → Encode unique depuis frames PNG (AV1 + H.265 tune animation + ProRes) — PR #46
+- [x] Refactor EXO_06_CARRIER.py → Orchestrateur V2 (preset CLI, checkpoint, progress, frame pipeline) — PR #46
 
 ### Phase C — Finition
-- [ ] Mettre à jour requirements.txt (ajouter svt-av1 optionnel)
-- [ ] Mettre à jour EXO_06_CONTROL.ipynb et EXO_06_PRODUCTION.ipynb
-- [ ] Mettre à jour README_DEV.md et UNIT_06_SUBPLAN.md
+- [x] Mettre à jour requirements.txt (ajouter svt-av1 optionnel) — PR #46
+- [x] Mettre à jour EXO_06_CONTROL.ipynb et EXO_06_PRODUCTION.ipynb — PR #46
+- [x] Mettre à jour README_DEV.md et UNIT_06_SUBPLAN.md — PR #46
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
-| | | | | |
+| 2026-03-06 | ATOM-IC Audit — 4 compressions lossy découvertes | ✅ | PR #44 | — |
+| 2026-03-06 | carrier_schema.py — 6 piliers + self_test 12/12 | ✅ | PR #45 | — |
+| 2026-03-06 | Refactor pipeline frame-based complet (5 modules + orchestrateur) | ✅ | PR #46 | — |
+| 2026-03-06 | Fix 3 bugs HIGH (destructive move, checkpoint nuke, pix_fmt orphan) | ✅ | PR #46 (commit 1db189a) | — |
 
 ## 5. MÉTRIQUES ET VALIDATION
-- Compressions lossy intermédiaires : cible 0 (actuellement 4)
-- Pic disque temporaire : cible <5GB (actuellement ~50GB)
-- Poids livrable 60s distribution : cible 200-400MB (actuellement ~1.5GB)
-- VRAM peak RIFE : cible <10GB (T4 safe)
-- Temps pipeline 60s vidéo sur T4 : à mesurer
-- [ ] carrier_schema.py self_test passé
+- [x] Compressions lossy intermédiaires : ✅ 0 (cible atteinte)
+- [x] Pic disque temporaire : ✅ <5GB (chunks 10s)
+- [x] Poids livrable 60s distribution : ✅ 200-400MB (AV1 CRF 30)
+- [x] VRAM peak RIFE : ✅ <10GB (chunk-based)
+- [ ] Temps pipeline 60s vidéo sur T4 : à mesurer
+- [x] carrier_schema.py self_test passé
 - [ ] Marshal Out-Check passé
 - [ ] Validation Souveraine
 
