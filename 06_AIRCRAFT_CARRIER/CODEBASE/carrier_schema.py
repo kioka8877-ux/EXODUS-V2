@@ -33,7 +33,11 @@ VALID_TARGET_FPS: List[int] = [120, 60, 30]
 DEFAULT_TARGET_FPS: int = 120
 DEFAULT_SOURCE_FPS: int = 30
 
-CRF_RANGE: Tuple[int, int] = (16, 22)
+CRF_RANGES: Dict[str, Tuple[int, int]] = {
+    "libx265": (16, 22),
+    "libsvtav1": (20, 38),
+    "default": (16, 28),
+}
 DEFAULT_CRF_DISTRIBUTION: int = 20
 DEFAULT_CRF_AV1: int = 30
 
@@ -230,12 +234,17 @@ class CarrierSchema:
     # Validation — CRF
     # -----------------------------------------------------------------
 
-    def validate_crf(self, value: int, preset: str = None) -> Tuple[bool, str]:
-        """Vérifie que le CRF est dans CRF_RANGE.
-        Si preset fourni, vérifie aussi la cohérence avec le preset."""
-        crf_min, crf_max = CRF_RANGE
+    def validate_crf(self, value: int, preset: str = None, codec: str = None) -> Tuple[bool, str]:
+        """Vérifie que le CRF est dans le range du codec.
+        Si preset fourni, le codec est déduit du preset.
+        Si ni preset ni codec, utilise 'default'."""
+        if preset and preset in ENCODING_PRESETS:
+            codec = ENCODING_PRESETS[preset].get("codec", codec)
+        if not codec or codec not in CRF_RANGES:
+            codec = "default"
+        crf_min, crf_max = CRF_RANGES[codec]
         if value < crf_min or value > crf_max:
-            return (False, f"CRF {value} hors range [{crf_min}, {crf_max}]")
+            return (False, f"CRF {value} hors range [{crf_min}, {crf_max}] pour codec {codec}")
         if preset and preset in ENCODING_PRESETS:
             expected_crf = ENCODING_PRESETS[preset].get("crf")
             if expected_crf is not None and value != expected_crf:
@@ -354,23 +363,24 @@ class CarrierSchema:
         else:
             print("[TEST 2]  VALID_RATIOS ................... ✗")
 
-        # --- TEST 3 : CRF_RANGE valide ---
+        # --- TEST 3 : CRF_RANGES valides (par codec) ---
         t3_ok = True
-        crf_min, crf_max = CRF_RANGE
-        if crf_min >= crf_max:
-            t3_ok = False
-            print(f"  ERREUR CRF_RANGE min ({crf_min}) >= max ({crf_max})")
-        if crf_min < 0:
-            t3_ok = False
-            print(f"  ERREUR CRF_RANGE min ({crf_min}) < 0")
-        if crf_max > 51:
-            t3_ok = False
-            print(f"  ERREUR CRF_RANGE max ({crf_max}) > 51")
+        for codec_name, (crf_min, crf_max) in CRF_RANGES.items():
+            if crf_min >= crf_max:
+                t3_ok = False
+                print(f"  ERREUR CRF_RANGES[{codec_name}] min ({crf_min}) >= max ({crf_max})")
+            if crf_min < 0:
+                t3_ok = False
+                print(f"  ERREUR CRF_RANGES[{codec_name}] min ({crf_min}) < 0")
+            if crf_max > 63:
+                t3_ok = False
+                print(f"  ERREUR CRF_RANGES[{codec_name}] max ({crf_max}) > 63")
         if t3_ok:
+            ranges_str = ", ".join(f"{k}:{v[0]}-{v[1]}" for k, v in CRF_RANGES.items())
             passed += 1
-            print(f"[TEST 3]  CRF_RANGE ...................... ✓ ({crf_min}-{crf_max}, 0 ≤ min < max ≤ 51)")
+            print(f"[TEST 3]  CRF_RANGES per-codec ........... ✓ ({ranges_str})")
         else:
-            print("[TEST 3]  CRF_RANGE ...................... ✗")
+            print("[TEST 3]  CRF_RANGES per-codec ........... ✗")
 
         # --- TEST 4 : parse_format_metadata V2 ---
         t4_ok = True
@@ -435,22 +445,27 @@ class CarrierSchema:
         else:
             print("[TEST 6]  validate_ratio ................. ✗")
 
-        # --- TEST 7 : validate_crf ---
+        # --- TEST 7 : validate_crf (per-codec ranges) ---
         t7_ok = True
-        ok_16, _ = self.validate_crf(16)
-        ok_22, _ = self.validate_crf(22)
-        ok_20, _ = self.validate_crf(20)
-        if not ok_16 or not ok_22 or not ok_20:
+        ok_av1, _ = self.validate_crf(30, preset="distribution")
+        if not ok_av1:
             t7_ok = False
-            print(f"  ERREUR CRF 16/20/22 devraient être acceptés")
+            print("  ERREUR CRF 30 preset=distribution (AV1) devrait être accepté")
+        ok_h265, _ = self.validate_crf(20, preset="distribution_h265")
+        if not ok_h265:
+            t7_ok = False
+            print("  ERREUR CRF 20 preset=distribution_h265 devrait être accepté")
         ok_5, _ = self.validate_crf(5)
-        ok_51, _ = self.validate_crf(51)
-        if ok_5 or ok_51:
+        if ok_5:
             t7_ok = False
-            print(f"  ERREUR CRF 5/51 devraient être rejetés")
+            print("  ERREUR CRF 5 (default) devrait être rejeté")
+        ok_50, _ = self.validate_crf(50)
+        if ok_50:
+            t7_ok = False
+            print("  ERREUR CRF 50 (default) devrait être rejeté")
         if t7_ok:
             passed += 1
-            print("[TEST 7]  validate_crf ................... ✓ (16-22 ✓, 5/51 ✗)")
+            print("[TEST 7]  validate_crf ................... ✓ (AV1:30 ✓, H265:20 ✓, 5 ✗, 50 ✗)")
         else:
             print("[TEST 7]  validate_crf ................... ✗")
 
