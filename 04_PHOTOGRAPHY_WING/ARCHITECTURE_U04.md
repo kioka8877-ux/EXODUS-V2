@@ -38,13 +38,17 @@ Séparer la **configuration caméra** (rapide, ~30 secondes) du **rendu** (lent,
 - **Contenu du .blend** : Caméra positionnée (fSpy), DOF actif (Empty→buste), Noise modifier (shake), Volume Scatter, lampes invisibles, Cycles configuré, passes activées, résolution 4K
 - **NE FAIT PAS** : Aucun rendu. Zéro frame produite.
 
-### U04-B — DARKROOM (Rendu)
-- **Mission** : Ouvrir le .blend de U04-A et lancer le rendu batch.
-- **Durée** : 15-45 heures (GPU dépendant)
-- **Input** : `*.blend` configuré par U04-A
-- **Output** : Frames EXR/PNG dans `OUT_CAMERA_LOGIC/` pour U05/Alchemist
-- **Infrastructure** : Google Colab Pro, cloud GPU, ou local — à définir
-- **STATUT** : 🔴 PLANIFIÉ — PAS DÉVELOPPÉ. Nécessite un brainstorming infrastructure séparé.
+### U04-B — DARKROOM (Rendu ATOM-IC)
+- **Mission** : Ouvrir le .blend de U04-A et rendre les frames en batch.
+- **Approche ATOM-IC** : Rendre en **1080p @ 128 samples** avec denoiser OIDN. U06 Real-ESRGAN upscale → 4K.
+  - **TRIZ Inversion** : Au lieu de rendre 4K (8.3M pixels × 256 samples = 15-45h), rendre 1080p (2.1M pixels × 128 samples = 2-4h). L'AI upscaler compense.
+  - **Pareto** : U05 travaille en RGB (cv2.imread) — pas besoin de passes EXR. PNG 16-bit Combined suffit.
+  - **Segmentation** : Chunks de 300 frames + checkpoint JSON. Résiste au timeout Colab 12h.
+- **Durée** : **~2-4 heures** sur T4 (au lieu de 15-45h)
+- **Input** : `scene_ready_*.blend` configuré par U04-A
+- **Output** : Frames PNG 16-bit 1080p dans `OUT_CAMERA_LOGIC/` pour U05/Alchemist
+- **Infrastructure** : Google Colab (T4 16GB)
+- **STATUT** : 🟡 EN FORGE
 
 ### Pourquoi cette séparation ?
 
@@ -61,8 +65,8 @@ Séparer la **configuration caméra** (rapide, ~30 secondes) du **rendu** (lent,
 
 ```
 U02 (actor.blend) ──┐
-                     ├──→ [U04-A DIRECTOR] ──→ scene_configured.blend ──→ [U04-B DARKROOM] ──→ frames.exr ──→ U05
-U03 (environment.blend)┘          ~30s                 ~200 MB                    ~15-45h              ~36 GB
+                     ├──→ [U04-A DIRECTOR] ──→ scene_configured.blend ──→ [U04-B DARKROOM] ──→ frames_1080p.png ──→ U05 ──→ U06 (AI upscale 4K)
+U03 (environment.blend)┘          ~30s                 ~200 MB                  ~2-4h              ~1.5 GB
 U00 (camera_fov_ratio.json)┘
 ```
 
@@ -108,6 +112,21 @@ Avant les 4 piliers, un module de données pures centralise TOUTES les constante
 └── README_DEV.md                  ← MODIFIÉ
 ```
 
+## 5b. ARCHITECTURE DES FICHIERS (U04-B)
+
+```
+04_PHOTOGRAPHY_WING/
+├── CODEBASE/
+│   ├── ...                            (fichiers U04-A existants)
+│   ├── darkroom_render.py             ← NOUVEAU (Script Blender headless — chunk rendering)
+│   ├── EXO_04_DARKROOM.py            ← NOUVEAU (Orchestrateur CLI Python pur)
+│   └── EXO_04_DARKROOM.ipynb         ← NOUVEAU (Notebook Colab)
+├── OUT_CAMERA_LOGIC/
+│   ├── scene_ready_*.blend            (U04-A)
+│   ├── render_*.png                   ← NOUVEAU (frames PNG 16-bit 1080p, U04-B)
+│   └── darkroom_checkpoint.json       ← NOUVEAU (checkpoint reprise)
+```
+
 ## 6. CRITÈRES DE VALIDATION (5/5 dans U04-A)
 
 Tous les critères de `EXODUS_V2_VALIDATION.md §U04` sont satisfaits par U04-A :
@@ -129,21 +148,19 @@ Conformément à `EXO_MARSHAL.py` (lignes 96-111) :
 - `IN_VIDEO_SOURCE/*.mp4` — vidéo source (pour référence)
 - `IN_VIDEO_SOURCE/camera_fov_ratio.json` — métadonnées caméra (U00)
 
-**OUT** (ce que U04-A produit) :
-- `OUT_CAMERA_LOGIC/*.blend` — scène avec caméra configurée ✅ (required: True)
-- ~~`OUT_CAMERA_LOGIC/*.exr`~~ — frames rendues ❌ (U04-B, pas U04-A)
-- ~~`OUT_CAMERA_LOGIC/*.png`~~ — frames rendues ❌ (U04-B, pas U04-A)
-
-> **Note** : Le Marshal actuel a `*.exr` et `*.png` en `required: False` dans le manifest U05. U04-A ne les produit pas — c'est U04-B qui le fera.
+**OUT** (ce que U04 produit) :
+- `OUT_CAMERA_LOGIC/*.blend` — scène avec caméra configurée ✅ (U04-A, required: True)
+- `OUT_CAMERA_LOGIC/render_*.png` — frames rendues PNG 16-bit 1080p (U04-B, required: True)
+- `OUT_CAMERA_LOGIC/darkroom_checkpoint.json` — checkpoint rendu (U04-B, required: False)
 
 ## 8. TIMELINE
 
 | Phase | Quoi | Quand | Statut |
 |-------|------|-------|--------|
-| C1 | Documents d'architecture (ce fichier) | Maintenant | 🟢 |
-| C2 | U04-A Director (camera_schema + 4 piliers) | Prochain sprint | 🟡 EN ATTENTE |
-| C3 | U04-B Darkroom (brainstorming infra) | Après C2 | 🔴 PLANIFIÉ |
-| C4 | U04-B Darkroom (implémentation) | Après C3 | 🔴 PLANIFIÉ |
+| C1 | Documents d'architecture (ce fichier) | Fait | 🟢 |
+| C2 | U04-A Director (camera_schema + 4 piliers) | Fait | 🟢 SCELLÉ |
+| C3 | U04-B Darkroom (brainstorming ATOM-IC) | Fait | 🟢 |
+| C4 | U04-B Darkroom (implémentation) | En cours | 🟡 EN FORGE |
 
 ## RÉFÉRENCES
 - [PRD §U04](../TRACKING/EXODUS_V2_PRD.md) — Spécifications techniques

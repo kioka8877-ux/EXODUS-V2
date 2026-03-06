@@ -107,10 +107,14 @@
 - [x] Câblage EXO_04_PHOTOGRAPHY.py
 - Statut : ✅ SCELLÉ (PR #34-#37)
 
-#### C3 — U04-B Darkroom (Rendu — PLANIFIÉ)
-- [ ] Brainstorming infrastructure (Colab/Cloud/Local)
-- [ ] Implémentation batch rendering
-- Statut : 🔴 PLANIFIÉ (après C2)
+#### C3 — U04-B Darkroom (Rendu ATOM-IC)
+- [x] Brainstorming ATOM-IC : 1080p @ 128 samples + OIDN → U06 AI upscale 4K
+- [ ] Preset `darkroom` dans camera_schema.py (1080p, 128 samples, Combined, PNG 16-bit)
+- [ ] `darkroom_render.py` (Blender headless, chunks 300 frames, checkpoint JSON)
+- [ ] `EXO_04_DARKROOM.py` (orchestrateur CLI + resume)
+- [ ] `EXO_04_DARKROOM.ipynb` (Colab notebook)
+- [ ] Documentation V2 (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md)
+- Statut : 🟡 EN FORGE (brainstorming validé, implémentation en cours)
 
 #### C5 — U06 Aircraft Carrier (Pipeline Frame-Based V2) ✅
 - [x] carrier_schema.py (Bible du Vaisseau-Mère — 6 piliers) — PR #45
