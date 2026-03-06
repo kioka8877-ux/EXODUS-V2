@@ -1,26 +1,25 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║             FRÉGATE 05_ALCHEMIST — EXODUS POST-PRODUCTION LAB                ║
-║              Compositing • Color Grading • Effets Cinématiques               ║
+║             FRÉGATE 05_ALCHEMIST — EXODUS VISUAL FUSION PIPELINE             ║
+║         Match Color • Grain • Bloom • Sharpness (OpenCV CPU pur)            ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Version: 1.0.0                                                              ║
-║  Mission: Post-production automatisée des rendus EXR 4K/120FPS              ║
-║  Stack: Blender Compositor + OpenColorIO + OptiX/OIDN                       ║
+║  Version: 2.0.0                                                              ║
+║  Mission: Fusion visuelle rendu/source pour atteindre le look cinéma 4K    ║
+║  Stack: OpenCV + Pillow + numpy (CPU pur — zéro Blender, zéro GPU)         ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 LOI D'ISOLATION DES SILOS:
     Cette unité est une île. Elle ne communique avec aucune autre Frégate.
     Elle lit ses inputs, produit ses outputs. Point final.
-    
+
 INPUTS REQUIS:
-    - render_*.exr : Séquences EXR multi-layer (de U04)
-    - PRODUCTION_PLAN.JSON : Instructions color grade et effets
-    - LUTS/*.cube : LUTs cinématiques
-    
+    - IN_RAW_FRAMES/ : Séquences rendues (EXR/PNG/TIFF de U04)
+    - PRODUCTION_PLAN.JSON : Scènes, timecodes, paramètres
+    - Source vidéo (.mp4/.avi/.mov) : Référence visuelle
+
 OUTPUTS:
-    - graded_{scene_id}_####.exr : Séquences EXR finales
-    - graded_preview_{scene_id}.mp4 : Preview H.264 pour validation
+    - OUT_FINAL_FRAMES/ : Frames fusionnées PNG 16-bit
     - alchemist_report.json : Rapport de production
 """
 
@@ -28,550 +27,650 @@ import argparse
 import json
 import os
 import sys
-import subprocess
-from pathlib import Path
+import time
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-ALCHEMIST_VERSION = "1.0.0"
+import cv2
+import numpy as np
 
-AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
-BLENDER_SUBDIR = "blender-4.0.0-linux-x64"
+ALCHEMIST_VERSION = "2.0.0"
 
+_CODEBASE_DIR = Path(__file__).parent
+sys.path.insert(0, str(_CODEBASE_DIR))
+
+from alchemist_schema import (
+    AlchemistSchema,
+    OUTPUT_COMPRESSION,
+    OUTPUT_DEPTH,
+    OUTPUT_FORMAT,
+    PIPELINE_ORDER,
+    SUPPORTED_INPUT_FORMATS,
+    SUPPORTED_VIDEO_FORMATS,
+)
+from bloom_engine import BloomEngine
+from sharpness_transfer import SharpnessTransfer
+
+try:
+    from match_color import ColorMatcher
+    HAS_MATCH_COLOR = True
+except ImportError:
+    HAS_MATCH_COLOR = False
+
+try:
+    from grain_matcher import GrainMatcher
+    HAS_GRAIN_MATCHER = True
+except ImportError:
+    HAS_GRAIN_MATCHER = False
+
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LOGGER
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class AlchemistLogger:
     """Logger structuré pour ALCHEMIST LAB."""
+
     def __init__(self, verbose: bool = False):
         self.verbose = verbose
-        self.logs = []
-    
+        self.logs: list = []
+
     def info(self, msg: str):
         entry = f"[ALCHEMIST] {msg}"
         print(entry)
         self.logs.append({"level": "INFO", "message": msg, "timestamp": datetime.now().isoformat()})
-    
+
     def debug(self, msg: str):
         if self.verbose:
             entry = f"[ALCHEMIST:DEBUG] {msg}"
             print(entry)
             self.logs.append({"level": "DEBUG", "message": msg, "timestamp": datetime.now().isoformat()})
-    
+
     def error(self, msg: str):
         entry = f"[ALCHEMIST:ERROR] {msg}"
         print(entry, file=sys.stderr)
         self.logs.append({"level": "ERROR", "message": msg, "timestamp": datetime.now().isoformat()})
-    
+
     def success(self, msg: str):
         entry = f"[ALCHEMIST:OK] ✓ {msg}"
         print(entry)
         self.logs.append({"level": "SUCCESS", "message": msg, "timestamp": datetime.now().isoformat()})
-    
+
     def warn(self, msg: str):
         entry = f"[ALCHEMIST:WARN] ⚠ {msg}"
         print(entry)
         self.logs.append({"level": "WARN", "message": msg, "timestamp": datetime.now().isoformat()})
-    
+
     def get_logs(self) -> list:
         return self.logs
 
 
-def check_blender(drive_root: Path, logger: AlchemistLogger, custom_path: str = None) -> str:
-    """
-    Vérifie que Blender 4.0 est disponible.
-    Retourne le chemin vers l'exécutable Blender.
-    """
-    if custom_path:
-        blender_path = Path(custom_path)
-        if blender_path.exists():
-            logger.success(f"Blender custom trouvé: {blender_path}")
-            return str(blender_path)
-        else:
-            logger.error(f"Blender custom introuvable: {blender_path}")
-            sys.exit(1)
-    
-    ai_models_path = drive_root / AI_MODELS_SUBDIR
-    blender_path = ai_models_path / BLENDER_SUBDIR / "blender"
-    
-    if not blender_path.exists():
-        logger.error(f"Blender 4.0 introuvable: {blender_path}")
-        logger.info("Téléchargez Blender 4.0 Linux x64 portable et placez-le dans:")
-        logger.info(f"  {ai_models_path / BLENDER_SUBDIR}/")
-        sys.exit(1)
-    
-    logger.success("Blender 4.0 vérifié")
-    return str(blender_path)
-
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATION & HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
 
 def validate_production_plan(plan_path: Path, logger: AlchemistLogger) -> dict:
-    """
-    Valide et charge le PRODUCTION_PLAN.JSON.
-    Extrait les paramètres post_production.
-    """
+    """Charge et valide le PRODUCTION_PLAN.JSON."""
     if not plan_path.exists():
         logger.error(f"PRODUCTION_PLAN.JSON introuvable: {plan_path}")
         sys.exit(1)
-    
+
     try:
-        with open(plan_path, 'r', encoding='utf-8') as f:
+        with open(plan_path, "r", encoding="utf-8") as f:
             plan = json.load(f)
     except json.JSONDecodeError as e:
         logger.error(f"JSON invalide dans {plan_path}: {e}")
         sys.exit(1)
-    
+
     if "scenes" not in plan:
         logger.warn("Aucune scène trouvée dans le plan, création structure vide")
         plan["scenes"] = []
-    
-    total_post_config = 0
-    for scene in plan.get("scenes", []):
-        if "post_production" in scene:
-            total_post_config += 1
-    
-    logger.success(f"Plan validé: {len(plan['scenes'])} scènes, {total_post_config} avec config post-prod")
+
+    logger.success(f"Plan validé: {len(plan['scenes'])} scènes")
     return plan
 
 
-def scan_exr_sequences(render_dir: Path, logger: AlchemistLogger) -> Dict[int, List[Path]]:
-    """
-    Scanne le dossier IN_RENDER pour trouver les séquences EXR.
-    Retourne un dict {scene_id: [liste de fichiers EXR]}.
-    """
-    sequences = {}
-    
+def scan_render_frames(render_dir: Path, logger: AlchemistLogger, scene_id: int = None) -> Dict[int, List[Path]]:
+    """Scanne render_dir pour trouver les frames par scène."""
+    sequences: Dict[int, List[Path]] = {}
+
     if not render_dir.exists():
         logger.warn(f"Dossier render introuvable: {render_dir}")
         return sequences
-    
-    exr_files = sorted(render_dir.glob("*.exr"))
-    
-    if not exr_files:
-        exr_files = sorted(render_dir.glob("**/*.exr"))
-    
-    for exr_file in exr_files:
-        name = exr_file.stem
-        
-        scene_id = 1
-        if "_scene_" in name.lower():
+
+    all_files = sorted(render_dir.iterdir())
+    for f in all_files:
+        if f.suffix.lower() not in SUPPORTED_INPUT_FORMATS:
+            continue
+
+        name = f.stem.lower()
+        sid = 1
+        if "_scene_" in name:
             try:
-                parts = name.lower().split("_scene_")
-                scene_id = int(parts[1].split("_")[0])
+                parts = name.split("_scene_")
+                sid = int(parts[1].split("_")[0])
             except (ValueError, IndexError):
                 pass
-        elif name.startswith("render_"):
+        elif "scene" in name:
             try:
-                scene_id = int(name.split("_")[1])
+                idx = name.index("scene")
+                num_str = ""
+                for c in name[idx + 5:]:
+                    if c.isdigit():
+                        num_str += c
+                    elif num_str:
+                        break
+                if num_str:
+                    sid = int(num_str)
             except (ValueError, IndexError):
                 pass
-        
-        if scene_id not in sequences:
-            sequences[scene_id] = []
-        sequences[scene_id].append(exr_file)
-    
-    for scene_id in sequences:
-        sequences[scene_id] = sorted(sequences[scene_id])
-    
-    logger.info(f"Séquences EXR trouvées: {len(sequences)} scènes")
-    for scene_id, files in sequences.items():
-        logger.debug(f"  Scene {scene_id}: {len(files)} frames")
-    
+
+        if scene_id is not None and sid != scene_id:
+            continue
+
+        sequences.setdefault(sid, []).append(f)
+
+    for sid in sequences:
+        sequences[sid] = sorted(sequences[sid])
+
+    logger.info(f"Frames render trouvées: {sum(len(v) for v in sequences.values())} dans {len(sequences)} scène(s)")
+    for sid, files in sorted(sequences.items()):
+        logger.debug(f"  Scene {sid}: {len(files)} frames")
+
     return sequences
 
 
-def validate_luts(luts_dir: Path, plan: dict, logger: AlchemistLogger) -> Dict[str, Path]:
-    """
-    Vérifie que les LUTs requis sont disponibles.
-    Retourne un mapping {nom_lut: chemin}.
-    """
-    required_luts = set()
-    
-    for scene in plan.get("scenes", []):
-        post_prod = scene.get("post_production", {})
-        color_grade = post_prod.get("color_grade", "")
-        if color_grade:
-            required_luts.add(color_grade)
-    
-    lut_mapping = {}
-    available_luts = list(luts_dir.glob("*.cube")) if luts_dir.exists() else []
-    
-    for lut_file in available_luts:
-        lut_name = lut_file.stem
-        lut_mapping[lut_name] = lut_file
-        normalized_name = lut_name.lower().replace("-", "_").replace(" ", "_")
-        if normalized_name != lut_name:
-            lut_mapping[normalized_name] = lut_file
-    
-    missing_luts = []
-    for lut_name in required_luts:
-        normalized = lut_name.lower().replace("-", "_").replace(" ", "_")
-        if lut_name not in lut_mapping and normalized not in lut_mapping:
-            missing_luts.append(lut_name)
-    
-    if missing_luts:
-        logger.warn(f"LUTs manquants: {missing_luts}")
-        logger.info("Color grade sera appliqué sans LUT pour ces scènes")
-    else:
-        logger.success(f"Tous les LUTs requis disponibles: {len(required_luts)}")
-    
-    logger.debug(f"LUTs disponibles: {list(lut_mapping.keys())}")
-    return lut_mapping
+def open_source_video(video_path: Path, logger: AlchemistLogger) -> Optional[cv2.VideoCapture]:
+    """Ouvre la vidéo source avec cv2.VideoCapture."""
+    if video_path is None or not video_path.exists():
+        return None
+
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        logger.warn(f"Impossible d'ouvrir la vidéo source: {video_path}")
+        return None
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    logger.success(f"Vidéo source ouverte: {w}x{h} @ {fps:.1f}fps, {total} frames")
+    return cap
 
 
-def get_post_config(scene: dict) -> dict:
-    """Extrait la config post-production d'une scène avec valeurs par défaut."""
-    default_config = {
-        "color_grade": "natural",
-        "effects": {
-            "bloom": False,
-            "lens_flare": False,
-            "film_grain": 0.0,
-            "vignette": 0.0,
-            "chromatic_aberration": 0.0
-        },
-        "denoise": True,
-        "exposure": 0.0,
-        "contrast": 1.0,
-        "saturation": 1.0
-    }
-    
-    post_prod = scene.get("post_production", {})
-    
-    config = default_config.copy()
-    config["color_grade"] = post_prod.get("color_grade", config["color_grade"])
-    config["denoise"] = post_prod.get("denoise", config["denoise"])
-    config["exposure"] = post_prod.get("exposure", config["exposure"])
-    config["contrast"] = post_prod.get("contrast", config["contrast"])
-    config["saturation"] = post_prod.get("saturation", config["saturation"])
-    
-    effects = post_prod.get("effects", {})
-    for key in config["effects"]:
-        if key in effects:
-            config["effects"][key] = effects[key]
-    
+def extract_source_frame(cap: cv2.VideoCapture, frame_idx: int, total_frames: int) -> Optional[np.ndarray]:
+    """Extrait une frame de la vidéo source, avec clamp aux bornes."""
+    clamped = max(0, min(frame_idx, total_frames - 1))
+    cap.set(cv2.CAP_PROP_POS_FRAMES, clamped)
+    ret, frame = cap.read()
+    if not ret:
+        return None
+    return frame
+
+
+def extract_sample_frames(
+    cap: cv2.VideoCapture,
+    start_frame: int,
+    end_frame: int,
+    total_video_frames: int,
+    count: int,
+) -> List[np.ndarray]:
+    """Extrait `count` frames uniformément réparties entre start et end."""
+    if end_frame <= start_frame:
+        end_frame = start_frame + 1
+    count = min(count, end_frame - start_frame)
+    if count <= 0:
+        return []
+
+    step = max(1, (end_frame - start_frame) // count)
+    frames = []
+    for i in range(count):
+        idx = start_frame + i * step
+        f = extract_source_frame(cap, idx, total_video_frames)
+        if f is not None:
+            frames.append(f)
+    return frames
+
+
+def resize_to_match(source: np.ndarray, target_shape: tuple) -> np.ndarray:
+    """Redimensionne source pour matcher target_shape (h, w)."""
+    th, tw = target_shape[:2]
+    sh, sw = source.shape[:2]
+    if sh == th and sw == tw:
+        return source
+    return cv2.resize(source, (tw, th), interpolation=cv2.INTER_LINEAR)
+
+
+def get_scene_timecodes(scene: dict, fps_source: float) -> Tuple[int, int]:
+    """Extrait start_frame et end_frame d'une scène du plan."""
+    tc_start = scene.get("timecode_start", scene.get("frame_start", 0))
+    tc_end = scene.get("timecode_end", scene.get("frame_end", 0))
+
+    if isinstance(tc_start, str) and ":" in tc_start:
+        parts = tc_start.split(":")
+        seconds = sum(float(p) * (60 ** (len(parts) - 1 - i)) for i, p in enumerate(parts))
+        tc_start = int(seconds * fps_source)
+    if isinstance(tc_end, str) and ":" in tc_end:
+        parts = tc_end.split(":")
+        seconds = sum(float(p) * (60 ** (len(parts) - 1 - i)) for i, p in enumerate(parts))
+        tc_end = int(seconds * fps_source)
+
+    return int(tc_start), int(tc_end)
+
+
+def save_frame(frame: np.ndarray, output_path: Path):
+    """Sauvegarde une frame en PNG 16-bit."""
+    if frame.dtype == np.float32 or frame.dtype == np.float64:
+        frame = np.clip(frame, 0.0, 1.0)
+        frame = (frame * 65535.0).astype(np.uint16)
+    elif frame.dtype == np.uint8:
+        frame = (frame.astype(np.uint16) * 257)
+
+    cv2.imwrite(
+        str(output_path),
+        frame,
+        [cv2.IMWRITE_PNG_COMPRESSION, OUTPUT_COMPRESSION],
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PIPELINE PRINCIPAL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def resolve_config(args, schema: AlchemistSchema) -> dict:
+    """Résout la config pipeline depuis le preset + overrides CLI."""
+    preset_name = args.preset
+    valid, msg = schema.validate_pipeline_preset(preset_name)
+    if not valid:
+        print(f"[ALCHEMIST:ERROR] {msg}", file=sys.stderr)
+        sys.exit(1)
+
+    config = schema.get_pipeline_config(preset_name)
+
+    if args.match_intensity is not None:
+        config["match_color"]["intensity"] = schema.validate_intensity(
+            "match_color", args.match_intensity
+        )
+    if args.grain_intensity is not None:
+        config["grain"]["intensity"] = schema.validate_intensity(
+            "grain", args.grain_intensity
+        )
+    if args.bloom_preset is not None:
+        config["bloom"] = schema.get_bloom_config(args.bloom_preset)
+    if args.sharpness_intensity is not None:
+        config["sharpness"]["intensity"] = schema.validate_intensity(
+            "sharpness", args.sharpness_intensity
+        )
+
     return config
 
 
-def run_blender_compositor(
-    blender_path: str,
-    scene_id: int,
-    exr_files: List[Path],
-    output_dir: Path,
-    post_config: dict,
-    luts_dir: Path,
-    lut_mapping: Dict[str, Path],
-    logger: AlchemistLogger
-) -> Tuple[bool, dict]:
-    """
-    Exécute Blender en mode headless pour le compositing.
-    """
-    logger.info(f"Compositing Scene {scene_id}...")
-    
-    script_dir = Path(__file__).parent
-    compositor_script = script_dir / "compositor_pipeline.py"
-    
-    if not compositor_script.exists():
-        logger.error(f"Script compositor introuvable: {compositor_script}")
-        return False, {"error": "Script missing"}
-    
-    lut_path = ""
-    color_grade = post_config.get("color_grade", "")
-    normalized_grade = color_grade.lower().replace("-", "_").replace(" ", "_")
-    
-    if color_grade in lut_mapping:
-        lut_path = str(lut_mapping[color_grade])
-    elif normalized_grade in lut_mapping:
-        lut_path = str(lut_mapping[normalized_grade])
-    
-    first_exr = str(exr_files[0]) if exr_files else ""
-    frame_start = 1
-    frame_end = len(exr_files)
-    
-    config_json = json.dumps({
-        "scene_id": scene_id,
-        "input_exr": first_exr,
-        "frame_start": frame_start,
-        "frame_end": frame_end,
-        "output_dir": str(output_dir),
-        "lut_path": lut_path,
-        "post_config": post_config
-    })
-    
-    cmd = [
-        blender_path,
-        "--background",
-        "--python", str(compositor_script),
-        "--",
-        "--config", config_json
-    ]
-    
-    logger.debug(f"Commande Blender: {' '.join(cmd[:5])}...")
-    
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
-    
-    if result.returncode != 0:
-        logger.error(f"Blender échoué (code {result.returncode})")
-        logger.error(f"STDERR: {result.stderr[-2000:] if result.stderr else 'N/A'}")
-        return False, {"error": result.stderr}
-    
-    logger.debug(f"STDOUT: {result.stdout[-1000:] if result.stdout else 'N/A'}")
-    logger.success(f"Compositing Scene {scene_id} terminé")
-    
-    return True, {
-        "scene_id": scene_id,
-        "frames_processed": frame_end,
-        "lut_applied": bool(lut_path),
-        "effects_applied": post_config.get("effects", {})
-    }
+def process_pipeline(args, logger: AlchemistLogger):
+    """Pipeline principal de fusion visuelle."""
 
+    schema = AlchemistSchema()
+    config = resolve_config(args, schema)
 
-def generate_preview(
-    scene_id: int,
-    output_dir: Path,
-    frame_count: int,
-    logger: AlchemistLogger
-) -> Optional[Path]:
-    """
-    Génère une preview MP4 basse qualité pour validation rapide.
-    Utilise FFmpeg si disponible.
-    """
-    exr_pattern = output_dir / f"graded_{scene_id:03d}_%04d.exr"
-    preview_path = output_dir / f"graded_preview_{scene_id:03d}.mp4"
-    
-    if not list(output_dir.glob(f"graded_{scene_id:03d}_*.exr")):
-        logger.warn(f"Pas de frames EXR pour preview Scene {scene_id}")
-        return None
-    
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-framerate", "30",
-        "-start_number", "1",
-        "-i", str(exr_pattern),
-        "-c:v", "libx264",
-        "-preset", "fast",
-        "-crf", "23",
-        "-pix_fmt", "yuv420p",
-        "-vf", "scale=1920:1080",
-        str(preview_path)
-    ]
-    
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-        if result.returncode == 0:
-            logger.success(f"Preview générée: {preview_path.name}")
-            return preview_path
+    drive_root = Path(args.drive_root)
+    unit_root = drive_root / "05_ALCHEMIST_LAB"
+
+    render_dir = Path(args.render_dir) if args.render_dir else unit_root / "IN_RAW_FRAMES"
+    output_dir = Path(args.output_dir) if args.output_dir else unit_root / "OUT_FINAL_FRAMES"
+    source_ref_dir = Path(args.source_ref_dir) if args.source_ref_dir else unit_root / "IN_SOURCE_REF"
+    plan_path = Path(args.production_plan)
+
+    logger.info(f"ALCHEMIST v{ALCHEMIST_VERSION} — Pipeline OpenCV CPU pur")
+    logger.info(f"Preset: {args.preset}")
+    logger.debug(f"drive_root   = {drive_root}")
+    logger.debug(f"render_dir   = {render_dir}")
+    logger.debug(f"output_dir   = {output_dir}")
+    logger.debug(f"source_ref   = {source_ref_dir}")
+    logger.debug(f"plan         = {plan_path}")
+
+    plan = validate_production_plan(plan_path, logger)
+
+    if not render_dir.exists():
+        logger.error(f"Dossier render introuvable: {render_dir}")
+        sys.exit(1)
+
+    source_video_path = None
+    if args.source_video:
+        svp = Path(args.source_video)
+        if svp.exists():
+            source_video_path = svp
         else:
-            logger.warn(f"FFmpeg échoué pour preview: {result.stderr[:500]}")
-            return None
-    except FileNotFoundError:
-        logger.warn("FFmpeg non disponible - preview non générée")
-        return None
-    except subprocess.TimeoutExpired:
-        logger.warn("FFmpeg timeout - preview non générée")
-        return None
+            logger.warn(f"Vidéo source introuvable: {svp}")
 
+    skip_match = args.skip_match or not HAS_MATCH_COLOR
+    skip_grain = args.skip_grain or not HAS_GRAIN_MATCHER
+    skip_bloom = args.skip_bloom
+    skip_sharpness = args.skip_sharpness
 
-def generate_report(
-    output_dir: Path,
-    plan: dict,
-    sequences: Dict[int, List[Path]],
-    results: List[dict],
-    logger: AlchemistLogger
-) -> dict:
-    """
-    Génère le rapport de production alchemist_report.json.
-    """
-    success_count = sum(1 for r in results if r.get("success", False))
-    
+    if not HAS_MATCH_COLOR:
+        logger.warn("Module match_color non disponible → match_color désactivé")
+    if not HAS_GRAIN_MATCHER:
+        logger.warn("Module grain_matcher non disponible → grain désactivé")
+    if source_video_path is None:
+        skip_match = True
+        skip_grain = True
+        skip_sharpness = True
+        logger.warn("Pas de vidéo source → match_color, grain, sharpness désactivés")
+
+    active_stages = []
+    for stage in PIPELINE_ORDER:
+        if stage == "match_color" and skip_match:
+            continue
+        if stage == "grain" and skip_grain:
+            continue
+        if stage == "bloom" and skip_bloom:
+            continue
+        if stage == "sharpness" and skip_sharpness:
+            continue
+        active_stages.append(stage)
+
+    logger.info(f"Pipeline actif: {' → '.join(active_stages) if active_stages else '(passthrough)'}")
+
+    scene_filter = args.scene
+    sequences = scan_render_frames(render_dir, logger, scene_id=scene_filter)
+
+    if not sequences:
+        logger.error("Aucune frame render trouvée")
+        sys.exit(1)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.dry_run:
+        logger.success("DRY-RUN — Validation complète, aucun traitement exécuté")
+        _print_dry_run_summary(config, active_stages, sequences, logger)
+        return
+
+    bloom_engine = BloomEngine(verbose=args.verbose) if not skip_bloom else None
+    sharpness_engine = SharpnessTransfer(verbose=args.verbose) if not skip_sharpness else None
+
+    color_matcher = None
+    grain_matcher = None
+    if HAS_MATCH_COLOR and not skip_match:
+        color_matcher = ColorMatcher(verbose=args.verbose)
+    if HAS_GRAIN_MATCHER and not skip_grain:
+        grain_matcher = GrainMatcher(verbose=args.verbose)
+
+    cap = None
+    total_video_frames = 0
+    fps_source = 24.0
+    if source_video_path is not None:
+        cap = open_source_video(source_video_path, logger)
+        if cap is not None:
+            total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps_source = cap.get(cv2.CAP_PROP_FPS) or 24.0
+
     report = {
         "version": ALCHEMIST_VERSION,
         "timestamp": datetime.now().isoformat(),
-        "status": "SUCCESS" if success_count == len(results) else "PARTIAL" if success_count > 0 else "FAILED",
-        "summary": {
-            "scenes_total": len(sequences),
-            "scenes_processed": success_count,
-            "scenes_failed": len(results) - success_count,
-            "total_frames": sum(len(files) for files in sequences.values())
-        },
-        "scenes": results,
-        "logs": logger.get_logs()
+        "preset": args.preset,
+        "pipeline": active_stages,
+        "scenes": [],
     }
-    
+
+    total_processed = 0
+    total_errors = 0
+    t_global_start = time.time()
+
+    scenes_data = plan.get("scenes", [])
+    if not scenes_data:
+        scenes_data = [{"scene_id": sid} for sid in sorted(sequences.keys())]
+
+    for scene in scenes_data:
+        sid = scene.get("scene_id", 1)
+        if scene_filter is not None and sid != scene_filter:
+            continue
+        if sid not in sequences:
+            logger.warn(f"Scene {sid}: aucune frame render, skip")
+            continue
+
+        frames_list = sequences[sid]
+        logger.info(f"Scene {sid}: {len(frames_list)} frames à traiter")
+
+        start_frame, end_frame = get_scene_timecodes(scene, fps_source)
+        if end_frame <= start_frame:
+            end_frame = start_frame + len(frames_list)
+
+        reference_cdfs = None
+        grain_stats = None
+        if cap is not None and color_matcher is not None and not skip_match:
+            ref_samples = extract_sample_frames(
+                cap, start_frame, end_frame, total_video_frames,
+                config["match_color"].get("reference_sample_count", 20),
+            )
+            if ref_samples:
+                reference_cdfs = color_matcher.compute_reference_histogram(ref_samples)
+                logger.debug(f"  Reference histograms calculés depuis {len(ref_samples)} frames source")
+
+        if cap is not None and grain_matcher is not None and not skip_grain:
+            grain_samples = extract_sample_frames(
+                cap, start_frame, end_frame, total_video_frames,
+                config["grain"].get("calibration_samples", 10),
+            )
+            if grain_samples:
+                grain_stats = grain_matcher.extract_grain_stats(grain_samples)
+                logger.debug(f"  Grain stats extraits depuis {len(grain_samples)} frames source")
+
+        scene_report = {
+            "scene_id": sid,
+            "frames_total": len(frames_list),
+            "frames_processed": 0,
+            "frames_failed": 0,
+            "time_seconds": 0.0,
+        }
+
+        frame_iter = frames_list
+        if HAS_TQDM:
+            frame_iter = tqdm(frames_list, desc=f"  Scene {sid}", unit="frame", leave=True)
+
+        t_scene_start = time.time()
+
+        for frame_idx, render_path in enumerate(frame_iter):
+            try:
+                render = cv2.imread(
+                    str(render_path),
+                    cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH,
+                )
+                if render is None:
+                    logger.warn(f"  Frame illisible: {render_path.name}")
+                    scene_report["frames_failed"] += 1
+                    total_errors += 1
+                    continue
+
+                source_f = None
+                if cap is not None:
+                    src_idx = start_frame + frame_idx
+                    source_f = extract_source_frame(cap, src_idx, total_video_frames)
+                    if source_f is not None:
+                        source_f = resize_to_match(source_f, render.shape)
+
+                current = render
+
+                if "match_color" in active_stages and color_matcher is not None and reference_cdfs is not None:
+                    current = color_matcher.match_frame(
+                        current, reference_cdfs,
+                        intensity=config["match_color"]["intensity"],
+                    )
+
+                if "grain" in active_stages and grain_matcher is not None and grain_stats is not None:
+                    current = grain_matcher.apply_grain(
+                        current, grain_stats,
+                        intensity=config["grain"]["intensity"],
+                    )
+
+                if "bloom" in active_stages and bloom_engine is not None:
+                    bloom_cfg = config["bloom"]
+                    current = bloom_engine.apply_bloom(
+                        current,
+                        threshold=bloom_cfg["threshold"],
+                        intensity=bloom_cfg["intensity"],
+                        radius=bloom_cfg["radius"],
+                    )
+
+                if "sharpness" in active_stages and sharpness_engine is not None and source_f is not None:
+                    current = sharpness_engine.transfer(
+                        current, source_f,
+                        intensity=config["sharpness"]["intensity"],
+                    )
+
+                out_name = f"final_{sid:03d}_{frame_idx:06d}.{OUTPUT_FORMAT}"
+                save_frame(current, output_dir / out_name)
+
+                scene_report["frames_processed"] += 1
+                total_processed += 1
+
+            except Exception as e:
+                logger.error(f"  Frame {render_path.name}: {e}")
+                scene_report["frames_failed"] += 1
+                total_errors += 1
+
+        scene_report["time_seconds"] = round(time.time() - t_scene_start, 2)
+        report["scenes"].append(scene_report)
+
+        fps_scene = scene_report["frames_processed"] / max(scene_report["time_seconds"], 0.001)
+        logger.success(
+            f"Scene {sid}: {scene_report['frames_processed']} traitées, "
+            f"{scene_report['frames_failed']} erreurs, "
+            f"{fps_scene:.1f} frames/s"
+        )
+
+    if cap is not None:
+        cap.release()
+
+    total_time = round(time.time() - t_global_start, 2)
+
+    report["summary"] = {
+        "scenes_total": len(report["scenes"]),
+        "scenes_processed": sum(1 for s in report["scenes"] if s["frames_processed"] > 0),
+        "total_frames_processed": total_processed,
+        "total_frames_failed": total_errors,
+        "total_time_seconds": total_time,
+        "status": "SUCCESS" if total_errors == 0 else "PARTIAL",
+    }
+
     report_path = output_dir / "alchemist_report.json"
-    with open(report_path, 'w', encoding='utf-8') as f:
+    with open(report_path, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
-    
-    logger.success(f"Rapport généré: {report_path}")
-    return report
+
+    logger.success(f"Rapport: {report_path}")
+
+    print()
+    print("═══════════════════════════════════════════════════")
+    print(f"   ALCHEMIST v{ALCHEMIST_VERSION} — RÉSUMÉ")
+    print("═══════════════════════════════════════════════════")
+    print(f"   Frames traitées : {total_processed}")
+    print(f"   Erreurs         : {total_errors}")
+    print(f"   Temps total     : {total_time:.1f}s")
+    if total_processed > 0:
+        print(f"   Moyenne         : {total_time / total_processed:.2f}s/frame")
+    print(f"   Output          : {output_dir}")
+    print("═══════════════════════════════════════════════════")
+
+
+def _print_dry_run_summary(config: dict, active_stages: list, sequences: dict, logger: AlchemistLogger):
+    """Affiche un résumé détaillé en mode dry-run."""
+    print()
+    print("═══════════════════════════════════════════════════")
+    print(f"   ALCHEMIST v{ALCHEMIST_VERSION} — DRY RUN")
+    print("═══════════════════════════════════════════════════")
+    print(f"   Pipeline : {' → '.join(active_stages) if active_stages else '(vide)'}")
+    print(f"   Scènes   : {len(sequences)}")
+    total = sum(len(v) for v in sequences.values())
+    print(f"   Frames   : {total}")
+    print()
+    for stage in PIPELINE_ORDER:
+        enabled = stage in active_stages
+        marker = "✓" if enabled else "✗"
+        if stage in config:
+            params = config[stage]
+            if isinstance(params, dict):
+                detail = ", ".join(f"{k}={v}" for k, v in params.items() if k != "description")
+            else:
+                detail = str(params)
+            print(f"   [{marker}] {stage:15s} → {detail}")
+        else:
+            print(f"   [{marker}] {stage}")
+    print("═══════════════════════════════════════════════════")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="EXO_05_ALCHEMIST",
+        description=(
+            "EXODUS ALCHEMIST v2 — Pipeline de fusion visuelle OpenCV\n"
+            "Fusionne les rendus 3D avec la vidéo source via match_color, grain, bloom, sharpness."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--drive-root", required=True,
+        help="Racine du Drive EXODUS V2",
+    )
+    parser.add_argument(
+        "--production-plan", required=True,
+        help="Chemin vers PRODUCTION_PLAN.JSON",
+    )
+    parser.add_argument(
+        "--source-video", default=None,
+        help="Vidéo source de référence (.mp4/.avi/.mov)",
+    )
+    parser.add_argument(
+        "--preset", default="cinema_fusion",
+        help="Preset pipeline (cinema_fusion, subtle_blend, neon_blast, raw_match, full_nuke)",
+    )
+
+    parser.add_argument("--render-dir", default=None, help="Dossier frames render (défaut: IN_RAW_FRAMES)")
+    parser.add_argument("--output-dir", default=None, help="Dossier output (défaut: OUT_FINAL_FRAMES)")
+    parser.add_argument("--source-ref-dir", default=None, help="Dossier références source (défaut: IN_SOURCE_REF)")
+
+    parser.add_argument("--scene", type=int, default=None, help="Traiter une seule scène (par ID)")
+
+    parser.add_argument("--match-intensity", type=float, default=None, help="Override intensité match_color [0.0-1.0]")
+    parser.add_argument("--grain-intensity", type=float, default=None, help="Override intensité grain [0.0-1.0]")
+    parser.add_argument("--bloom-preset", default=None, help="Override bloom preset (cinema, subtle, neon, none)")
+    parser.add_argument("--sharpness-intensity", type=float, default=None, help="Override intensité sharpness [0.0-1.0]")
+
+    parser.add_argument("--skip-match", action="store_true", help="Désactiver match_color")
+    parser.add_argument("--skip-grain", action="store_true", help="Désactiver grain")
+    parser.add_argument("--skip-bloom", action="store_true", help="Désactiver bloom")
+    parser.add_argument("--skip-sharpness", action="store_true", help="Désactiver sharpness")
+
+    parser.add_argument("-v", "--verbose", action="store_true", help="Mode verbose")
+    parser.add_argument("--dry-run", action="store_true", help="Valider sans traitement")
+
+    return parser
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=f'ALCHEMIST LAB - EXODUS v{ALCHEMIST_VERSION}',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Exemples:
-  python EXO_05_ALCHEMIST.py --drive-root /content/drive/MyDrive/DRIVE_EXODUS_V2 \\
-    --production-plan PRODUCTION_PLAN.JSON
-
-  python EXO_05_ALCHEMIST.py --drive-root /path/to/drive \\
-    --render-dir /path/to/exr \\
-    --output-dir /path/to/output \\
-    --luts-dir /path/to/luts \\
-    -v
-        """
-    )
-    
-    parser.add_argument('--drive-root', required=True,
-                        help='Racine du Drive EXODUS')
-    parser.add_argument('--production-plan', required=True,
-                        help='PRODUCTION_PLAN.JSON du Cortex')
-    parser.add_argument('--render-dir',
-                        help='Dossier rendus EXR (défaut: IN_RAW_FRAMES/)')
-    parser.add_argument('--output-dir',
-                        help='Dossier output (défaut: OUT_FINAL_FRAMES/)')
-    parser.add_argument('--luts-dir',
-                        help='Dossier LUTs (défaut: LUTS/)')
-    parser.add_argument('--blender-path',
-                        help='Chemin custom vers Blender')
-    parser.add_argument('--scene', type=int,
-                        help='Traiter uniquement une scène spécifique')
-    parser.add_argument('--skip-preview', action='store_true',
-                        help='Ne pas générer les previews MP4')
-    parser.add_argument('--verbose', '-v', action='store_true',
-                        help='Logs détaillés')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Valider les chemins sans exécuter')
-    
+    parser = build_parser()
     args = parser.parse_args()
+
     logger = AlchemistLogger(verbose=args.verbose)
-    
-    print("=" * 70)
-    print("   FRÉGATE 05_ALCHEMIST — EXODUS POST-PRODUCTION LAB")
-    print(f"   Version {ALCHEMIST_VERSION}")
-    print("=" * 70)
-    
-    drive_root = Path(args.drive_root)
-    unit_root = drive_root / "05_ALCHEMIST_LAB"
-    
-    raw_frames_dir = unit_root / "IN_RAW_FRAMES"
-    
-    plan_path = Path(args.production_plan)
-    if not plan_path.is_absolute():
-        plan_path = raw_frames_dir / args.production_plan
-    
-    if args.render_dir:
-        render_dir = Path(args.render_dir)
-    else:
-        render_dir = raw_frames_dir
-    
-    if args.output_dir:
-        output_dir = Path(args.output_dir)
-    else:
-        output_dir = unit_root / "OUT_FINAL_FRAMES"
-    
-    if args.luts_dir:
-        luts_dir = Path(args.luts_dir)
-    else:
-        luts_dir = unit_root / "LUTS"
-    
-    logger.info(f"Drive Root: {drive_root}")
-    logger.info(f"Production Plan: {plan_path}")
-    logger.info(f"Render Dir: {render_dir}")
-    logger.info(f"Output Dir: {output_dir}")
-    logger.info(f"LUTs Dir: {luts_dir}")
-    
-    blender_path = check_blender(drive_root, logger, args.blender_path)
-    plan = validate_production_plan(plan_path, logger)
-    sequences = scan_exr_sequences(render_dir, logger)
-    lut_mapping = validate_luts(luts_dir, plan, logger)
-    
-    output_dir.mkdir(parents=True, exist_ok=True)
-    
-    logger.success("Configuration validée")
-    
-    if not sequences:
-        logger.warn("Aucune séquence EXR trouvée - vérifiez IN_RENDER/")
-        if args.dry_run:
-            print("\n✓ Configuration valide (pas de rendus à traiter)")
-            sys.exit(0)
-    
-    if args.dry_run:
-        logger.info("Mode dry-run: arrêt avant traitement")
-        print("\n✓ Tous les chemins sont valides. Prêt pour post-production.")
-        
-        print("\n=== Résumé ===")
-        print(f"  Scènes à traiter: {len(sequences)}")
-        print(f"  Frames totales: {sum(len(f) for f in sequences.values())}")
-        print(f"  LUTs disponibles: {len(lut_mapping)}")
-        sys.exit(0)
-    
-    results = []
-    scenes_to_process = sequences.keys()
-    
-    if args.scene is not None:
-        if args.scene in sequences:
-            scenes_to_process = [args.scene]
-        else:
-            logger.error(f"Scene {args.scene} introuvable dans les rendus")
-            sys.exit(1)
-    
-    for scene_id in scenes_to_process:
-        exr_files = sequences[scene_id]
-        
-        scene_config = None
-        for scene in plan.get("scenes", []):
-            if scene.get("scene_id") == scene_id:
-                scene_config = scene
-                break
-        
-        if scene_config is None:
-            scene_config = {"scene_id": scene_id}
-            logger.warn(f"Scene {scene_id} sans config post-prod - utilisation défauts")
-        
-        post_config = get_post_config(scene_config)
-        
-        success, result_data = run_blender_compositor(
-            blender_path,
-            scene_id,
-            exr_files,
-            output_dir,
-            post_config,
-            luts_dir,
-            lut_mapping,
-            logger
-        )
-        
-        result_entry = {
-            "scene_id": scene_id,
-            "success": success,
-            "frames_input": len(exr_files),
-            "config": post_config,
-            **result_data
-        }
-        
-        if success and not args.skip_preview:
-            preview_path = generate_preview(scene_id, output_dir, len(exr_files), logger)
-            if preview_path:
-                result_entry["preview"] = str(preview_path.name)
-        
-        results.append(result_entry)
-    
-    report = generate_report(output_dir, plan, sequences, results, logger)
-    
-    success_count = sum(1 for r in results if r.get("success", False))
-    
-    if success_count == 0 and results:
-        logger.error("Post-production échouée pour toutes les scènes")
-        sys.exit(1)
-    
-    print("\n" + "=" * 70)
-    logger.success(f"POST-PRODUCTION COMPLÈTE: {success_count}/{len(results)} scènes")
-    print(f"  → Output: {output_dir}")
-    print(f"  → Rapport: {output_dir}/alchemist_report.json")
-    print("=" * 70)
-    
-    return 0
+
+    print()
+    print("╔══════════════════════════════════════════════════════════════════════════════╗")
+    print("║             FRÉGATE 05_ALCHEMIST — VISUAL FUSION PIPELINE                    ║")
+    print(f"║             Version {ALCHEMIST_VERSION}  •  OpenCV CPU pur                              ║")
+    print("╚══════════════════════════════════════════════════════════════════════════════╝")
+    print()
+
+    process_pipeline(args, logger)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

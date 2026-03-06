@@ -1,161 +1,156 @@
 # SOUS-PLAN TECHNIQUE — UNITÉ 05: ALCHEMIST LAB
 
 ## Mission
-Post-production automatisée et color grading cinématique des rendus EXR pour atteindre la qualité finale 4K/120FPS.
+Fusion visuelle automatisée des rendus 3D avec la vidéo source pour atteindre le look cinéma 4K. Pipeline OpenCV CPU pur en 4 étapes.
 
-## Statut: 🟢 OPÉRATIONNEL
+## Statut: 🟢 OPÉRATIONNEL (V2)
 
-## Stack Technique
-- **Blender 4.0 Compositor** - Node tree automatique (headless)
-- **OpenColorIO** - Color management professionnel
-- **OptiX Denoiser** - GPU NVIDIA RTX (optimal)
-- **OIDN** - Intel Open Image Denoise (CPU fallback)
-- **FFmpeg** - Génération previews H.264
-- **.cube LUTs** - Format Adobe/Resolve compatible
+## Stack Technique V2
+- **OpenCV** (headless) — Traitement d'image, I/O, blur, unsharp mask
+- **numpy** — Calcul matriciel float32, opérations pixel
+- **Pillow** — Support formats image complémentaire
+- **tqdm** — Barre de progression CLI
+- **CPU pur** — Zéro dépendance Blender, GPU ou scipy
 
 ## Inputs
-- `IN_RENDER/render_*.exr` — Séquences EXR multi-layer (de U04)
-- `IN_RENDER/PRODUCTION_PLAN.JSON` — Instructions post-production du Cortex
-- `LUTS/*.cube` — LUTs cinématiques personnalisées
+- `IN_RAW_FRAMES/render_*.{exr,png,tiff}` — Frames rendues (de U04)
+- `PRODUCTION_PLAN.JSON` — Scènes, timecodes, paramètres
+- Vidéo source `.mp4/.avi/.mov` — Référence visuelle pour fusion
 
 ## Outputs
-- `OUT_GRADED/graded_{scene_id}_####.exr` — Rendus color-gradés 16-bit
-- `OUT_GRADED/graded_preview_{scene_id}.mp4` — Preview H.264 1080p
-- `OUT_GRADED/alchemist_report.json` — Rapport de production détaillé
+- `OUT_FINAL_FRAMES/final_{scene}_{frame}.png` — Frames fusionnées PNG 16-bit
+- `OUT_FINAL_FRAMES/alchemist_report.json` — Rapport de production détaillé
 
-## Modules Implémentés
+## Pipeline V2 : 4 Étapes
 
-### 1. EXO_05_ALCHEMIST.py ✅
-- CLI wrapper principal avec argparse
-- Orchestration du pipeline compositing
-- Validation des séquences EXR
-- Génération du rapport final
-- Support dry-run et traitement par scène
-
-### 2. compositor_pipeline.py ✅
-- Script Blender headless
-- Construction automatique du node tree
-- Pipeline: Input → Denoise → Color → Effects → Output
-- Support multi-pass et render layers
-
-### 3. color_grader.py ✅
-- Parser fichiers .cube LUT complet
-- 7 presets cinématiques intégrés
-- Lift/Gamma/Gain control
-- Exposition, contraste, saturation
-- Température et teinte
-
-### 4. effects_forge.py ✅
-- Bloom (Glare Fog Glow)
-- Lens Flare (Streaks, Ghosts)
-- Film Grain (Noise overlay)
-- Vignette (Ellipse mask + blur)
-- Chromatic Aberration (Lens Distortion)
-- 6 presets d'effets
-
-### 5. denoiser.py ✅
-- Détection automatique backend optimal
-- Support OptiX (GPU RTX)
-- Fallback OIDN (CPU)
-- Fallback Blender Compositor
-- Validation EXR pour denoise
-
-## LUTs Fournies
-
-| Nom | Description |
-|-----|-------------|
-| `cinematic_warm.cube` | Tons chauds, ombres orangées |
-| `cinematic_cold.cube` | Tons froids, bleus profonds |
-| `neon_nights.cube` | Style cyberpunk saturé |
-| `natural.cube` | Correction neutre |
-
-## Presets Color Grade
-
-| Preset | Exposure | Contrast | Saturation | Temperature |
-|--------|----------|----------|------------|-------------|
-| cinematic_warm | +0.1 | 1.15 | 0.95 | +0.15 |
-| cinematic_cold | +0.05 | 1.2 | 0.9 | -0.1 |
-| neon_nights | 0 | 1.3 | 1.3 | -0.05 |
-| natural | 0 | 1.0 | 1.0 | 0 |
-| bleach_bypass | +0.1 | 1.4 | 0.6 | 0 |
-| vintage_film | +0.05 | 0.9 | 0.85 | +0.1 |
-| teal_orange | 0 | 1.1 | 1.1 | 0 |
-
-## Format PRODUCTION_PLAN.JSON
-
-```json
-{
-  "scenes": [
-    {
-      "scene_id": 1,
-      "post_production": {
-        "color_grade": "cinematic_warm",
-        "effects": {
-          "bloom": true,
-          "lens_flare": false,
-          "film_grain": 0.05,
-          "vignette": 0.2
-        },
-        "denoise": true
-      }
-    }
-  ]
-}
+```
+Render → [1] Match Color → [2] Grain → [3] Bloom → [4] Sharpness → Output PNG 16-bit
 ```
 
-## Gestion d'Erreurs
+## Modules V2 Implémentés
 
-| Erreur | Comportement |
-|--------|--------------|
-| LUT manquante | Warning + utilise preset |
-| Pas de GPU | Fallback OIDN CPU |
-| EXR corrompu | Skip frame + log |
-| FFmpeg absent | Skip preview |
+### 1. alchemist_schema.py ✅
+- Bible Alchimique — 7 piliers de données pures
+- Constantes canoniques (OUTPUT_FORMAT, PIPELINE_ORDER, etc.)
+- Paramètres et ranges pour chaque étape
+- 5 pipeline presets + 4 bloom presets
+- Classe AlchemistSchema avec validation complète
+- Self-test intégré (8 tests)
 
-## Performance Estimée
+### 2. match_color.py ✅
+- Classe ColorMatcher — transfert d'histogrammes
+- Espace colorimétrique LAB
+- compute_reference_histogram() depuis N frames source
+- match_frame() avec intensité réglable
 
-| Config | Temps/frame 4K |
-|--------|---------------|
-| GPU RTX 3090 | ~1s |
-| GPU RTX 2080 | ~2s |
-| CPU 8-core | ~4s |
+### 3. grain_matcher.py ✅
+- Classe GrainMatcher — transfert de grain filmique
+- Extraction profil grain via filtrage bilatéral
+- extract_grain_stats() depuis N frames source
+- apply_grain() procédural avec intensité réglable
 
-## Notebooks
+### 4. bloom_engine.py ✅
+- Classe BloomEngine — bloom additif OpenCV
+- Extraction hautes lumières (luminance Rec.709)
+- Flou gaussien massif → glow
+- Blend additif avec intensité
+- 4 presets (cinema, subtle, neon, none)
+- Support uint8, uint16, float32
+- Self-test intégré (5 tests)
 
-- `EXO_05_CONTROL.ipynb` — Debug et tests unitaires
-- `EXO_05_PRODUCTION.ipynb` — Batch processing production
+### 5. sharpness_transfer.py ✅
+- Classe SharpnessTransfer — alignement de netteté
+- Mesure variance du Laplacien
+- Blur gaussien si render trop net (ratio < 1)
+- Unsharp mask si render trop mou (ratio > 1)
+- Support uint8, uint16, float32
+- Self-test intégré (6 tests)
+
+### 6. EXO_05_ALCHEMIST.py ✅ (v2.0.0)
+- Orchestrateur CLI complet (argparse)
+- Résolution preset + overrides individuels
+- Chargement vidéo source via cv2.VideoCapture
+- Extraction frames reference (histogrammes, grain, sharpness)
+- Pipeline séquentiel 4 étapes par frame
+- Sauvegarde PNG 16-bit
+- Rapport JSON + résumé console
+- Support --dry-run, --scene, --skip-*, -v
+- Gestion gracieuse modules absents (match_color, grain_matcher)
+
+## Pipeline Presets
+
+| Preset | match_color | grain | bloom | sharpness |
+|--------|-------------|-------|-------|-----------|
+| cinema_fusion | 0.85 | 0.5 | cinema | 0.7 |
+| subtle_blend | 0.6 | 0.3 | subtle | 0.5 |
+| neon_blast | 0.7 | 0.2 | neon | 0.4 |
+| raw_match | 1.0 | 0.0 | none | 0.0 |
+| full_nuke | 0.95 | 0.6 | cinema | 0.8 |
+
+## Performance Estimée (CPU)
+
+| Opération | Temps/frame 4K | RAM |
+|-----------|---------------|-----|
+| Match Color | ~0.3s | ~200 MB |
+| Grain | ~0.2s | ~150 MB |
+| Bloom | ~0.4s | ~300 MB |
+| Sharpness | ~0.1s | ~100 MB |
+| **Total** | **~1.0s/frame** | **~500 MB peak** |
+
+**Stockage** : ~25 MB/frame PNG 16-bit 4K → ~60 GB pour 2400 frames.
 
 ## Commandes
 
 ```bash
-# Dry-run validation
+# Tests standalone
+python bloom_engine.py
+python sharpness_transfer.py
+python alchemist_schema.py
+
+# Dry-run
 python EXO_05_ALCHEMIST.py --drive-root /path --production-plan plan.json --dry-run -v
 
 # Production complète
-python EXO_05_ALCHEMIST.py --drive-root /path --production-plan plan.json -v
+python EXO_05_ALCHEMIST.py \
+    --drive-root /path \
+    --production-plan plan.json \
+    --source-video source.mp4 \
+    --preset cinema_fusion -v
 
 # Scène unique
-python EXO_05_ALCHEMIST.py --drive-root /path --production-plan plan.json --scene 1 -v
+python EXO_05_ALCHEMIST.py \
+    --drive-root /path \
+    --production-plan plan.json \
+    --source-video source.mp4 \
+    --scene 1 -v
 ```
 
-## Checklist Déploiement
+## Fichiers Legacy V1 (inactifs)
 
-- [x] Structure dossiers créée
-- [x] CLI wrapper EXO_05_ALCHEMIST.py
-- [x] Compositor pipeline Blender
-- [x] Color grader avec LUTs
-- [x] Effects forge (5 effets)
-- [x] Denoiser multi-backend
-- [x] 4 fichiers LUT .cube
-- [x] Notebook CONTROL
-- [x] Notebook PRODUCTION
-- [x] Documentation README_DEV.md
-- [x] UNIT_05_SUBPLAN.md mis à jour
+| Fichier | Rôle V1 | Statut |
+|---------|---------|--------|
+| compositor_pipeline.py | Blender Compositor nodes | Inactif |
+| color_grader.py | LUTs .cube | Inactif |
+| effects_forge.py | Effets Blender (bloom, grain) | Inactif |
+| denoiser.py | OptiX/OIDN | Inactif |
 
-## Prochaines Améliorations (V2)
+## Checklist Déploiement V2
 
-- [ ] Support ACES color space natif
-- [ ] Timeline-based effects (keyframes)
-- [ ] AI upscaling integration
-- [ ] DaVinci Resolve XML export
-- [ ] Multi-GPU rendering
+- [x] alchemist_schema.py — Bible Alchimique
+- [x] match_color.py — Transfert couleur
+- [x] grain_matcher.py — Transfert grain
+- [x] bloom_engine.py — Bloom additif
+- [x] sharpness_transfer.py — Alignement netteté
+- [x] EXO_05_ALCHEMIST.py v2.0.0 — Orchestrateur CLI
+- [x] requirements.txt — 4 dépendances CPU pur
+- [x] README_DEV.md — Documentation V2
+- [x] UNIT_05_SUBPLAN.md — Sous-plan V2
+
+## Dépendances
+
+```
+numpy>=1.21.0
+opencv-python-headless>=4.5.0
+Pillow>=9.0.0
+tqdm>=4.62.0
+```
