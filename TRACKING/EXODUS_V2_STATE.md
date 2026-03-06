@@ -11,7 +11,7 @@
 | U03 | SCENOGRAPHY DOCK | 🟢 Forgé (V1) | 🔴 5% | McPrep ≠ Tri-Layer System |
 | U04 | PHOTOGRAPHY WING | 🟢 Opérationnel (V1) | 🟡 40% | Manque fSpy, DOF, Shake |
 | U05 | ALCHEMIST LAB | 🟢 Opérationnel (V1) | 🟡 50% | Manque Match Color, Grain |
-| U06 | AIRCRAFT CARRIER | ✅ Opérationnel (V1) | 🔴 40% | 4 compressions lossy + schema manquant |
+| U06 | AIRCRAFT CARRIER | 🟢 Scellée (V2) | 🟢 100% | Pipeline frame-based, zéro lossy intermédiaire, carrier_schema.py |
 | MARSHAL | INTENDANT | ✅ Scellé (PR #12) | 🟢 100% | — |
 
 ## ÉCARTS DÉTAILLÉS
@@ -47,16 +47,12 @@
 - **V2 exige** : Match Color (histogram alignment to source video), Film Grain matching (not just adding grain — matching source grain), Bloom/Glow bleed, Sharpness transfer blur. Uses OpenCV+Pillow.
 - **Impact** : Partial rewrite — needs histogram-based color matching instead of LUT, grain extraction from source
 
-### U06 — AIRCRAFT CARRIER
-- **Code actuel** : `rife_interpolator.py`, `final_encoder.py`, `upscaler.py`, `audio_sync.py`, `sequence_assembler.py` — Pipeline fonctionnel V1
-- **V2 exige** : Pipeline frame-based ZÉRO compression intermédiaire, carrier_schema.py, 3 encoding presets (AV1/H.265/ProRes), batch RIFE+upscale par chunks 10s, checkpoint system, ratio lock strict, CRF configurable avec tune animation
-- **Écarts critiques découverts** :
-  1. **4 compressions lossy H.264 en cascade** : sequence_assembler (libx264 CRF 18) → rife_interpolator (libx264 CRF 18) → upscaler (libx264 CRF 18) → final_encoder (libx265 CRF 18). Dégradation cumulative de qualité.
-  2. **Absence de carrier_schema.py** : U06 est la seule frégate sans module de données pures. Toutes les constantes sont éparpillées ou hardcodées.
-  3. **Schema JSON V2 non lu** : Le code attend `output.resolution` (string) mais le PRD définit `format.resolution` (array) et `format.ratio` (string).
-  4. **Aucun batch processing** : RIFE traite toute la vidéo d'un coup (~50GB de frames temp, risque OOM T4)
-  5. **Aucun checkpoint** : crash = restart total
-- **Impact** : Réécriture majeure — nouveau carrier_schema.py + refactor complet des 5 modules + nouveau pipeline
+### U06 — AIRCRAFT CARRIER ✅ SCELLÉ
+- **Code actuel** : Pipeline frame-based V2 complet — `carrier_schema.py`, `sequence_assembler.py` (Frame Indexer), `rife_interpolator.py` (chunk PNG→PNG), `upscaler.py` (chunk PNG→PNG), `final_encoder.py` (AV1/H.265/ProRes), `audio_sync.py` (auto_sync_duration), `EXO_06_CARRIER.py` (Orchestrateur V2)
+- **V2 exige** : Pipeline frame-based ZÉRO compression intermédiaire ✅, carrier_schema.py ✅, 3 encoding presets ✅, batch chunks 10s ✅, checkpoint system ✅, ratio lock strict ✅, CRF configurable ✅
+- **Écarts résiduels** : Aucun — tous les critères V2 implémentés
+- **PRs** : #44 (audit), #45 (carrier_schema), #46 (pipeline complet + bugfix)
+- **Impact** : ✅ Terminé
 
 ### MARSHAL — L'Intendant ✅ SCELLÉ
 - **Code actuel** : `EXO_MARSHAL.py` (578 lignes) — Python pur, zéro dépendance
