@@ -11,9 +11,9 @@
 | U01 | ANIMATION ENGINE | 🟢 SCELLÉE | 2026-02-27 |
 | U02 | LOGISTICS DEPOT | 🟢 SCELLÉE | 2026-02-27 |
 | U03 | SCENOGRAPHY DOCK | 🟢 SCELLÉE | 2026-02-28 |
-| U04 | PHOTOGRAPHY WING | 🟡 EN FORGE | - |
-| U05 | ALCHEMIST LAB | ⚪ EN ATTENTE | - |
-| U06 | AIRCRAFT CARRIER | ⚪ EN ATTENTE | - |
+| U04 | PHOTOGRAPHY WING | 🟢 SCELLÉE | 2026-03-03 |
+| U05 | ALCHEMIST LAB | 🟢 SCELLÉE | 2026-03-04 |
+| U06 | AIRCRAFT CARRIER | 🟡 EN MUTATION | - |
 
 **Légende:** ⚪ En attente | 🟡 En forge | 🔵 Test | 🟢 SCELLÉE
 
@@ -31,14 +31,17 @@
 | 2026-02-27 | U02 | OMEGA | Bypass conditionnel + nettoyage | ✅ |
 | 2026-02-28 | U03 | OMEGA | Tri-Layer System complet (D0-D4) | ✅ |
 | 2026-03-03 | U04 | ALPHA | Architecture split A/B documentée | ⏳ |
+| 2026-03-04 | U05 | OMEGA | Alchemist Lab scellée (PR #38-#41) | ✅ |
+| 2026-03-06 | U06 | AUDIT | Audit ATOM-IC — 4 compressions lossy découvertes | ✅ |
+| 2026-03-06 | U06 | ALPHA | Mutation V2 ATOM-IC planifiée — pipeline frame-based | ⏳ |
 
 ---
 
 ## COMPTEUR DE GUERRE
 
 ```
-Progression: [██████░░░░] 5/8 Unités Scellées (63%)
-En Forge:    [█░░░░░░░░░] 1/8 Unités (U04)
+Progression: [███████░░░] 7/8 Unités Scellées (88%)
+En Mutation: [█░░░░░░░░░] 1/8 Unités (U06 — ATOM-IC)
 Objectif: 100% Flotte Opérationnelle
 ```
 
