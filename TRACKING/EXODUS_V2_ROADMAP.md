@@ -107,14 +107,14 @@
 - [x] Câblage EXO_04_PHOTOGRAPHY.py
 - Statut : ✅ SCELLÉ (PR #34-#37)
 
-#### C3 — U04-B Darkroom (Rendu ATOM-IC)
-- [x] Brainstorming ATOM-IC : 1080p @ 128 samples + OIDN → U06 AI upscale 4K
-- [ ] Preset `darkroom` dans camera_schema.py (1080p, 128 samples, Combined, PNG 16-bit)
-- [ ] `darkroom_render.py` (Blender headless, chunks 300 frames, checkpoint JSON)
-- [ ] `EXO_04_DARKROOM.py` (orchestrateur CLI + resume)
-- [ ] `EXO_04_DARKROOM.ipynb` (Colab notebook)
-- [ ] Documentation V2 (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md)
-- Statut : 🟡 EN FORGE (brainstorming validé, implémentation en cours)
+#### C3 — U04-B Darkroom (Rendu ATOM-IC) ✅
+- [x] Brainstorming ATOM-IC : 1080p @ 128 samples + OIDN → U06 AI upscale 4K — PR #48
+- [x] Preset `darkroom` dans camera_schema.py (1080p, 128 samples, Combined, PNG 16-bit) — PR #49
+- [x] `darkroom_render.py` (Blender headless, chunks 300 frames, checkpoint JSON) — PR #49
+- [x] `EXO_04_DARKROOM.py` (orchestrateur CLI + resume) — PR #49
+- [x] `EXO_04_DARKROOM.ipynb` (Colab notebook) — PR #49
+- [x] Documentation V2 (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md) — PR #49
+- Statut : ✅ 100% SCELLÉ (PR #48-#49)
 
 #### C5 — U06 Aircraft Carrier (Pipeline Frame-Based V2) ✅
 - [x] carrier_schema.py (Bible du Vaisseau-Mère — 6 piliers) — PR #45
@@ -152,8 +152,8 @@
 MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [█████████░] 🟢 95% — MARSHAL + U00 + U01 + U02 + U03 + U04-A + U05 + U06 scellés
-Phase courante : PHASE D (Scale — U04-B Darkroom + test end-to-end restants)
+Mutation V2 : [██████████] 🟢 98% — TOUTES les frégates scellées (MARSHAL + U00-U06)
+Phase courante : PHASE D (Scale — test end-to-end restant)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -163,4 +163,4 @@ Phase courante : PHASE D (Scale — U04-B Darkroom + test end-to-end restants)
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.8 — U06 SCELLÉ 100% (PR #44-#46) -->
+<!-- v2.9 — U04-B SCELLÉ (PR #48-#49), TOUTES frégates scellées -->

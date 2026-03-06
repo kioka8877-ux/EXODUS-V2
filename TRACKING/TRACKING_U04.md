@@ -7,7 +7,7 @@ Fidélité cinématographique — la caméra 3D doit reproduire la caméra sourc
 
 **Architecture** : U04 est séparée en deux sous-frégates (voir [ARCHITECTURE_U04.md](../04_PHOTOGRAPHY_WING/ARCHITECTURE_U04.md)) :
 - **U04-A (Director)** : Configure le .blend (caméra, DOF, shake, atmosphère, Cycles). ~30s. Output = .blend.
-- **U04-B (Darkroom)** : Lance le rendu batch ATOM-IC. ~2-4h (1080p + AI upscale). Output = frames PNG 16-bit. EN FORGE.
+- **U04-B (Darkroom)** : Lance le rendu batch ATOM-IC. ~2-4h (1080p + AI upscale). Output = frames PNG 16-bit. ✅ SCELLÉ (PR #48-#49).
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
 - **Écarts constatés** : TOUS CORRIGÉS par U04-A.
@@ -29,16 +29,16 @@ Fidélité cinématographique — la caméra 3D doit reproduire la caméra sourc
 - [x] Câbler `EXO_04_PHOTOGRAPHY.py` v2.0.0 (nouveaux modules + arguments CLI) — PR #37
 - [x] Mettre à jour documentation (UNIT_04_SUBPLAN.md, README_DEV.md) — PR #37
 
-### U04-B — DARKROOM (Rendu ATOM-IC — EN FORGE)
+### U04-B — DARKROOM (Rendu ATOM-IC) ✅ SCELLÉ
 **Décision ATOM-IC** : Rendre en 1080p @ 128 samples (pas 4K @ 256) — U06 Real-ESRGAN upscale → 4K.
 Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 
-- [x] Brainstorming infrastructure rendu → Google Colab T4 (ATOM-IC Inversion : 1080p + AI upscale)
-- [ ] Nouveau preset `darkroom` dans `camera_schema.py` (1080p, 128 samples, OIDN, PNG 16-bit)
-- [ ] `darkroom_render.py` — Script Blender headless (chunk rendering 300 frames + checkpoint JSON)
-- [ ] `EXO_04_DARKROOM.py` — Orchestrateur CLI Python pur (valide inputs, lance blender, gère resume)
-- [ ] `EXO_04_DARKROOM.ipynb` — Notebook Colab (mount Drive, auto-resume, progress bar)
-- [ ] Mise à jour documentation (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md)
+- [x] Brainstorming infrastructure rendu → Google Colab T4 (ATOM-IC Inversion : 1080p + AI upscale) — PR #48
+- [x] Nouveau preset `darkroom` dans `camera_schema.py` (1080p, 128 samples, OIDN, PNG 16-bit) — PR #49
+- [x] `darkroom_render.py` — Script Blender headless (chunk rendering 300 frames + checkpoint JSON) — PR #49
+- [x] `EXO_04_DARKROOM.py` — Orchestrateur CLI Python pur (valide inputs, lance blender, gère resume) — PR #49
+- [x] `EXO_04_DARKROOM.ipynb` — Notebook Colab (mount Drive, auto-resume, progress bar) — PR #49
+- [x] Mise à jour documentation (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md) — PR #49
 - [ ] Intégration Marshal Out-Check pour frames rendues PNG 16-bit
 
 ## 4. REGISTRE DE FORGE (LOGS)
@@ -50,12 +50,17 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 | - | camera_director.py (Noise shake + frustum) + lighting_rig.py (Volume Scatter) | 🟢 | PR #36 | N/A |
 | - | cuts_engine.py refactor + EXO_04 câblage + docs | 🟢 | PR #37 | N/A |
 | 2026-03-06 | Brainstorming ATOM-IC U04-B : 1080p + chunks + checkpoint + AI upscale | ✅ | — | — |
+| 2026-03-06 | U04-B Darkroom complet : darkroom_render.py + EXO_04_DARKROOM.py + notebook + docs | ✅ | PR #49 | — |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (U04-A ne rend pas)
 - Temps d'exécution moyen : ~30s (configuration .blend)
 - [x] 5/5 critères VALIDATION.md satisfaits par U04-A
 - [ ] Marshal Out-Check passé (*.blend dans OUT_CAMERA_LOGIC/) — nécessite test intégration
+- Temps d'exécution estimé U04-B : ~2-4h pour 60s vidéo (1080p @ 128 samples)
+- Taille output U04-B : ~1.5 GB pour 60s vidéo (1800 frames PNG 16-bit)
+- [x] 8/8 critères VALIDATION.md satisfaits par U04-B (sauf Marshal Out-Check)
+- [x] camera_schema.py self_test 8/8 (inclut test darkroom preset)
 
 ## RÉFÉRENCES
 - [ARCHITECTURE U04](../04_PHOTOGRAPHY_WING/ARCHITECTURE_U04.md) — **Note technique split A/B**

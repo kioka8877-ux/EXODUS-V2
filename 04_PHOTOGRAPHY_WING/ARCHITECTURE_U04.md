@@ -48,7 +48,7 @@ Séparer la **configuration caméra** (rapide, ~30 secondes) du **rendu** (lent,
 - **Input** : `scene_ready_*.blend` configuré par U04-A
 - **Output** : Frames PNG 16-bit 1080p dans `OUT_CAMERA_LOGIC/` pour U05/Alchemist
 - **Infrastructure** : Google Colab (T4 16GB)
-- **STATUT** : 🟡 EN FORGE
+- **STATUT** : 🟢 SCELLÉ (PR #48-#49)
 
 ### Pourquoi cette séparation ?
 
@@ -160,7 +160,7 @@ Conformément à `EXO_MARSHAL.py` (lignes 96-111) :
 | C1 | Documents d'architecture (ce fichier) | Fait | 🟢 |
 | C2 | U04-A Director (camera_schema + 4 piliers) | Fait | 🟢 SCELLÉ |
 | C3 | U04-B Darkroom (brainstorming ATOM-IC) | Fait | 🟢 |
-| C4 | U04-B Darkroom (implémentation) | En cours | 🟡 EN FORGE |
+| C4 | U04-B Darkroom (implémentation) | Fait | 🟢 SCELLÉ (PR #49) |
 
 ## RÉFÉRENCES
 - [PRD §U04](../TRACKING/EXODUS_V2_PRD.md) — Spécifications techniques

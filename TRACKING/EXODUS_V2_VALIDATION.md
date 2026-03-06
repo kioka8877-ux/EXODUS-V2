@@ -84,21 +84,21 @@
 - [ ] World Sync : Strength du World Shader aligné sur exposition vidéo source
 
 ## U04 — PHOTOGRAPHY WING
-- [ ] Perspective lock via fSpy ou tracker Blender (mouvement ±5% max)
-- [ ] Auto-DOF avec Empty parenté au buste avatar
-- [ ] Shake procédural (Noise modifier sur axes de rotation)
-- [ ] Volume Scatter + lampes invisibles alignées sur sources vidéo
-- [ ] Alerte si avatar sort du frustum caméra
+- [x] Perspective lock via fSpy ou tracker Blender (mouvement ±5% max)
+- [x] Auto-DOF avec Empty parenté au buste avatar
+- [x] Shake procédural (Noise modifier sur axes de rotation)
+- [x] Volume Scatter + lampes invisibles alignées sur sources vidéo
+- [x] Alerte si avatar sort du frustum caméra
 
 ### U04-B — DARKROOM (Rendu Batch)
-- [ ] Preset `darkroom` dans camera_schema.py (1080p, 128 samples, OIDN, Combined pass)
-- [ ] Script Blender headless rend des frames PNG 16-bit dans OUT_CAMERA_LOGIC/
-- [ ] Chunk-based rendering (300 frames/chunk) avec checkpoint JSON pour reprise
-- [ ] Checkpoint survit au cleanup (pas dans temp_dir — même pattern que U06)
-- [ ] CLI : `python EXO_04_DARKROOM.py --blend scene.blend --chunk-size 300 --resume`
-- [ ] Output compatible U05 : scan_render_frames() trouve les PNG dans IN_RAW_FRAMES/
-- [ ] GPU auto-detection (CUDA → OPTIX → CPU fallback)
-- [ ] Notebook Colab fonctionnel avec mount Drive + auto-resume
+- [x] Preset `darkroom` dans camera_schema.py (1080p, 128 samples, OIDN, Combined pass)
+- [x] Script Blender headless rend des frames PNG 16-bit dans OUT_CAMERA_LOGIC/
+- [x] Chunk-based rendering (300 frames/chunk) avec checkpoint JSON pour reprise
+- [x] Checkpoint survit au cleanup (pas dans temp_dir — même pattern que U06)
+- [x] CLI : `python EXO_04_DARKROOM.py --blend scene.blend --chunk-size 300 --resume`
+- [x] Output compatible U05 : scan_render_frames() trouve les PNG dans IN_RAW_FRAMES/
+- [x] GPU auto-detection (CUDA → OPTIX → CPU fallback)
+- [x] Notebook Colab fonctionnel avec mount Drive + auto-resume
 
 ## U05 — ALCHEMIST LAB
 - [ ] Match Color par alignement histogramme (pas de LUT)
