@@ -98,11 +98,42 @@
 - [ ] Output : .png 16 bits
 
 ## U06 — AIRCRAFT CARRIER
-- [ ] RIFE 4.0 : 30 → 120 FPS
-- [ ] Ratio lock strict (9:16 ou 16:9 depuis métadonnées U00, zéro letterbox)
-- [ ] Codec H.265/HEVC, CRF 16-18
-- [ ] Poids ~450MB-1.5GB pour 60s
+
+### carrier_schema.py (Bible du Vaisseau-Mère)
+- [ ] Module `carrier_schema.py` existe et est importable (Python pur, zéro dépendance externe)
+- [ ] 3 ENCODING_PRESETS définis (distribution, distribution_h265, master) avec tous les paramètres codec
+- [ ] VALID_RATIOS définis : "9:16", "16:9", "4:3", "1:1"
+- [ ] CRF_RANGE : [16, 22] avec default approprié par preset
+- [ ] WEIGHT_TARGETS : dict duration → (min_mb, max_mb) par preset
+- [ ] validate_ratio(width, height, expected_ratio) : retourne True si zéro letterbox
+- [ ] validate_crf(value) : retourne True si dans CRF_RANGE
+- [ ] validate_output_weight(file_bytes, duration_s, preset) : retourne True si dans la cible
+- [ ] checksum_resolution(output_res, format_res) : retourne True si sortie = entrée U00
+- [ ] parse_format_metadata(plan_json) : lit format.resolution (array), format.ratio (string), format.fps_source (int)
+- [ ] self_test() : ≥ 8 tests passent, exécutable standalone
+
+### Pipeline Frame-Based
+- [ ] ZÉRO compression lossy intermédiaire (grep "libx264" dans les modules → 0 occurrences sauf final_encoder)
+- [ ] sequence_assembler.py ne produit PAS de vidéo MP4 — retourne un manifeste/index de frames
+- [ ] rife_interpolator.py lit des frames PNG directement (pas un MP4)
+- [ ] rife_interpolator.py traite par chunks de 10 secondes (pas toute la vidéo d'un coup)
+- [ ] upscaler.py lit des frames PNG directement (pas un MP4)
+- [ ] Pipeline fusionné : chunk → RIFE → upscale → append video final (pas 2 passes séparées)
+- [ ] Pic disque temporaire < 5GB pour 60s de vidéo
+
+### Encodage Final
+- [ ] Preset `distribution` : SVT-AV1, poids 200-400MB/60s
+- [ ] Preset `distribution_h265` : libx265 + `--tune animation`, poids 350-600MB/60s
+- [ ] Preset `master` : ProRes 422 HQ
+- [ ] Support fallback : si AV1 indisponible → H.265 automatiquement
+
+### Conformité V2
+- [ ] Ratio lock strict depuis format.ratio du PRODUCTION_PLAN.JSON V2 (zéro letterbox)
+- [ ] Résolution lue depuis format.resolution (array [height, width])
 - [ ] Audio sync depuis audio_source.wav de U00
+- [ ] Checkpoint system : reprise après crash au dernier chunk
+- [ ] CLI preset : `--preset distribution|master|custom`
+- [ ] carrier_report.json généré avec métriques complètes
 
 ## MARSHAL — L'Intendant
 - [ ] Commande CLI : `python EXO_MARSHAL.py --unit F04 --mode validate`

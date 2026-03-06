@@ -10,14 +10,14 @@
 | 3 | U03 | SCENOGRAPHY DOCK | ✅ Done | 100% | 🟢 SCELLÉ (PR #27-#31) | — |
 | 4 | U04 | PHOTOGRAPHY WING | ✅ Done | 100% | 🟢 U04-A SCELLÉ (PR #34-#37) | U04-B Darkroom planifié |
 | 5 | U05 | ALCHEMIST LAB | ✅ Done | 100% | 🟢 SCELLÉ (PR #38-#41) | — |
-| 6 | U06 | AIRCRAFT CARRIER | 🟢 P2 | 80% | 🟡 EN ATTENTE | Ratio lock + CRF |
+| 6 | U06 | AIRCRAFT CARRIER | 🔴 P0 | 40% | 🟡 EN MUTATION | Pipeline lossy + schema manquant |
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [█████████░] 85% — MARSHAL + U00 + U01 + U02 + U03 + U04-A + U05 scellés
+Mutation V2 : [████████░░] 80% — MARSHAL + U00 + U01 + U02 + U03 + U04-A + U05 scellés
 Frégates conformes : 7/8 (MARSHAL, U00, U01, U02, U03, U04-A, U05)
-Phase courante : PHASE C (Finition — U05 scellée, U04-B + U06 restants)
-Dernière frappe : U05 Alchemist Lab scellée (PR #38-#41)
+Phase courante : PHASE C (Finition — U06 en mutation ATOM-IC)
+Dernière frappe : U06 audit ATOM-IC — 4 compressions lossy découvertes, pipeline frame-based planifié
 
 ## LÉGENDE
 - 🔴 BLOQUÉ : Écart majeur, réécriture nécessaire
@@ -30,4 +30,4 @@ Dernière frappe : U05 Alchemist Lab scellée (PR #38-#41)
 - [VALIDATION](./EXODUS_V2_VALIDATION.md) | [RISKS](./EXODUS_V2_RISKS.md) | [TRANSFERS](./EXODUS_V2_TRANSFER_LOG.md)
 - [U00](./TRACKING_U00.md) | [U01](./TRACKING_U01.md) | [U02](./TRACKING_U02.md) | [U03](./TRACKING_U03.md) | [U04](./TRACKING_U04.md) | [U05](./TRACKING_U05.md) | [U06](./TRACKING_U06.md) | [MARSHAL](./TRACKING_MARSHAL.md)
 
-<!-- v3.2 — U05 SCELLÉ 100% (PR #38-#41) -->
+<!-- v3.3 — U06 ATOM-IC Mutation Planned -->

@@ -261,13 +261,18 @@ Transmuter n'importe quelle vidéo virale en animation Roblox cinématique 4K/12
 | final_video.mp4 | .mp4 (H.265) | Empereur (livrable) |
 
 **Key Technical Specs**
-- **RIFE 4.0** : interpolation 30 → 120 FPS
-- **Ratio Lock Strict** : résolution et ratio (9:16 ou 16:9) depuis métadonnées U00 — zéro letterbox
-- **Codec** : H.265/HEVC, CRF 16-18
-- **Poids cible** : ~450MB-1.5GB pour 60 secondes
-- **Audio Sync** : synchronisation depuis `audio_source.wav` de U00
-- Batch processing par segments de 10s pour optimiser VRAM
-- Check-sum résolution : sortie = entrée U00
+- **Pipeline Frame-Based** : ZÉRO compression intermédiaire. Les frames PNG 16-bit de U05 traversent RIFE et Upscale sans JAMAIS être encodées en vidéo lossy. Seul l'encodage final compresse.
+- **carrier_schema.py** (Bible du Vaisseau-Mère) : module de données pures (6 piliers), zéro dépendance externe, validation + self_test. Suit le pattern de camera_schema.py (U04) et alchemist_schema.py (U05).
+- **3 Encoding Presets** :
+  - `distribution` : SVT-AV1 CRF 30, ~300MB/60s — optimisé YouTube/TikTok
+  - `distribution_h265` : libx265 CRF 20 + `--tune animation`, ~500MB/60s — fallback si AV1 indisponible
+  - `master` : ProRes 422 HQ — archive lossless pour réédition
+- **RIFE 4.0** : interpolation 30 → 120 FPS par chunks de 10 secondes (pic VRAM <10GB, pic disque ~3GB)
+- **Ratio Lock Strict** : résolution et ratio (9:16 ou 16:9) depuis `format.resolution` et `format.ratio` du PRODUCTION_PLAN.JSON V2 — zéro letterbox
+- **Checkpoint System** : reprise après crash au dernier chunk traité
+- **Batch RIFE+Upscale fusionné** : chunk source → RIFE → upscale → append final video → delete chunk
+- **Poids cible distribution** : 200-400MB pour 60 secondes (÷5 vs ancien pipeline)
+- **`--tune animation`** : optimisation x265 pour contenu Roblox (aplats de couleur, mouvement prédictible)
 
 ---
 
@@ -469,5 +474,5 @@ MARSHAL : vérifie chaque transfert (Out-Check → In-Check)
 - [TRANSFERS](./EXODUS_V2_TRANSFER_LOG.md) — Registre des flux
 
 > **Loi du Béton** : Pas de fichier, pas d'existence. Chaque spécification ci-dessus doit se traduire en code traçable par commit.
-<!-- v2.2 — B1.1 Cathédrale de Chair -->
+<!-- v2.3 — U06 ATOM-IC Specs -->
 

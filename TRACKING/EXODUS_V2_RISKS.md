@@ -21,9 +21,9 @@
 
 ### R3 — Temps de rendu RIFE sur T4
 - **Unités touchées** : U06
-- **Probabilité** : HAUTE
-- **Impact** : 60s vidéo → estimation 30-60 min de rendu pour interpolation 120FPS
-- **Mitigation** : Batch processing par segments de 10s, checkpoint system
+- **Probabilité** : MOYENNE (réduite grâce au batch par chunks)
+- **Impact** : 60s vidéo → estimation 20-40 min grâce au pipeline fusionné RIFE+Upscale
+- **Mitigation** : Batch 10s, checkpoint system (reprise après crash), pipeline frame-based (zéro décodage intermédiaire)
 
 ### R4 — Shadowban Google Colab
 - **Probabilité** : MOYENNE
@@ -45,20 +45,25 @@
 - **Impact** : Fichiers manquants/corrompus entre frégates, rendus gaspillés
 - **Mitigation** : MARSHAL module (Out-Check + In-Check obligatoires)
 
+### R8 — Disponibilité SVT-AV1 sur Colab
+- **Probabilité** : MOYENNE
+- **Impact** : Codec AV1 potentiellement absent du FFmpeg Colab → fallback H.265
+- **Mitigation** : Fallback automatique vers libx265 --tune animation. Vérification au démarrage du pipeline.
+
 ---
 
 ## MATRICE DE RISQUES PAR FRÉGATE
 
-| Unité | R1 (VRAM) | R2 (Gemini) | R3 (RIFE) | R4 (Colab) | R5 (Depth) | R6 (SAM) | R7 (Transfert) |
-|-------|-----------|-------------|-----------|------------|------------|----------|-----------------|
-| U00 | 🔴 | 🔴 | ⬜ | 🟡 | 🔴 | 🔴 | 🟡 |
-| U01 | 🟡 | 🟡 | ⬜ | 🟡 | ⬜ | ⬜ | 🟡 |
-| U02 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | 🟡 |
-| U03 | 🟡 | ⬜ | ⬜ | 🟡 | 🔴 | 🔴 | 🟡 |
-| U04 | ⬜ | ⬜ | ⬜ | 🟡 | ⬜ | ⬜ | 🟡 |
-| U05 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | 🟡 |
-| U06 | 🔴 | ⬜ | 🔴 | 🟡 | ⬜ | ⬜ | 🟡 |
-| MARSHAL | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| Unité | R1 (VRAM) | R2 (Gemini) | R3 (RIFE) | R4 (Colab) | R5 (Depth) | R6 (SAM) | R7 (Transfert) | R8 (AV1) |
+|-------|-----------|-------------|-----------|------------|------------|----------|-----------------|----------|
+| U00 | 🔴 | 🔴 | ⬜ | 🟡 | 🔴 | 🔴 | 🟡 | ⬜ |
+| U01 | 🟡 | 🟡 | ⬜ | 🟡 | ⬜ | ⬜ | 🟡 | ⬜ |
+| U02 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | 🟡 | ⬜ |
+| U03 | 🟡 | ⬜ | ⬜ | 🟡 | 🔴 | 🔴 | 🟡 | ⬜ |
+| U04 | ⬜ | ⬜ | ⬜ | 🟡 | ⬜ | ⬜ | 🟡 | ⬜ |
+| U05 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | 🟡 | ⬜ |
+| U06 | 🔴 | ⬜ | 🟡 | 🟡 | ⬜ | ⬜ | 🟡 | 🟡 |
+| MARSHAL | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
 **Légende** : 🔴 Critique | 🟡 Modéré | ⬜ Non concerné
 
