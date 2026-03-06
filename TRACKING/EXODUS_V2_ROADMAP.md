@@ -115,23 +115,23 @@
 - [ ] U06 : Forcer H.265 CRF 16-18
 - Statut : 🔴 0%
 
-#### C4 — U05 Alchemist Lab (Fusion Visuelle V2)
+#### C4 — U05 Alchemist Lab (Fusion Visuelle V2) ✅
 
 ##### C4.1 — alchemist_schema.py (Bible Alchimique) ✅
 - [x] alchemist_schema.py — 7 piliers, presets, validation, self_test 8/8 — PR #38
 - [x] Dossier IN_SOURCE_REF/ — PR #38
 
-##### C4.2 — Match Color + Grain Matcher (Cœur Nucléaire)
-- [ ] match_color.py (Histogram Specification LAB, référence par scène)
-- [ ] grain_matcher.py (Bilateral filter decomposition, grain procédural calibré)
+##### C4.2 — Match Color + Grain Matcher (Cœur Nucléaire) ✅
+- [x] match_color.py (Histogram Specification LAB, référence par scène) — PR #40
+- [x] grain_matcher.py (Bilateral filter decomposition, grain procédural calibré) — PR #40
 
-##### C4.3 — Bloom + Sharpness + Orchestrateur
-- [ ] bloom_engine.py (Luminance threshold + Gaussian blur + additive blend)
-- [ ] sharpness_transfer.py (Laplacian variance matching)
-- [ ] Rewrite EXO_05_ALCHEMIST.py v2.0.0 (Pipeline OpenCV, --preset CLI)
-- [ ] Documentation (README_DEV.md, UNIT_05_SUBPLAN.md, requirements.txt)
+##### C4.3 — Bloom + Sharpness + Orchestrateur ✅
+- [x] bloom_engine.py (Luminance threshold + Gaussian blur + additive blend) — PR #41
+- [x] sharpness_transfer.py (Laplacian variance matching) — PR #41
+- [x] Rewrite EXO_05_ALCHEMIST.py v2.0.0 (Pipeline OpenCV, --preset CLI) — PR #41
+- [x] Documentation (README_DEV.md, UNIT_05_SUBPLAN.md, requirements.txt) — PR #41
 
-- Statut : 🟡 10% (Bible forgée, code traitement en attente)
+- Statut : ✅ 100% SCELLÉ (PR #38, #40, #41)
 
 ### PHASE D : SCALE (Semaine 4+)
 - [ ] Test end-to-end (vidéo Brookhaven complète)
@@ -143,8 +143,8 @@
 MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [█████░░░░░] 🟡 75% — MARSHAL + U00 + U01 + U02 + U03 + U04-A scellés, U05 en forge
-Phase courante : PHASE C4 (Finition — U05 Alchemist Lab)
+Mutation V2 : [███████░░░] 🟡 85% — MARSHAL + U00 + U01 + U02 + U03 + U04-A + U05 scellés
+Phase courante : PHASE C (Finition — U04-B Darkroom + U06 Aircraft Carrier restants)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -154,4 +154,4 @@ Phase courante : PHASE C4 (Finition — U05 Alchemist Lab)
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.6 — U04-A SCELLÉ + U05 Phase C4 -->
+<!-- v2.7 — U05 SCELLÉ 100% (PR #38-#41) -->
