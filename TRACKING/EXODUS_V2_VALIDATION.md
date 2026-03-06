@@ -90,6 +90,16 @@
 - [ ] Volume Scatter + lampes invisibles alignées sur sources vidéo
 - [ ] Alerte si avatar sort du frustum caméra
 
+### U04-B — DARKROOM (Rendu Batch)
+- [ ] Preset `darkroom` dans camera_schema.py (1080p, 128 samples, OIDN, Combined pass)
+- [ ] Script Blender headless rend des frames PNG 16-bit dans OUT_CAMERA_LOGIC/
+- [ ] Chunk-based rendering (300 frames/chunk) avec checkpoint JSON pour reprise
+- [ ] Checkpoint survit au cleanup (pas dans temp_dir — même pattern que U06)
+- [ ] CLI : `python EXO_04_DARKROOM.py --blend scene.blend --chunk-size 300 --resume`
+- [ ] Output compatible U05 : scan_render_frames() trouve les PNG dans IN_RAW_FRAMES/
+- [ ] GPU auto-detection (CUDA → OPTIX → CPU fallback)
+- [ ] Notebook Colab fonctionnel avec mount Drive + auto-resume
+
 ## U05 — ALCHEMIST LAB
 - [ ] Match Color par alignement histogramme (pas de LUT)
 - [ ] Film Grain matching (extraction du grain de la vidéo source)

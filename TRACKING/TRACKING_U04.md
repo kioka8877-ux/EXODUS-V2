@@ -7,7 +7,7 @@ Fidélité cinématographique — la caméra 3D doit reproduire la caméra sourc
 
 **Architecture** : U04 est séparée en deux sous-frégates (voir [ARCHITECTURE_U04.md](../04_PHOTOGRAPHY_WING/ARCHITECTURE_U04.md)) :
 - **U04-A (Director)** : Configure le .blend (caméra, DOF, shake, atmosphère, Cycles). ~30s. Output = .blend.
-- **U04-B (Darkroom)** : Lance le rendu batch. ~15-45h. Output = frames EXR/PNG. PLANIFIÉ.
+- **U04-B (Darkroom)** : Lance le rendu batch ATOM-IC. ~2-4h (1080p + AI upscale). Output = frames PNG 16-bit. EN FORGE.
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
 - **Écarts constatés** : TOUS CORRIGÉS par U04-A.
@@ -29,11 +29,17 @@ Fidélité cinématographique — la caméra 3D doit reproduire la caméra sourc
 - [x] Câbler `EXO_04_PHOTOGRAPHY.py` v2.0.0 (nouveaux modules + arguments CLI) — PR #37
 - [x] Mettre à jour documentation (UNIT_04_SUBPLAN.md, README_DEV.md) — PR #37
 
-### U04-B — DARKROOM (Rendu — PLANIFIÉ, PAS DÉVELOPPÉ)
-- [ ] Brainstorming infrastructure rendu (Colab Pro / Cloud / Local)
-- [ ] Script batch rendering EXR 4K
-- [ ] Optimisation VRAM / tiling / progressive rendering
-- [ ] Intégration Marshal Out-Check pour frames rendues
+### U04-B — DARKROOM (Rendu ATOM-IC — EN FORGE)
+**Décision ATOM-IC** : Rendre en 1080p @ 128 samples (pas 4K @ 256) — U06 Real-ESRGAN upscale → 4K.
+Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
+
+- [x] Brainstorming infrastructure rendu → Google Colab T4 (ATOM-IC Inversion : 1080p + AI upscale)
+- [ ] Nouveau preset `darkroom` dans `camera_schema.py` (1080p, 128 samples, OIDN, PNG 16-bit)
+- [ ] `darkroom_render.py` — Script Blender headless (chunk rendering 300 frames + checkpoint JSON)
+- [ ] `EXO_04_DARKROOM.py` — Orchestrateur CLI Python pur (valide inputs, lance blender, gère resume)
+- [ ] `EXO_04_DARKROOM.ipynb` — Notebook Colab (mount Drive, auto-resume, progress bar)
+- [ ] Mise à jour documentation (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md)
+- [ ] Intégration Marshal Out-Check pour frames rendues PNG 16-bit
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
@@ -43,6 +49,7 @@ Fidélité cinématographique — la caméra 3D doit reproduire la caméra sourc
 | - | fspy_tracker.py + auto_dof.py + render_forge.py | 🟢 | PR #35 | N/A |
 | - | camera_director.py (Noise shake + frustum) + lighting_rig.py (Volume Scatter) | 🟢 | PR #36 | N/A |
 | - | cuts_engine.py refactor + EXO_04 câblage + docs | 🟢 | PR #37 | N/A |
+| 2026-03-06 | Brainstorming ATOM-IC U04-B : 1080p + chunks + checkpoint + AI upscale | ✅ | — | — |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (U04-A ne rend pas)
