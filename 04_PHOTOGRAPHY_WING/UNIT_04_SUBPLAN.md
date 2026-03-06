@@ -3,7 +3,7 @@
 ## Mission
 Implémenter le tracking caméra et l'éclairage cinématique basés sur le PRODUCTION_PLAN.JSON généré par CORTEX.
 
-## Statut: 🟢 U04-A SCELLÉ (V2)
+## Statut: 🟢 U04-A SCELLÉ | 🟡 U04-B EN FORGE
 
 ## Stack Technique
 - **Python 3.10+**
@@ -25,9 +25,12 @@ Implémenter le tracking caméra et l'éclairage cinématique basés sur le PROD
 │   ├── cuts_engine.py             # ✅ Système de cuts (imports depuis camera_schema)
 │   ├── lighting_rig.py            # ✅ Rigs éclairage + Volume Scatter + lampes invisibles
 │   ├── keyframe_animator.py       # ✅ Animation par keyframes
+│   ├── darkroom_render.py            # 🟡 U04-B : Script Blender headless chunk rendering
+│   ├── EXO_04_DARKROOM.py           # 🟡 U04-B : Orchestrateur CLI Python pur
 │   ├── requirements.txt           # ✅ Dépendances
 │   ├── EXO_04_CONTROL.ipynb       # ✅ Notebook debug
-│   └── EXO_04_PRODUCTION.ipynb    # ✅ Notebook production
+│   ├── EXO_04_PRODUCTION.ipynb    # ✅ Notebook production
+│   └── EXO_04_DARKROOM.ipynb        # 🟡 U04-B : Notebook Colab rendu batch
 ├── IN_VIDEO_SOURCE/
 │   └── camera_fov_ratio.json      # De U00 (métadonnées caméra)
 ├── IN_SCENE_REF/
@@ -36,8 +39,10 @@ Implémenter le tracking caméra et l'éclairage cinématique basés sur le PROD
 │   └── PRODUCTION_PLAN.JSON       # De U00/CORTEX
 ├── OUT_CAMERA_LOGIC/
 │   ├── scene_ready_*.blend        # Scènes prêtes au rendu (U04-A)
+│   ├── render_*.png               # Frames rendues (U04-B, PNG 16-bit 1080p)
 │   ├── camera_data_*.json         # Export données caméra
-│   └── photography_report.json    # Rapport production
+│   ├── photography_report.json    # Rapport production (U04-A)
+│   └── darkroom_report.json       # Rapport rendu (U04-B)
 ├── ARCHITECTURE_U04.md            # ✅ Note technique split A/B
 ├── README_DEV.md                  # ✅ Documentation dev
 └── UNIT_04_SUBPLAN.md             # ✅ Ce fichier
@@ -57,8 +62,10 @@ Implémenter le tracking caméra et l'éclairage cinématique basés sur le PROD
 | Fichier | Destination | Description |
 |---------|-------------|-------------|
 | `scene_ready_*.blend` | U04-B / U05 | Scène complète prête au rendu |
+| `render_*.png` | U05 / U06 | Frames PNG 16-bit 1080p (U04-B) |
 | `camera_data_*.json` | Archive | Données caméra exportées |
-| `photography_report.json` | Logs | Rapport de production |
+| `photography_report.json` | Logs | Rapport de production (U04-A) |
+| `darkroom_report.json` | Logs | Rapport de rendu (U04-B) |
 
 ## Fonctionnalités Implémentées
 
@@ -105,6 +112,14 @@ Implémenter le tracking caméra et l'éclairage cinématique basés sur le PROD
 - [x] Courbes Catmull-Rom pour paths
 - [x] Animation orbit/dolly/crane
 - [x] Animation FOV (zoom)
+
+### U04-B — Darkroom (Rendu ATOM-IC)
+- [ ] Preset `darkroom` dans camera_schema.py
+- [ ] darkroom_render.py (Blender headless, chunks, checkpoint)
+- [ ] EXO_04_DARKROOM.py (orchestrateur CLI)
+- [ ] EXO_04_DARKROOM.ipynb (Colab notebook)
+- [ ] Mise à jour notebooks (CONTROL + PRODUCTION)
+- [ ] Documentation complète V2
 
 ## Format PRODUCTION_PLAN.JSON
 
@@ -229,13 +244,19 @@ python EXO_04_PHOTOGRAPHY.py \
 
 ```bash
 # Test modules individuels (hors Blender)
-python camera_schema.py       # 7/7 tests
+python camera_schema.py       # 8/8 tests
 python cuts_engine.py         # Test presets + auto-cuts
 python lighting_rig.py        # Test rigs
 python fspy_tracker.py        # 3/3 tests
 python auto_dof.py            # 3/3 tests
 python render_forge.py        # 4/4 tests
 python keyframe_animator.py   # Test easing
+
+# Test U04-B standalone (hors Blender)
+python darkroom_render.py \
+    --output-dir /tmp/darkroom_test \
+    --preset darkroom \
+    --start-frame 1 --end-frame 1800 -v
 
 # Test avec Blender
 blender --background --python camera_director.py -- \
@@ -250,9 +271,17 @@ blender --background --python camera_director.py -- \
 2. **Compatibilité**: Testé avec Blender 4.0+ headless
 3. **Isolation**: Aucune dépendance vers autres unités (Loi des Silos)
 4. **Extensibilité**: Nouveaux styles ajoutables via `camera_schema.py` (Bible Optique)
-5. **Séparation A/B**: U04-A configure le .blend (~30s), U04-B rendra les frames (planifié)
+5. **Séparation A/B**: U04-A configure le .blend (~30s), U04-B rend les frames (~2-4h)
+6. **ATOM-IC**: Rendu 1080p + AI upscale → 4K via U06 Real-ESRGAN (60-80% plus rapide que rendu 4K direct)
 
 ## Changelog
+
+### v2.1.0 (U04-B Darkroom)
+- `darkroom_render.py` : Chunk-based Blender headless rendering (300 frames/chunk)
+- `EXO_04_DARKROOM.py` : Orchestrateur CLI avec --resume, --dry-run
+- `EXO_04_DARKROOM.ipynb` : Notebook Colab avec auto-resume
+- `camera_schema.py` : Preset `darkroom` (1080p, 128 samples, OIDN, PNG 16-bit)
+- Approche ATOM-IC : 1080p + U06 AI upscale → 4K (2-4h au lieu de 15-45h)
 
 ### v2.0.0 (U04-A Scellé)
 - `camera_schema.py` : Bible Optique centralisée (8 piliers, 533 lignes)

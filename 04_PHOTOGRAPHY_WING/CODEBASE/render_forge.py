@@ -212,7 +212,7 @@ if __name__ == "__main__":
     total = 4
 
     # --- TEST 1 : RENDER_PRESETS a les clés attendues ---
-    expected_presets = {"production", "preview"}
+    expected_presets = {"production", "darkroom", "preview"}
     actual_presets = set(RENDER_PRESETS.keys())
     t1_ok = actual_presets == expected_presets
     if t1_ok:

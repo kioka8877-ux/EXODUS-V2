@@ -189,7 +189,7 @@ BUST_BONE_CHAIN: List[str] = [
 
 
 # =============================================================================
-# PILIER 6 — RENDER PRESETS
+# PILIER 6 — RENDER PRESETS (production 4K/256, darkroom 1080p/128, preview 1080p/64)
 # =============================================================================
 
 RENDER_PRESETS: Dict[str, dict] = {
@@ -203,6 +203,19 @@ RENDER_PRESETS: Dict[str, dict] = {
         "adaptive_threshold": 0.01,
         "film_transparent": False,
         "passes": ["Combined", "Depth", "Normal", "DiffCol", "GlossCol", "Emit"],
+    },
+    "darkroom": {
+        "engine": "CYCLES",
+        "samples": 128,
+        "resolution": (1920, 1080),
+        "use_denoising": True,
+        "denoiser": "OPENIMAGEDENOISE",
+        "use_adaptive_sampling": True,
+        "adaptive_threshold": 0.02,
+        "film_transparent": False,
+        "passes": ["Combined"],
+        "output_format": "PNG",
+        "color_depth": "16",
     },
     "preview": {
         "engine": "CYCLES",
@@ -383,7 +396,7 @@ class CameraSchema:
 if __name__ == "__main__":
     schema = CameraSchema()
     passed = 0
-    total = 7
+    total = 8
 
     print("=== CAMERA SCHEMA — RAPPORT DE VALIDATION ===")
 
@@ -506,28 +519,59 @@ if __name__ == "__main__":
     else:
         print(f"[TEST 6] Style features............... ✗")
 
-    # --- TEST 7 : Rejets hérétiques ---
+    # --- TEST 7 : Darkroom preset ---
     t7_ok = True
-    ok_7a, _ = schema.validate_camera_style("inexistant")
-    if ok_7a:
+    if "darkroom" not in RENDER_PRESETS:
         t7_ok = False
-        print("  ERREUR style 'inexistant' devrait être rejeté")
-    ok_7b, _ = schema.validate_cut_type("inexistant")
-    if ok_7b:
-        t7_ok = False
-        print("  ERREUR cut 'inexistant' devrait être rejeté")
-    ok_7c, _ = schema.validate_lighting_style("inexistant")
-    if ok_7c:
-        t7_ok = False
-        print("  ERREUR lighting 'inexistant' devrait être rejeté")
-    ok_7d, _ = schema.validate_camera_style("static")
-    if not ok_7d:
-        t7_ok = False
-        print("  ERREUR style 'static' devrait être accepté")
+        print("  ERREUR 'darkroom' absent de RENDER_PRESETS")
+    else:
+        dr = RENDER_PRESETS["darkroom"]
+        if dr["samples"] != 128:
+            t7_ok = False
+            print(f"  ERREUR darkroom.samples = {dr['samples']} (attendu 128)")
+        if dr["resolution"] != (1920, 1080):
+            t7_ok = False
+            print(f"  ERREUR darkroom.resolution = {dr['resolution']} (attendu (1920, 1080))")
+        if dr["denoiser"] != "OPENIMAGEDENOISE":
+            t7_ok = False
+            print(f"  ERREUR darkroom.denoiser = {dr['denoiser']} (attendu OPENIMAGEDENOISE)")
+        if dr.get("output_format") != "PNG":
+            t7_ok = False
+            print(f"  ERREUR darkroom.output_format = {dr.get('output_format')} (attendu PNG)")
+        if dr.get("color_depth") != "16":
+            t7_ok = False
+            print(f"  ERREUR darkroom.color_depth = {dr.get('color_depth')} (attendu 16)")
+        if dr["passes"] != ["Combined"]:
+            t7_ok = False
+            print(f"  ERREUR darkroom.passes = {dr['passes']} (attendu ['Combined'])")
     if t7_ok:
         passed += 1
-        print(f"[TEST 7] Rejets hérétiques............ ✓ (style/cut/lighting inconnus rejetés)")
+        print(f"[TEST 7] Darkroom preset.............. ✓ (128 samples, 1080p, OIDN, PNG 16-bit)")
     else:
-        print(f"[TEST 7] Rejets hérétiques............ ✗")
+        print(f"[TEST 7] Darkroom preset.............. ✗")
+
+    # --- TEST 8 : Rejets hérétiques ---
+    t8_ok = True
+    ok_8a, _ = schema.validate_camera_style("inexistant")
+    if ok_8a:
+        t8_ok = False
+        print("  ERREUR style 'inexistant' devrait être rejeté")
+    ok_8b, _ = schema.validate_cut_type("inexistant")
+    if ok_8b:
+        t8_ok = False
+        print("  ERREUR cut 'inexistant' devrait être rejeté")
+    ok_8c, _ = schema.validate_lighting_style("inexistant")
+    if ok_8c:
+        t8_ok = False
+        print("  ERREUR lighting 'inexistant' devrait être rejeté")
+    ok_8d, _ = schema.validate_camera_style("static")
+    if not ok_8d:
+        t8_ok = False
+        print("  ERREUR style 'static' devrait être accepté")
+    if t8_ok:
+        passed += 1
+        print(f"[TEST 8] Rejets hérétiques............ ✓ (style/cut/lighting inconnus rejetés)")
+    else:
+        print(f"[TEST 8] Rejets hérétiques............ ✗")
 
     print(f"=== VALIDATION COMPLÈTE : {passed}/{total} TESTS PASSÉS ===")
