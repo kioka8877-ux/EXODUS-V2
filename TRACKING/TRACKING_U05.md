@@ -1,30 +1,72 @@
 # TRACKING – U05 ALCHEMIST LAB (Le Philtre)
 
 ## 1. OBJECTIF DE LA MUTATION (V2)
-Fusion visuelle totale — Match Color (alignement histogramme), Film Grain matching (extraction grain source),
-Bloom/Glow bleed, Sharpness transfer. L'avatar doit être indistinguable de la vidéo source.
-Moteur : OpenCV + Pillow.
+Fusion visuelle totale entre le rendu 3D (U04) et la vidéo source (U00).
+L'avatar Roblox doit être indistinguable de la vidéo. 4 transformations mathématiques :
+Match Color (histogramme LAB), Film Grain matching (extraction grain source),
+Bloom/Glow bleed, Sharpness transfer.
+
+**Shift V1 → V2** : Blender Compositor + LUTs → **OpenCV + Pillow** (CPU pur, zéro Blender).
+
+**Architecture** : Bible-first (alchemist_schema.py) + 4 modules OpenCV + orchestrateur CLI.
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
-- **Écarts constatés** : `color_grader.py` utilise des LUTs au lieu du Match Color par histogramme. Pas de grain matching (extraction du grain source). `effects_forge.py` manque bloom/glow spécifique.
-- **Goulot d'étranglement** : Match Color par histogramme (OpenCV) — algorithme plus complexe que LUT
-- **Risque VRAM/RAM** : FAIBLE — traitement CPU (OpenCV+Pillow)
+- **Écarts constatés** : `color_grader.py` utilise des LUTs au lieu du Match Color par histogramme. Pas de grain matching. `effects_forge.py` manque bloom/glow spécifique. Tout le pipeline est Blender-dépendant.
+- **Goulot d'étranglement** : AUCUN — traitement CPU ~1s/frame (100× plus rapide que U04-B)
+- **Risque VRAM/RAM** : NUL — 1.5 GB RAM peak sur 12 GB Colab T4
 
 ## 3. PLAN D'ACTION (BACKLOG)
-- [ ] Remplacer LUT grading par Match Color histogramme (OpenCV)
-- [ ] Implémenter extraction et application du grain source
-- [ ] Ajouter Bloom/Glow bleed (hautes lumières)
-- [ ] Implémenter flou de transfert (netteté avatar → grain source)
-- [ ] Output en .png 16 bits
+
+### Task A — Bible Alchimique ✅ (PR #38)
+- [x] `alchemist_schema.py` — 7 piliers, 5 pipeline presets, classe AlchemistSchema, self_test 8/8
+- [x] Dossier `IN_SOURCE_REF/` créé (.gitkeep)
+
+### Task B — Match Color + Grain Matcher (les 85% du look)
+- [ ] `match_color.py` — Histogram Specification en espace LAB (OpenCV)
+    - Histogramme de référence par scène (anti-flicker, ~20 frames échantillonnées)
+    - Blend avec intensité configurable
+- [ ] `grain_matcher.py` — Extraction grain source + application procédurale
+    - Calibration par scène (~10 frames, bilateral filter decomposition)
+    - Grain procédural calibré sur stats source (np.random.normal)
+
+### Task C — Bloom + Sharpness + Orchestrateur CLI + Docs
+- [ ] `bloom_engine.py` — Luminance threshold → Gaussian blur → additive blend
+- [ ] `sharpness_transfer.py` — Laplacian variance matching + Gaussian blur/unsharp mask
+- [ ] Rewrite `EXO_05_ALCHEMIST.py` v2.0.0 — Pipeline OpenCV, CLI avec --preset, extraction frames source via cv2.VideoCapture
+- [ ] Mise à jour `requirements.txt` (numpy, opencv-python-headless, Pillow, tqdm)
+- [ ] Mise à jour `README_DEV.md`
+- [ ] Mise à jour `UNIT_05_SUBPLAN.md`
 
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
-| - | - | 🔴 | - | - |
+| 2026-03-06 | alchemist_schema.py (Bible Alchimique, 479 lignes, self_test 8/8) + IN_SOURCE_REF/ | 🟢 | PR #38 | N/A (Python pur) |
 
 ## 5. MÉTRIQUES ET VALIDATION
-- Consommation VRAM Max : N/A (CPU processing)
-- Temps d'exécution moyen : À mesurer
+- Consommation VRAM Max : N/A (CPU processing — OpenCV + Pillow)
+- RAM peak estimé : ~1.5 GB
+- Temps d'exécution estimé : ~1s/frame 4K → ~15 min pour 30s vidéo
+- Stockage estimé : ~32 GB (input + output) pour 30s vidéo
+
+### Inputs
+| Fichier | Format | De | Poids estimé (30s) |
+|---------|--------|----|--------------------|
+| raw_frames/ | .exr ou .png (Combined pass) | U04 | ~14-27 GB |
+| source_video.mp4 | .mp4 | U00 | ~10-100 MB |
+| PRODUCTION_PLAN.JSON | .json | U00 | ~20 KB |
+
+### Outputs
+| Fichier | Format | Vers | Poids estimé (30s) |
+|---------|--------|------|--------------------|
+| graded_frames/ | .png 16-bit 4K | U06 | ~13-22 GB |
+| alchemist_report.json | .json | — | ~20 KB |
+
+### Critères VALIDATION.md
+- [ ] Match Color par alignement histogramme (pas de LUT)
+- [ ] Film Grain matching (extraction du grain de la vidéo source)
+- [ ] Bloom/Glow bleed (hautes lumières bavent sur le décor)
+- [ ] Flou de transfert (avatar pas "trop net" vs grain source)
+- [ ] Output : .png 16 bits
 - [ ] Marshal Out-Check passé
 - [ ] Validation Souveraine
 

@@ -91,32 +91,47 @@
 ### PHASE C : FINITION (Semaines 3-4)
 **Priorité : U02 + U04 + U05 + U06**
 - [x] U02 : Ajouter bypass conditionnel (requires_u02)
-#### C1 — U04 Architecture (Documentation)
-- [ ] ARCHITECTURE_U04.md (note technique split A/B)
-- [ ] Mise à jour TRACKING_U04.md, TRACKING_MASTER.md
-- Statut : 🟢 EN COURS
+#### C1 — U04 Architecture (Documentation) ✅
+- [x] ARCHITECTURE_U04.md (note technique split A/B)
+- [x] Mise à jour TRACKING_U04.md, TRACKING_MASTER.md
+- Statut : ✅ SCELLÉ
 
-#### C2 — U04-A Director (Configuration .blend)
-- [ ] camera_schema.py (Bible Optique — fondation)
-- [ ] fspy_tracker.py (Pilier A — Perspective Lock ±5%)
-- [ ] auto_dof.py (Pilier B — Empty sur buste avatar)
-- [ ] Réécrire shake → Noise modifier (Pilier C)
-- [ ] apply_atmosphere() + invisible lamps (Pilier D)
-- [ ] check_frustum() (Alerte frustum)
-- [ ] render_forge.py (config Cycles — PAS de rendu)
-- [ ] Câblage EXO_04_PHOTOGRAPHY.py
-- Statut : 🟡 EN ATTENTE (après C1)
+#### C2 — U04-A Director (Configuration .blend) ✅
+- [x] camera_schema.py (Bible Optique — fondation)
+- [x] fspy_tracker.py (Pilier A — Perspective Lock ±5%)
+- [x] auto_dof.py (Pilier B — Empty sur buste avatar)
+- [x] Réécrire shake → Noise modifier (Pilier C)
+- [x] apply_atmosphere() + invisible lamps (Pilier D)
+- [x] check_frustum() (Alerte frustum)
+- [x] render_forge.py (config Cycles — PAS de rendu)
+- [x] Câblage EXO_04_PHOTOGRAPHY.py
+- Statut : ✅ SCELLÉ (PR #34-#37)
 
 #### C3 — U04-B Darkroom (Rendu — PLANIFIÉ)
 - [ ] Brainstorming infrastructure (Colab/Cloud/Local)
 - [ ] Implémentation batch rendering
 - Statut : 🔴 PLANIFIÉ (après C2)
-- [ ] U05 : Match Color (alignement histogramme)
-- [ ] U05 : Film Grain matching (extraction grain source)
-- [ ] U05 : Bloom/Glow bleed
 - [ ] U06 : Ratio lock strict (métadonnées U00)
 - [ ] U06 : Forcer H.265 CRF 16-18
 - Statut : 🔴 0%
+
+#### C4 — U05 Alchemist Lab (Fusion Visuelle V2)
+
+##### C4.1 — alchemist_schema.py (Bible Alchimique) ✅
+- [x] alchemist_schema.py — 7 piliers, presets, validation, self_test 8/8 — PR #38
+- [x] Dossier IN_SOURCE_REF/ — PR #38
+
+##### C4.2 — Match Color + Grain Matcher (Cœur Nucléaire)
+- [ ] match_color.py (Histogram Specification LAB, référence par scène)
+- [ ] grain_matcher.py (Bilateral filter decomposition, grain procédural calibré)
+
+##### C4.3 — Bloom + Sharpness + Orchestrateur
+- [ ] bloom_engine.py (Luminance threshold + Gaussian blur + additive blend)
+- [ ] sharpness_transfer.py (Laplacian variance matching)
+- [ ] Rewrite EXO_05_ALCHEMIST.py v2.0.0 (Pipeline OpenCV, --preset CLI)
+- [ ] Documentation (README_DEV.md, UNIT_05_SUBPLAN.md, requirements.txt)
+
+- Statut : 🟡 10% (Bible forgée, code traitement en attente)
 
 ### PHASE D : SCALE (Semaine 4+)
 - [ ] Test end-to-end (vidéo Brookhaven complète)
@@ -128,8 +143,8 @@
 MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [█████░░░░░] 🟢 50% — MARSHAL + U00 + U01 + U02 scellés
-Phase courante : PHASE B2 (Décor — U03 Tri-Layer System)
+Mutation V2 : [█████░░░░░] 🟡 75% — MARSHAL + U00 + U01 + U02 + U03 + U04-A scellés, U05 en forge
+Phase courante : PHASE C4 (Finition — U05 Alchemist Lab)
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -139,4 +154,4 @@ Phase courante : PHASE B2 (Décor — U03 Tri-Layer System)
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.5 — U04 Split A/B -->
+<!-- v2.6 — U04-A SCELLÉ + U05 Phase C4 -->
