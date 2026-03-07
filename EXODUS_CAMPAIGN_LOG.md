@@ -34,6 +34,7 @@
 | 2026-03-04 | U05 | OMEGA | Alchemist Lab scellée (PR #38-#41) | ✅ |
 | 2026-03-06 | U06 | AUDIT | Audit ATOM-IC — 4 compressions lossy découvertes | ✅ |
 | 2026-03-06 | U06 | ALPHA | Mutation V2 ATOM-IC planifiée — pipeline frame-based | ⏳ |
+| 2026-03-07 | MARSHAL | D.1 | Architecture Phantom Link documentée | ✅ |
 
 ---
 
@@ -41,7 +42,7 @@
 
 ```
 Progression: [███████░░░] 7/8 Unités Scellées (88%)
-En Mutation: [█░░░░░░░░░] 1/8 Unités (U06 — ATOM-IC)
+En Mutation: [██░░░░░░░░] D.1 Phantom Link — Architecture validée
 Objectif: 100% Flotte Opérationnelle
 ```
 

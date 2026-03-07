@@ -16,8 +16,8 @@
 ## PROGRESSION GLOBALE
 Mutation V2 : [██████████] 98% — TOUTES les frégates scellées (MARSHAL + U00-U06)
 Frégates conformes : 8/8 (MARSHAL, U00, U01, U02, U03, U04, U05, U06)
-Phase courante : PHASE D (Scale — test end-to-end restant)
-Dernière frappe : U04-B SCELLÉ — Darkroom ATOM-IC complet (PR #48-#49)
+Phase courante : PHASE D — D.1 Phantom Link en cours
+Dernière frappe : Architecture Phantom Link documentée (ARCHITECTURE_PHANTOM_LINK.md)
 
 ## LÉGENDE
 - 🔴 BLOQUÉ : Écart majeur, réécriture nécessaire
@@ -30,4 +30,8 @@ Dernière frappe : U04-B SCELLÉ — Darkroom ATOM-IC complet (PR #48-#49)
 - [VALIDATION](./EXODUS_V2_VALIDATION.md) | [RISKS](./EXODUS_V2_RISKS.md) | [TRANSFERS](./EXODUS_V2_TRANSFER_LOG.md)
 - [U00](./TRACKING_U00.md) | [U01](./TRACKING_U01.md) | [U02](./TRACKING_U02.md) | [U03](./TRACKING_U03.md) | [U04](./TRACKING_U04.md) | [U05](./TRACKING_U05.md) | [U06](./TRACKING_U06.md) | [MARSHAL](./TRACKING_MARSHAL.md)
 
-<!-- v3.5 — U04-B SCELLÉ, TOUTES frégates scellées (PR #48-#49) -->
+## PHASE D.1 — PHANTOM LINK (EN COURS)
+Architecture validée — ARCHITECTURE_PHANTOM_LINK.md créé.
+Prochaine étape : Implémentation phantom_link.py + MARSHAL V2 + 6 orchestrateurs.
+
+<!-- v3.6 — Phase D.1 Phantom Link Architecture (2026-03-07) -->
