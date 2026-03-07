@@ -20,11 +20,19 @@ CLI : `python EXO_MARSHAL.py --unit F04 --mode validate`
 - [x] Implémenter Campaign Log (append horodaté dans EXODUS_CAMPAIGN.LOG)
 - [x] Copier MARSHAL dans chaque CODEBASE/ lors de l'init
 
+### D.1 — Phantom Link (EN ATTENTE DEV)
+- [x] Architecture Phantom Link documentée (ARCHITECTURE_PHANTOM_LINK.md)
+- [ ] Implémenter phantom_link.py (resolve_input + create_link + validate_link)
+- [ ] Ajouter --mode link (crée _LINK.json via TRANSFER_ROUTES)
+- [ ] Ajouter --mode cleanup (supprime OUT/ intermédiaires après production)
+- [ ] Mettre à jour check-in pour résoudre les phantom links
+
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
 | 2026-02-26 | Création EXO_MARSHAL.py + README | 🟢 | PR #12 | N/A |
 | 2026-02-26 | Test check-out U00 (0/7 — attendu) | 🟢 | EXODUS_CAMPAIGN.LOG | < 1s |
+| 2026-03-07 | Phase D.1 Architecture Phantom Link | 🟡 | ARCHITECTURE_PHANTOM_LINK.md | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (pure Python CPU)

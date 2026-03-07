@@ -143,6 +143,17 @@
 - Statut : ✅ 100% SCELLÉ (PR #38, #40, #41)
 
 ### PHASE D : SCALE (Semaine 4+)
+
+#### D.1 — Phantom Link (Zéro Copie Inter-Frégates)
+- [ ] ARCHITECTURE_PHANTOM_LINK.md rédigée et validée
+- [ ] phantom_link.py (resolve_input + create_link + validate_link)
+- [ ] EXO_MARSHAL.py V2 (--mode link + --mode cleanup)
+- [ ] 6 orchestrateurs adaptés (resolve_input)
+- [ ] 7 notebooks PRODUCTION mis à jour
+- [ ] Test end-to-end U00→U06 avec phantom links
+- Statut : 🟡 En cours
+
+#### D.2 — Test End-to-End
 - [ ] Test end-to-end (vidéo Brookhaven complète)
 - [ ] Optimisation VRAM pour batch processing
 - [ ] Documentation finale et formation
@@ -153,7 +164,7 @@ MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
 
 ## PROGRESSION GLOBALE
 Mutation V2 : [██████████] 🟢 98% — TOUTES les frégates scellées (MARSHAL + U00-U06)
-Phase courante : PHASE D (Scale — test end-to-end restant)
+Phase courante : PHASE D — D.1 Phantom Link en cours
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -163,4 +174,4 @@ Phase courante : PHASE D (Scale — test end-to-end restant)
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
-<!-- v2.9 — U04-B SCELLÉ (PR #48-#49), TOUTES frégates scellées -->
+<!-- v3.0 — Phase D.1 Phantom Link Architecture (2026-03-07) -->
