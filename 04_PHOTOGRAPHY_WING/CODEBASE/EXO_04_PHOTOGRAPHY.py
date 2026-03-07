@@ -33,6 +33,16 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+# Phantom Link — Phase D.1
+import importlib.util
+_phantom_spec = importlib.util.spec_from_file_location("phantom_link", Path(__file__).resolve().parents[2] / "phantom_link.py")
+if _phantom_spec and _phantom_spec.loader:
+    _phantom_mod = importlib.util.module_from_spec(_phantom_spec)
+    _phantom_spec.loader.exec_module(_phantom_mod)
+    resolve_input = _phantom_mod.resolve_input
+else:
+    resolve_input = lambda p: Path(p)  # fallback si phantom_link.py absent
+
 PHOTOGRAPHY_VERSION = "2.0.0"
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
@@ -359,8 +369,8 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "04_PHOTOGRAPHY_WING"
     
-    video_source_dir = unit_root / "IN_VIDEO_SOURCE"
-    scene_ref_dir = unit_root / "IN_SCENE_REF"
+    video_source_dir = resolve_input(unit_root / "IN_VIDEO_SOURCE")
+    scene_ref_dir = resolve_input(unit_root / "IN_SCENE_REF")
     
     plan_path = Path(args.production_plan)
     if not plan_path.is_absolute():

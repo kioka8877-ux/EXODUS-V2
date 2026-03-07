@@ -46,6 +46,16 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple
 
+# Phantom Link — Phase D.1
+import importlib.util
+_phantom_spec = importlib.util.spec_from_file_location("phantom_link", Path(__file__).resolve().parents[2] / "phantom_link.py")
+if _phantom_spec and _phantom_spec.loader:
+    _phantom_mod = importlib.util.module_from_spec(_phantom_spec)
+    _phantom_spec.loader.exec_module(_phantom_mod)
+    resolve_input = _phantom_mod.resolve_input
+else:
+    resolve_input = lambda p: Path(p)  # fallback si phantom_link.py absent
+
 sys.path.insert(0, str(Path(__file__).parent))
 from carrier_schema import (
     CarrierSchema, ENCODING_PRESETS, DEFAULT_PRESET,
@@ -745,7 +755,7 @@ Exemples:
     if args.assembly_kit_dir:
         assembly_kit_dir = Path(args.assembly_kit_dir)
     else:
-        assembly_kit_dir = unit_root / "IN_ASSEMBLY_KIT"
+        assembly_kit_dir = resolve_input(unit_root / "IN_ASSEMBLY_KIT")
 
     if args.output_dir:
         output_dir = Path(args.output_dir)

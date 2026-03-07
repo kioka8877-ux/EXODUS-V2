@@ -14,6 +14,9 @@ import fnmatch
 from pathlib import Path
 from datetime import datetime
 
+# Phantom Link — Phase D.1
+from phantom_link import create_link, resolve_input, validate_link
+
 MANIFEST = {
     "U00": {
         "name": "CORTEX HQ",
@@ -176,8 +179,28 @@ TRANSFER_ROUTES = {
     }
 }
 
+def _build_reverse_routes():
+    """Construit la map inversée : {dest_unit: {dest_in_folder: (source_unit, source_out_folder)}}"""
+    reverse = {}
+    for src_unit, routes in TRANSFER_ROUTES.items():
+        src_info = MANIFEST[src_unit]
+        src_folder = src_info["folder"]
+        for route_key, destinations in routes.items():
+            out_subfolder = route_key.split("/")[0]
+            for dest in destinations:
+                if dest == "EMPEROR":
+                    continue
+                dest_unit = dest.split("/")[0]
+                dest_in = dest.split("/")[1]
+                if dest_unit not in reverse:
+                    reverse[dest_unit] = {}
+                reverse[dest_unit][dest_in] = (src_unit, src_folder, out_subfolder)
+    return reverse
+
+REVERSE_ROUTES = _build_reverse_routes()
+
 VALID_UNITS = ["U00", "U01", "U02", "U03", "U04", "U05", "U06"]
-VALID_MODES = ["check-out", "check-in", "validate"]
+VALID_MODES = ["check-out", "check-in", "validate", "link", "cleanup"]
 UNIT_ALIASES = {f"F{i:02d}": f"U{i:02d}" for i in range(7)}
 
 
@@ -241,6 +264,111 @@ def print_banner(title):
 
 def print_separator():
     print("\u2501" * 56)
+
+
+def link_inputs(unit, drive_root, verbose=False):
+    """Crée les _LINK.json pour tous les dossiers IN/ de l'unité cible."""
+    info = MANIFEST[unit]
+    unit_folder = Path(drive_root) / info["folder"]
+
+    print_banner(f"EXODUS MARSHAL — LINK: {unit} {info['name']}")
+
+    if unit not in REVERSE_ROUTES:
+        print(f"  Aucune route entrante pour {unit} — rien à linker")
+        return True, 0
+
+    routes = REVERSE_ROUTES[unit]
+    created = 0
+    issues = []
+
+    for in_folder, (src_unit, src_unit_folder, out_subfolder) in routes.items():
+        target_in_dir = unit_folder / in_folder
+        source_out_dir = Path(drive_root) / src_unit_folder / out_subfolder
+
+        if not source_out_dir.is_dir():
+            print(f"  [MISSING] Source {src_unit}/{out_subfolder}/ introuvable")
+            issues.append(f"Source {source_out_dir} introuvable")
+            continue
+
+        source_files = [f for f in source_out_dir.iterdir() if f.is_file()] if source_out_dir.is_dir() else []
+        if not source_files:
+            print(f"  [EMPTY] Source {src_unit}/{out_subfolder}/ est vide")
+            issues.append(f"Source {source_out_dir} vide")
+            continue
+
+        create_link(str(source_out_dir), str(target_in_dir))
+        created += 1
+
+        if verbose:
+            total_size = sum(f.stat().st_size for f in source_files)
+            print(f"         ({len(source_files)} fichiers, {format_size(total_size)})")
+
+    print_separator()
+    if not issues:
+        print(f"RÉSULTAT: ✅ FRÉGATE {unit} — {created} PHANTOM LINK(S) CRÉÉ(S)")
+    else:
+        print(f"RÉSULTAT: ⚠️ FRÉGATE {unit} — {created} link(s) créé(s), {len(issues)} erreur(s)")
+        for iss in issues:
+            print(f"  → {iss}")
+    print_separator()
+    print()
+
+    return len(issues) == 0, created
+
+
+def cleanup_outputs(unit, drive_root, force=False, verbose=False):
+    """Supprime les fichiers dans OUT/ de l'unité, avec garde-fous."""
+    info = MANIFEST[unit]
+    unit_folder = Path(drive_root) / info["folder"]
+    out_spec = info["out"]
+
+    print_banner(f"EXODUS MARSHAL — CLEANUP: {unit} {info['name']}")
+
+    if unit in TRANSFER_ROUTES:
+        for route_key, destinations in TRANSFER_ROUTES[unit].items():
+            for dest in destinations:
+                if dest == "EMPEROR":
+                    continue
+                dest_unit = dest.split("/")[0]
+                dest_info = MANIFEST.get(dest_unit, {})
+                if not dest_info:
+                    continue
+                dest_folder = Path(drive_root) / dest_info["folder"]
+                dest_out_spec = dest_info.get("out", {})
+                for dest_out_subfolder in dest_out_spec:
+                    dest_out_dir = dest_folder / dest_out_subfolder
+                    if dest_out_dir.is_dir():
+                        dest_files = [f for f in dest_out_dir.iterdir() if f.is_file()]
+                        if not dest_files and not force:
+                            print(f"  [BLOCKED] {dest_unit}/{dest_out_subfolder}/ est vide — la frégate suivante n'a pas terminé")
+                            print(f"  → Utilisez --force pour forcer le cleanup")
+                            return False, 0
+
+    total_freed = 0
+    files_deleted = 0
+
+    for subfolder in out_spec:
+        out_dir = unit_folder / subfolder
+        if not out_dir.is_dir():
+            continue
+
+        for f in sorted(out_dir.iterdir()):
+            if f.is_file() and f.name != "_LINK.json":
+                fsize = f.stat().st_size
+                if verbose:
+                    print(f"  [DEL] {f.name} ({format_size(fsize)})")
+                f.unlink()
+                total_freed += fsize
+                files_deleted += 1
+
+    print_separator()
+    print(f"RÉSULTAT: 🧹 FRÉGATE {unit} — {files_deleted} fichiers supprimés ({format_size(total_freed)} libérés)")
+    print_separator()
+
+    log_result(unit, "cleanup", files_deleted, files_deleted, [], drive_root)
+
+    print()
+    return True, total_freed
 
 
 def check_out(unit, drive_root, verbose=False):
@@ -381,7 +509,10 @@ def check_in(unit, drive_root, verbose=False):
     issues = []
 
     for subfolder, entries in in_spec.items():
-        scan_dir = unit_folder / subfolder
+        raw_dir = unit_folder / subfolder
+        scan_dir = resolve_input(raw_dir)
+        if scan_dir != raw_dir:
+            print(f"  [PHANTOM] {subfolder}/ → {scan_dir}")
         print(f"Scanning: {info['folder']}/{subfolder}/")
 
         for entry in entries:
@@ -517,7 +648,7 @@ def build_parser():
     )
     parser.add_argument(
         "--mode", required=True, choices=VALID_MODES,
-        help="Validation mode: check-out, check-in, or validate (both)."
+        help="Validation mode: check-out, check-in, validate, link, cleanup."
     )
     parser.add_argument(
         "--drive-root", default=None,
@@ -526,6 +657,10 @@ def build_parser():
     parser.add_argument(
         "--verbose", action="store_true",
         help="Show detailed file info (sizes, SHA256 hashes)."
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Force cleanup without checking downstream completion."
     )
     return parser
 
@@ -566,6 +701,17 @@ def main():
     if mode in ("check-in", "validate"):
         ok, passed, total, issues = check_in(unit, drive_root, verbose)
         log_result(unit, "check-in", passed, total, issues, drive_root)
+        if not ok:
+            all_passed = False
+
+    if mode == "link":
+        ok, count = link_inputs(unit, drive_root, verbose)
+        log_result(unit, "link", count, count, [] if ok else ["Phantom link errors"], drive_root)
+        if not ok:
+            all_passed = False
+
+    if mode == "cleanup":
+        ok, freed = cleanup_outputs(unit, drive_root, force=args.force, verbose=verbose)
         if not ok:
             all_passed = False
 
