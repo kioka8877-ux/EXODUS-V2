@@ -180,7 +180,7 @@ TRANSFER_ROUTES = {
 }
 
 def _build_reverse_routes():
-    """Construit la map inversée : {dest_unit: {dest_in_folder: (source_unit, source_out_folder)}}"""
+    """Construit la map inversée : {dest_unit: {dest_in_folder: [(source_unit, source_folder, out_subfolder), ...]}}"""
     reverse = {}
     for src_unit, routes in TRANSFER_ROUTES.items():
         src_info = MANIFEST[src_unit]
@@ -194,7 +194,11 @@ def _build_reverse_routes():
                 dest_in = dest.split("/")[1]
                 if dest_unit not in reverse:
                     reverse[dest_unit] = {}
-                reverse[dest_unit][dest_in] = (src_unit, src_folder, out_subfolder)
+                if dest_in not in reverse[dest_unit]:
+                    reverse[dest_unit][dest_in] = []
+                entry = (src_unit, src_folder, out_subfolder)
+                if entry not in reverse[dest_unit][dest_in]:
+                    reverse[dest_unit][dest_in].append(entry)
     return reverse
 
 REVERSE_ROUTES = _build_reverse_routes()
@@ -281,8 +285,17 @@ def link_inputs(unit, drive_root, verbose=False):
     created = 0
     issues = []
 
-    for in_folder, (src_unit, src_unit_folder, out_subfolder) in routes.items():
+    for in_folder, sources in routes.items():
         target_in_dir = unit_folder / in_folder
+
+        if len(sources) > 1:
+            print(f"  [MULTI-SOURCE] {in_folder}/ reçoit de {len(sources)} sources :")
+            for (su, sf, osf) in sources:
+                print(f"    → {su}/{osf}/")
+            print(f"  [INFO] Phantom link créé vers la dernière source de la chaîne uniquement")
+            print(f"  [INFO] Les autres fichiers doivent être copiés manuellement ou via symlinks")
+
+        src_unit, src_unit_folder, out_subfolder = sources[-1]
         source_out_dir = Path(drive_root) / src_unit_folder / out_subfolder
 
         if not source_out_dir.is_dir():
@@ -705,8 +718,9 @@ def main():
             all_passed = False
 
     if mode == "link":
+        expected = len(REVERSE_ROUTES.get(unit, {}))
         ok, count = link_inputs(unit, drive_root, verbose)
-        log_result(unit, "link", count, count, [] if ok else ["Phantom link errors"], drive_root)
+        log_result(unit, "link", count, expected, [] if ok else ["Phantom link errors"], drive_root)
         if not ok:
             all_passed = False
 
