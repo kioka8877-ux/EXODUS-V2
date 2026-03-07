@@ -32,6 +32,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+# Phantom Link — Phase D.1
+import importlib.util
+_phantom_spec = importlib.util.spec_from_file_location("phantom_link", Path(__file__).resolve().parents[2] / "phantom_link.py")
+if _phantom_spec and _phantom_spec.loader:
+    _phantom_mod = importlib.util.module_from_spec(_phantom_spec)
+    _phantom_spec.loader.exec_module(_phantom_mod)
+    resolve_input = _phantom_mod.resolve_input
+else:
+    resolve_input = lambda p: Path(p)  # fallback si phantom_link.py absent
+
 import cv2
 import numpy as np
 
@@ -321,9 +331,9 @@ def process_pipeline(args, logger: AlchemistLogger):
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "05_ALCHEMIST_LAB"
 
-    render_dir = Path(args.render_dir) if args.render_dir else unit_root / "IN_RAW_FRAMES"
+    render_dir = Path(args.render_dir) if args.render_dir else resolve_input(unit_root / "IN_RAW_FRAMES")
     output_dir = Path(args.output_dir) if args.output_dir else unit_root / "OUT_FINAL_FRAMES"
-    source_ref_dir = Path(args.source_ref_dir) if args.source_ref_dir else unit_root / "IN_SOURCE_REF"
+    source_ref_dir = Path(args.source_ref_dir) if args.source_ref_dir else resolve_input(unit_root / "IN_SOURCE_REF")
     plan_path = Path(args.production_plan)
 
     logger.info(f"ALCHEMIST v{ALCHEMIST_VERSION} — Pipeline OpenCV CPU pur")

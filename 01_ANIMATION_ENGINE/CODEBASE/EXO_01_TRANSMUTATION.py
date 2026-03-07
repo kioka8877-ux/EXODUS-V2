@@ -33,6 +33,16 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+# Phantom Link — Phase D.1
+import importlib.util
+_phantom_spec = importlib.util.spec_from_file_location("phantom_link", Path(__file__).resolve().parents[2] / "phantom_link.py")
+if _phantom_spec and _phantom_spec.loader:
+    _phantom_mod = importlib.util.module_from_spec(_phantom_spec)
+    _phantom_spec.loader.exec_module(_phantom_mod)
+    resolve_input = _phantom_mod.resolve_input
+else:
+    resolve_input = lambda p: Path(p)  # fallback si phantom_link.py absent
+
 TRANSMUTATION_VERSION = "2.1.0"
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
@@ -239,8 +249,8 @@ Exemples:
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "01_ANIMATION_ENGINE"
 
-    cortex_json_dir = unit_root / "IN_CORTEX_JSON"
-    mixamo_base_dir = unit_root / "IN_MIXAMO_BASE"
+    cortex_json_dir = resolve_input(unit_root / "IN_CORTEX_JSON")
+    mixamo_base_dir = resolve_input(unit_root / "IN_MIXAMO_BASE")
     output_dir = unit_root / "OUT_MOTION_DATA"
 
     body_path = Path(args.body_fbx)

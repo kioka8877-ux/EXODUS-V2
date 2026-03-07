@@ -145,13 +145,13 @@
 ### PHASE D : SCALE (Semaine 4+)
 
 #### D.1 — Phantom Link (Zéro Copie Inter-Frégates)
-- [ ] ARCHITECTURE_PHANTOM_LINK.md rédigée et validée
-- [ ] phantom_link.py (resolve_input + create_link + validate_link)
-- [ ] EXO_MARSHAL.py V2 (--mode link + --mode cleanup)
-- [ ] 6 orchestrateurs adaptés (resolve_input)
-- [ ] 7 notebooks PRODUCTION mis à jour
+- [x] ARCHITECTURE_PHANTOM_LINK.md rédigée et validée
+- [x] phantom_link.py (resolve_input + create_link + validate_link)
+- [x] EXO_MARSHAL.py V2 (--mode link + --mode cleanup)
+- [x] 6 orchestrateurs adaptés (resolve_input)
+- [x] 7 notebooks PRODUCTION mis à jour
 - [ ] Test end-to-end U00→U06 avec phantom links
-- Statut : 🟡 En cours
+- Statut : 🟢 Implémenté (test end-to-end restant)
 
 #### D.2 — Test End-to-End
 - [ ] Test end-to-end (vidéo Brookhaven complète)
