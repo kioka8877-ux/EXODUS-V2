@@ -14,9 +14,19 @@
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [██████████] 98% — TOUTES les frégates scellées (MARSHAL + U00-U06)
+Mutation V2 : [██████████] 99% — Fleet Validator créé, E2E en attente
 Frégates conformes : 8/8 (MARSHAL, U00, U01, U02, U03, U04, U05, U06)
-Phase courante : PHASE D — D.1 Phantom Link en cours
+Phase courante : PHASE D.2 — Fleet Validator créé, Test E2E en attente
+
+## FLEET SEAL — VALIDATION END-TO-END
+
+| Couche | Description | Statut |
+|--------|-------------|--------|
+| Layer 1 — Quick | Fichiers existent, taille OK | ⏳ En attente |
+| Layer 2 — Deep | JSON valides, scripts OK, formats corrects | ⏳ En attente |
+| Layer 3 — Cross | Phantom Links, dépendances inter-frégates | ⏳ En attente |
+
+**Fleet Seal** : ⏳ EN ATTENTE DE VALIDATION E2E
 Dernière frappe : Architecture Phantom Link documentée (ARCHITECTURE_PHANTOM_LINK.md)
 
 ## LÉGENDE
@@ -34,4 +44,4 @@ Dernière frappe : Architecture Phantom Link documentée (ARCHITECTURE_PHANTOM_L
 Architecture validée — ARCHITECTURE_PHANTOM_LINK.md créé.
 Prochaine étape : Implémentation phantom_link.py + MARSHAL V2 + 6 orchestrateurs.
 
-<!-- v3.6 — Phase D.1 Phantom Link Architecture (2026-03-07) -->
+<!-- v3.7 — Phase D.2 Fleet Validator (2026-03-08) -->

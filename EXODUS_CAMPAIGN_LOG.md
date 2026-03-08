@@ -35,15 +35,16 @@
 | 2026-03-06 | U06 | AUDIT | Audit ATOM-IC — 4 compressions lossy découvertes | ✅ |
 | 2026-03-06 | U06 | ALPHA | Mutation V2 ATOM-IC planifiée — pipeline frame-based | ⏳ |
 | 2026-03-07 | MARSHAL | D.1 | Architecture Phantom Link documentée | ✅ |
+| 2026-03-08 | FLEET | D.2 | Fleet Validator créé (EXO_FLEET_VALIDATOR.py + notebook + certificat) | ⏳ |
 
 ---
 
 ## COMPTEUR DE GUERRE
 
 ```
-Progression: [███████░░░] 7/8 Unités Scellées (88%)
-En Mutation: [██░░░░░░░░] D.1 Phantom Link — Architecture validée
-Objectif: 100% Flotte Opérationnelle
+Progression: [██████████] 8/8 Unités Scellées (100%)
+Fleet Seal: [░░░░░░░░░░] En attente — Test E2E requis
+Objectif: Fleet Seal Certificate
 ```
 
 ---
