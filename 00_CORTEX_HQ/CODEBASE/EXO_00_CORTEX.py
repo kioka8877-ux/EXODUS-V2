@@ -1130,17 +1130,22 @@ def run_sam_segmentation(video_path: Path, output_path: Path,
 
 def call_gemini_v2(video_path: Path, metadata: dict, logger: CortexLogger,
                    model_name: str = "gemini-2.5-flash-lite",
-                   max_retries: int = 3) -> Optional[dict]:
+                   max_retries: int = 5) -> Optional[dict]:
     """Appelle Gemini avec response_schema pour obtenir le Master JSON V2."""
     
     if not GENAI_AVAILABLE:
         logger.error("google-generativeai non installé")
         return None
     
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = (
+        os.environ.get("GOOGLE_API_KEY") or
+        os.environ.get("GEMINI_API_KEY")
+    )
     if not api_key:
-        logger.error("GEMINI_API_KEY non définie")
+        logger.error("Clé API manquante — définir GOOGLE_API_KEY ou GEMINI_API_KEY")
         return None
+    logger.info("Clé API chargée depuis " +
+        ("GOOGLE_API_KEY" if os.environ.get("GOOGLE_API_KEY") else "GEMINI_API_KEY"))
     
     genai.configure(api_key=api_key)
     
@@ -1208,12 +1213,18 @@ def call_gemini_v2(video_path: Path, metadata: dict, logger: CortexLogger,
                 logger.warn(f"Tentative {attempt + 1}: Réponse vide")
         
         except Exception as e:
-            logger.error(f"Tentative {attempt + 1} échouée: {e}")
-        
-        if attempt < max_retries - 1:
-            wait_time = (attempt + 1) * 5
-            logger.info(f"Attente {wait_time}s avant retry...")
-            time.sleep(wait_time)
+            err_str = str(e).lower()
+            is_rate_limit = "429" in str(e) or "resource_exhausted" in err_str or "rate" in err_str
+            if is_rate_limit:
+                wait_time = 65
+                logger.warn(f"Rate limit 429 détecté — attente {wait_time}s (Free Tier Gemini)")
+            else:
+                logger.error(f"Tentative {attempt + 1} échouée: {e}")
+                wait_time = (attempt + 1) * 5
+
+            if attempt < max_retries - 1:
+                logger.info(f"Retry dans {wait_time}s... ({attempt + 2}/{max_retries})")
+                time.sleep(wait_time)
     
     logger.error(f"Échec après {max_retries} tentatives")
     return None
