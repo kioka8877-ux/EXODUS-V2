@@ -93,6 +93,8 @@ Deux notebooks sont disponibles pour des usages différents:
 
 ## 🔑 Configuration API Gemini
 
+> ⚡ Pour activer le Tier 1 et débloquer les vrais quotas, voir [GEMINI_TIER1_SETUP.md](GEMINI_TIER1_SETUP.md)
+
 1. Obtenir une clé API sur [Google AI Studio](https://aistudio.google.com/)
 2. Configurer la variable d'environnement:
 
