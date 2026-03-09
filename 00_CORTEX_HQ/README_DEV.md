@@ -130,7 +130,7 @@ python EXO_00_CORTEX.py \
 | `--drive-root` | ✅ | - | Chemin racine EXODUS |
 | `--input-video` | ✅ | - | Nom du fichier vidéo |
 | `--output-name` | ❌ | Auto | Nom du fichier JSON |
-| `--model` | ❌ | gemini-2.5-flash | Modèle Gemini |
+| `--model` | ❌ | gemini-2.5-flash-lite | Modèle Gemini |
 | `--dry-run` | ❌ | False | Mode test sans API |
 | `--verbose` | ❌ | False | Logs détaillés |
 
@@ -152,7 +152,7 @@ python EXO_00_CORTEX.py \
 python EXO_00_CORTEX.py \
   --drive-root /data/EXODUS \
   --input-video source.mp4 \
-  --model gemini-2.0-flash \
+  --model gemini-2.5-flash-lite \
   --verbose
 ```
 
@@ -284,7 +284,7 @@ pip install opencv-python-headless
 - Vérifier la connexion internet
 - Vérifier la validité de la clé API
 - Réduire la taille de la vidéo (< 100MB recommandé)
-- Essayer un autre modèle: `--model gemini-2.0-flash`
+- Essayer un autre modèle: `--model gemini-2.5-flash-lite`
 
 ### Mode Debug
 
