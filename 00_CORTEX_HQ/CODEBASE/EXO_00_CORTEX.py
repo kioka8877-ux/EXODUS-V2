@@ -1129,7 +1129,7 @@ def run_sam_segmentation(video_path: Path, output_path: Path,
 # ============================================================================
 
 def call_gemini_v2(video_path: Path, metadata: dict, logger: CortexLogger,
-                   model_name: str = "gemini-2.0-flash",
+                   model_name: str = "gemini-2.5-flash-lite",
                    max_retries: int = 3) -> Optional[dict]:
     """Appelle Gemini avec response_schema pour obtenir le Master JSON V2."""
     
@@ -1921,7 +1921,7 @@ def main():
 Exemples:
   %(prog)s --drive-root /content/drive/MyDrive/EXODUS --input-video video.mp4
   %(prog)s --drive-root ./EXODUS --input-video test.mp4 --dry-run
-  %(prog)s --drive-root /data/EXODUS --input-video source.mp4 --model gemini-2.0-flash
+  %(prog)s --drive-root /data/EXODUS --input-video source.mp4 --model gemini-2.5-flash-lite
   %(prog)s --drive-root ./EXODUS --input-video video.mp4 --rerun audio_extraction
         """
     )
@@ -1939,8 +1939,8 @@ Exemples:
         help="Nom du fichier JSON de sortie (défaut: PRODUCTION_PLAN.JSON)"
     )
     parser.add_argument(
-        "--model", type=str, default="gemini-2.0-flash",
-        help="Modèle Gemini à utiliser (défaut: gemini-2.0-flash)"
+        "--model", type=str, default="gemini-2.5-flash-lite",
+        help="Modèle Gemini à utiliser (défaut: gemini-2.5-flash-lite)"
     )
     parser.add_argument(
         "--dry-run", action="store_true",
