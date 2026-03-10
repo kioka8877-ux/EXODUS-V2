@@ -1819,7 +1819,9 @@ def run_pipeline(args, logger: CortexLogger):
     if not args.rerun or args.rerun == "depth_anything":
         depth_dir = output_dir / "DEPTH_MAP"
         depth_dir.mkdir(parents=True, exist_ok=True)
-        depth_ok = run_depth_anything(video_path, depth_dir, logger)
+        drive_root = Path(args.drive_root)
+        depth_model_path = drive_root / "EXODUS_AI_MODELS" / "DEPTH_ANYTHING" / "depth_anything_v2_vitl.pth"
+        depth_ok = run_depth_anything(video_path, depth_dir, logger, model_path=depth_model_path)
         if depth_ok:
             depth_count = len(list(depth_dir.glob("frame_*.png")))
             frames_total = 0
@@ -1846,7 +1848,9 @@ def run_pipeline(args, logger: CortexLogger):
     
     if not args.rerun or args.rerun == "sam_segmentation":
         sam_out = output_dir / "semantic_masks.json"
-        sam_ok = run_sam_segmentation(video_path, sam_out, logger)
+        drive_root = Path(args.drive_root)
+        sam_model_path = drive_root / "EXODUS_AI_MODELS" / "SAM" / "sam_vit_h.pth"
+        sam_ok = run_sam_segmentation(video_path, sam_out, logger, model_path=sam_model_path)
         if sam_ok:
             motor_status.mark_success("sam_segmentation", sam_out)
         else:
