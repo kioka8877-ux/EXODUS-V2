@@ -31,12 +31,12 @@ MANIFEST = {
                 {"pattern": "PRODUCTION_PLAN.JSON", "required": True, "validate": "json", "description": "Master production plan"},
                 {"pattern": "motion_synthesis_prompt.txt", "required": True, "description": "SayMotion prompt for Emperor"},
                 {"pattern": "facial_animation.json", "required": True, "validate": "json", "description": "ARKit facial segments for U01"},
-                {"pattern": "semantic_masks.json", "required": True, "validate": "json", "description": "SAM segmentation for U03"},
+                {"pattern": "semantic_masks.json", "required": False, "validate": "json", "description": "SAM segmentation for U03 (GPU requis — optionnel si GPU indisponible)"},
                 {"pattern": "camera_fov_ratio.json", "required": True, "validate": "json", "description": "Camera metadata for U04"},
                 {"pattern": "audio_source.wav", "required": True, "description": "Audio track for U06"}
             ],
             "OUT_PRODUCTION_PLAN/DEPTH_MAP": [
-                {"pattern": "*.png", "required": True, "min_count": 1, "description": "Depth map sequence from DepthAnything V2"}
+                {"pattern": "*.png", "required": False, "min_count": 1, "description": "Depth map sequence from DepthAnything V2 (GPU requis — optionnel si GPU indisponible)"}
             ]
         }
     },
