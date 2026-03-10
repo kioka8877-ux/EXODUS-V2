@@ -7,9 +7,15 @@ google-generativeai>=0.8.0
 # Vision
 opencv-python-headless>=4.8.0
 
-# GPU engines (optionnel — requis pour Phase 3-4)
+# GPU engines (Phase 3-4 — requis sur Colab avec runtime GPU)
+# Installation séparée (depuis GitHub) :
+# pip install git+https://github.com/facebookresearch/segment-anything.git
+# pip install git+https://github.com/DepthAnything/Depth-Anything-V2.git
 torch>=2.0.0
 torchvision>=0.15.0
+numpy>=1.24.0
 
-# Note: DepthAnything V2 et SAM sont installés séparément
-# depuis leurs repos respectifs dans EXODUS_AI_MODELS/
+# Poids des modèles (télécharger via CELLULE 2B du notebook — Colab uniquement) :
+# SAM vit_h      (~2.5GB) → EXODUS_AI_MODELS/SAM/sam_vit_h.pth
+# DepthAny vitl  (~1.3GB) → EXODUS_AI_MODELS/DEPTH_ANYTHING/depth_anything_v2_vitl.pth
+# ⚠️ Ne jamais télécharger en dehors de Colab — consommerait 3.8GB de forfait internet
