@@ -1532,6 +1532,11 @@ def update_flags(pp_path: Path, motor_status: MotorStatus,
         
         with open(pp_path, 'w', encoding='utf-8') as f:
             json.dump(pp, f, indent=2, ensure_ascii=False)
+        # Flush pour Google Drive FUSE
+        try:
+            os.sync()
+        except Exception:
+            pass
         
         logger.info("Flags mis à jour dans PRODUCTION_PLAN.JSON")
     except Exception as e:
@@ -1684,7 +1689,7 @@ def generate_mock_master_json(metadata: dict) -> dict:
 def run_pipeline(args, logger: CortexLogger):
     """Orchestrateur principal — exécute les 4 phases séquentiellement."""
     
-    drive_root = Path(args.drive_root).resolve()
+    drive_root = Path(args.drive_root)
     cortex_dir = drive_root / "00_CORTEX_HQ"
     input_dir = cortex_dir / "IN_VIDEO_SOURCE"
     output_dir = cortex_dir / "OUT_PRODUCTION_PLAN"
@@ -1734,6 +1739,12 @@ def run_pipeline(args, logger: CortexLogger):
         motor_status.mark_failed("sam_segmentation", "Stub not implemented")
         
         dispatch_master_json(master_json, output_dir, motor_status, logger)
+        # Force Drive FUSE flush avant lecture
+        try:
+            os.sync()
+            time.sleep(2)
+        except Exception:
+            pass
         update_flags(output_dir / "PRODUCTION_PLAN.JSON", motor_status, logger)
         
         logger.info("=== DRY-RUN TERMINÉ ===")
@@ -1790,6 +1801,12 @@ def run_pipeline(args, logger: CortexLogger):
         if master_json is None:
             logger.error("FATAL: Gemini a échoué. Pipeline arrêté.")
             motor_status.mark_failed("gemini_semantic", "Gemini returned None after retries")
+            # Force Drive FUSE flush avant lecture
+            try:
+                os.sync()
+                time.sleep(2)
+            except Exception:
+                pass
             update_flags(output_dir / "PRODUCTION_PLAN.JSON", motor_status, logger)
             sys.exit(1)
         
@@ -1861,6 +1878,12 @@ def run_pipeline(args, logger: CortexLogger):
     # =================================================================
     # FINALISATION
     # =================================================================
+    # Force Drive FUSE flush avant lecture
+    try:
+        os.sync()
+        time.sleep(2)
+    except Exception:
+        pass
     update_flags(output_dir / "PRODUCTION_PLAN.JSON", motor_status, logger)
     
     flags = motor_status.get_flags()
@@ -1892,8 +1915,16 @@ def run_pipeline(args, logger: CortexLogger):
         marshal_cmd = [
             sys.executable, str(marshal_script),
             "--unit", "U00",
-            "--mode", "check-out"
+            "--mode", "check-out",
+            "--drive-root", str(drive_root)
         ]
+        # Force Drive FUSE à écrire tous les buffers sur disque
+        logger.info("Flush Drive FUSE avant MARSHAL...")
+        try:
+            os.sync()
+            time.sleep(3)
+        except Exception:
+            pass
         logger.info(f"Lancement: {' '.join(marshal_cmd)}")
         try:
             result = subprocess.run(
