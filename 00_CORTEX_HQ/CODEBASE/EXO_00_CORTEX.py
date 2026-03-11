@@ -990,7 +990,7 @@ def run_sam_segmentation(video_path: Path, output_path: Path,
         logger.error("CUDA non disponible — SAM requiert un GPU")
         return False
 
-    vram_free = (torch.cuda.get_device_properties(0).total_mem - torch.cuda.memory_allocated()) / 1e9
+    vram_free = (torch.cuda.get_device_properties(0).total_memory - torch.cuda.memory_allocated()) / 1e9
     logger.info(f"MOTEUR SAM — VRAM disponible: {vram_free:.2f} GB")
     if vram_free < 3.0:
         logger.error(f"VRAM insuffisante: {vram_free:.2f} GB < 3.0 GB requis")
