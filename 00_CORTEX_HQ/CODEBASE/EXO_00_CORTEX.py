@@ -912,7 +912,7 @@ def run_depth_anything(video_path: Path, output_dir: Path,
                 return False
 
         model.load_state_dict(torch.load(str(checkpoint), map_location='cpu'))
-        model = model.to('cuda').eval().half()
+        model = model.to('cuda').eval()
 
         vram_loaded = torch.cuda.memory_allocated() / 1e9
         logger.info(f"MOTEUR DEPTH — Modèle chargé: {vram_loaded:.2f} GB (delta: {vram_loaded - vram_before:.2f} GB)")
