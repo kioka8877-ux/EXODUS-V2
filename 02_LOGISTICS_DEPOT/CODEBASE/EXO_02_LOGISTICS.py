@@ -319,10 +319,12 @@ Exemples:
     
     parser.add_argument('--drive-root', required=True,
                         help='Racine du Drive EXODUS')
-    parser.add_argument('--actor-blend', required=True,
-                        help='Fichier .blend de l\'avatar animé (cherché dans IN_MOTION_DATA/)')
-    parser.add_argument('--production-plan', required=True,
-                        help='PRODUCTION_PLAN.JSON du Cortex (chemin absolu ou relatif)')
+    parser.add_argument('--actor-blend', required=False, default=None,
+                        help='Fichier .blend de l\'avatar animé (auto-détecté si omis)')
+    parser.add_argument('--production-plan', required=False, default=None,
+                        help='PRODUCTION_PLAN.JSON du Cortex (auto-détecté si omis)')
+    parser.add_argument('--bypass', action='store_true',
+                        help='Mode bypass: transfert direct U01→OUT sans Blender (si pas de props)')
     parser.add_argument('--props-library',
                         help='Dossier props_library/ (défaut: IN_PROPS_LIBRARY/)')
     parser.add_argument('--output-dir',
@@ -346,72 +348,151 @@ Exemples:
     
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "02_LOGISTICS_DEPOT"
-    
+
     motion_data_dir = resolve_input(unit_root / "IN_MOTION_DATA")
     props_library_dir = resolve_input(unit_root / "IN_PROPS_LIBRARY")
-    
-    actor_path = Path(args.actor_blend)
-    if not actor_path.is_absolute():
-        actor_path = motion_data_dir / args.actor_blend
-    
-    plan_path = Path(args.production_plan)
-    if not plan_path.is_absolute():
-        plan_path = motion_data_dir / args.production_plan
-    
+
+    # === AUTO-DÉTECTION ACTOR ===
+    if args.actor_blend:
+        actor_path = Path(args.actor_blend)
+        if not actor_path.is_absolute():
+            actor_path = motion_data_dir / args.actor_blend
+    else:
+        # Chercher le .blend le plus récent dans U01/OUT_MOTION_DATA
+        u01_out = drive_root / "01_ANIMATION_ENGINE" / "OUT_MOTION_DATA"
+        blends = sorted(u01_out.glob("*.blend"), key=lambda f: f.stat().st_mtime, reverse=True) if u01_out.exists() else []
+        if blends:
+            actor_path = blends[0]
+            logger.info(f"Actor auto-détecté: {actor_path.name}")
+        else:
+            if not args.bypass:
+                logger.error("Aucun .blend trouvé dans U01/OUT_MOTION_DATA et --actor-blend non spécifié")
+                sys.exit(1)
+            actor_path = None
+
+    # === AUTO-DÉTECTION PRODUCTION PLAN ===
+    if args.production_plan:
+        plan_path = Path(args.production_plan)
+        if not plan_path.is_absolute():
+            plan_path = motion_data_dir / args.production_plan
+    else:
+        # Chercher dans U00/OUT_PRODUCTION_PLAN
+        u00_plan = drive_root / "00_CORTEX_HQ" / "OUT_PRODUCTION_PLAN" / "PRODUCTION_PLAN.JSON"
+        if u00_plan.exists():
+            plan_path = u00_plan
+            logger.info(f"Production plan auto-détecté: {plan_path}")
+        else:
+            if not args.bypass:
+                logger.error("PRODUCTION_PLAN.JSON introuvable et --production-plan non spécifié")
+                sys.exit(1)
+            plan_path = None
+
     if args.props_library:
         props_library = Path(args.props_library)
     else:
         props_library = props_library_dir
-    
+
     if args.output_dir:
         output_dir = Path(args.output_dir)
     else:
         output_dir = unit_root / "OUT_BAKED_ACTORS"
-    
+
     logger.info(f"Drive Root: {drive_root}")
     logger.info(f"Actor Blend: {actor_path}")
     logger.info(f"Production Plan: {plan_path}")
     logger.info(f"Props Library: {props_library}")
     logger.info(f"Output Dir: {output_dir}")
-    
-    if not actor_path.exists():
-        logger.error(f"Actor .blend introuvable: {actor_path}")
-        sys.exit(1)
-    
-    blender_path = check_blender(drive_root, logger, args.blender_path)
-    plan = validate_production_plan(plan_path, logger)
 
-    # === BYPASS CONDITIONNEL V2 ===
-    requires_u02 = plan.get("production_notes", {}).get("requires_u02", True)
+    # === AUTO-DÉTECTION PROPS + BYPASS ===
+    requires_u02 = True  # default: pipeline normal
+
+    if plan_path and plan_path.exists():
+        plan = validate_production_plan(plan_path, logger)
+
+        # Check 1: flag explicite dans le plan
+        requires_u02 = plan.get("production_notes", {}).get("requires_u02", True)
+
+        # Check 2: auto-détection — aucune action props dans les scènes
+        if requires_u02:
+            total_props = 0
+            for scene in plan.get("scenes", []):
+                total_props += len(scene.get("props_actions", []))
+            if total_props == 0:
+                logger.info("Auto-détection: 0 props_actions dans le plan → bypass automatique")
+                requires_u02 = False
+    elif args.bypass:
+        requires_u02 = False
+        plan = None
+
+    # Forçage bypass CLI
+    if args.bypass:
+        requires_u02 = False
 
     if not requires_u02:
-        logger.info("requires_u02 = false — U02 SKIPPED (aucun prop requis)")
-        logger.info("Transfert direct : acteur U01 → OUT_BAKED_ACTORS sans modification")
-
+        logger.info("═══ MODE BYPASS — Transfert direct U01 → OUT_BAKED_ACTORS ═══")
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_blend = output_dir / f"{args.output_name}.blend"
-        shutil.copy2(str(actor_path), str(output_blend))
-        logger.success(f"Copie directe: {actor_path} → {output_blend}")
 
+        # Trouver actor .blend
+        if actor_path and actor_path.exists():
+            src_blend = actor_path
+        else:
+            logger.error("Aucun .blend actor trouvé pour le bypass")
+            sys.exit(1)
+
+        actor_stem = src_blend.stem  # ex: ACTOR_01_NOOB
+        output_name = args.output_name if args.output_name != "actor_equipped" else actor_stem
+
+        # Copier .blend
+        output_blend = output_dir / f"{output_name}.blend"
+        shutil.copy2(str(src_blend), str(output_blend))
+        logger.success(f"Copie: {src_blend.name} → {output_blend.name}")
+
+        # Copier .abc (chercher dans le même dossier que le .blend source)
+        src_abc = src_blend.with_suffix(".abc")
+        if src_abc.exists():
+            output_abc = output_dir / f"{output_name}.abc"
+            shutil.copy2(str(src_abc), str(output_abc))
+            logger.success(f"Copie: {src_abc.name} → {output_abc.name}")
+        else:
+            logger.warn(f"Pas de .abc correspondant ({src_abc.name}) — ignoré")
+
+        # Générer rapport bypass
         skip_report = {
             "version": LOGISTICS_VERSION,
             "timestamp": datetime.now().isoformat(),
             "status": "SKIPPED",
-            "reason": "requires_u02 == false",
-            "input": {"actor": str(actor_path)},
-            "output": {"blend": str(output_blend), "abc": None}
+            "mode": "BYPASS",
+            "reason": "bypass CLI" if args.bypass else ("requires_u02 == false" if plan and not plan.get("production_notes", {}).get("requires_u02", True) else "0 props_actions détectées"),
+            "input": {
+                "actor": str(src_blend),
+                "production_plan": str(plan_path) if plan_path else None
+            },
+            "output": {
+                "blend": str(output_blend),
+                "abc": str(output_dir / f"{output_name}.abc") if src_abc.exists() else None
+            },
+            "next_unit": "U04_PHOTOGRAPHY_WING"
         }
         report_path = output_dir / "logistics_report.json"
         with open(report_path, 'w', encoding='utf-8') as f:
             json.dump(skip_report, f, indent=2, ensure_ascii=False)
-        logger.success(f"Rapport skip: {report_path}")
+        logger.success(f"Rapport: {report_path}")
 
         print("\n" + "=" * 70)
-        logger.success("U02 SKIPPED — Aucun prop requis")
+        logger.success("U02 BYPASS COMPLÉTÉ — Aucun prop requis")
+        print(f"  → .blend : {output_blend}")
+        if src_abc.exists():
+            print(f"  → .abc   : {output_dir / f'{output_name}.abc'}")
+        print(f"  → Rapport: {report_path}")
         print("=" * 70)
         sys.exit(0)
 
-    # Si on arrive ici, requires_u02 == true → pipeline normal
+    # === MODE NORMAL — Pipeline Blender complet ===
+    if not actor_path or not actor_path.exists():
+        logger.error(f"Actor .blend introuvable: {actor_path}")
+        sys.exit(1)
+
+    blender_path = check_blender(drive_root, logger, args.blender_path)
     props_mapping = validate_props_library(props_library, plan, logger)
     
     output_dir.mkdir(parents=True, exist_ok=True)

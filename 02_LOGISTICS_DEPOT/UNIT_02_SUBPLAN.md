@@ -303,4 +303,42 @@ Si l'export Alembic échoue:
 
 ---
 
+---
+
+## 🔄 WORKFLOW AUTOMATISÉ — SESSION TYPE
+
+### Option A — Sans Props (BYPASS auto-détecté)
+```bash
+# Auto-détection: cherche l'actor dans U01/OUT_MOTION_DATA,
+# scanne le PRODUCTION_PLAN pour les props_actions.
+# Si 0 props → bypass automatique.
+python CODEBASE/EXO_02_LOGISTICS.py --drive-root {DRIVE_ROOT}
+
+# OU forcer le bypass
+python CODEBASE/EXO_02_LOGISTICS.py --drive-root {DRIVE_ROOT} --bypass
+
+# Validation MARSHAL
+python {DRIVE_ROOT}/EXO_MARSHAL.py --unit U02 --mode check-out --drive-root {DRIVE_ROOT}
+```
+
+### Option B — Avec Props (mode normal)
+```bash
+python CODEBASE/EXO_02_LOGISTICS.py \
+    --drive-root {DRIVE_ROOT} \
+    --actor-blend ACTOR_01_NOOB.blend \
+    --production-plan PRODUCTION_PLAN.JSON \
+    --output-name ACTOR_01_NOOB \
+    -v
+
+# Validation MARSHAL
+python {DRIVE_ROOT}/EXO_MARSHAL.py --unit U02 --mode check-out --drive-root {DRIVE_ROOT}
+```
+
+### Outputs attendus
+- `OUT_BAKED_ACTORS/*.blend` — Acteur équipé (Blender)
+- `OUT_BAKED_ACTORS/*.abc` — Acteur équipé (Alembic)
+- `OUT_BAKED_ACTORS/logistics_report.json` — Rapport de production
+
+---
+
 *EXODUS SYSTEM — Frégate 02_LOGISTICS v2.0.0*
