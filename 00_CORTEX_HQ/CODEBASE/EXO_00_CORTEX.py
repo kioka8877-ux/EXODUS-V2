@@ -1489,11 +1489,22 @@ def dispatch_master_json(master_json: dict, output_dir: Path,
     logger.info(f"Écrit: {pp_path} ({pp_path.stat().st_size} bytes)")
     written["production_plan"] = str(pp_path)
     
-    # --- 2. facial_animation.json ---
+    # --- 2. facial_animation.json (dual-key compatible U01 TRANSMUTATION) ---
     fa = master_json.get("facial_animation", {})
+    segments = fa.get("segments", [])
+    fa_output = {
+        "sequence_id": fa.get("sequence_id", ""),
+        "facial_animation": segments,
+        "segments": segments,
+        "metadata": {
+            "source": "U00_CORTEX_HQ",
+            "segments_count": len(segments),
+            "cortex_version": "2.0"
+        }
+    }
     fa_path = output_dir / "facial_animation.json"
     with open(fa_path, 'w', encoding='utf-8') as f:
-        json.dump(fa, f, indent=2, ensure_ascii=False)
+        json.dump(fa_output, f, indent=2, ensure_ascii=False)
     logger.info(f"Écrit: {fa_path} ({fa_path.stat().st_size} bytes)")
     written["facial_animation"] = str(fa_path)
     

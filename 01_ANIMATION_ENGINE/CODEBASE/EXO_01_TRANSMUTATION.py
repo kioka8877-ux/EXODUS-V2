@@ -71,26 +71,38 @@ class TransmutationLogger:
         print(f"[TRANSMUTATION:WARN] {msg}")
 
 
-def check_ai_models(drive_root: Path, logger: TransmutationLogger) -> dict:
+def check_ai_models(drive_root: Path, logger: TransmutationLogger, blender_path_arg: str = None) -> dict:
     """
-    Vérifie que Blender est présent sur le Drive.
-    Retourne le chemin vers Blender.
+    Vérifie que Blender est présent.
+    Chaîne de priorité : arg CLI → env var → Drive → /opt/ local.
     """
     ai_models_path = drive_root / AI_MODELS_SUBDIR
 
-    blender_path = ai_models_path / BLENDER_SUBDIR / "blender"
+    candidates = []
+    if blender_path_arg:
+        candidates.append(blender_path_arg)
+    if os.environ.get("BLENDER_PATH"):
+        candidates.append(os.environ["BLENDER_PATH"])
+    candidates.append(str(ai_models_path / BLENDER_SUBDIR / "blender"))
+    candidates.extend([
+        "/opt/blender-4.0.2-linux-x64/blender",
+        "/opt/blender-4.0.0-linux-x64/blender",
+        "/usr/local/bin/blender",
+    ])
 
-    if not blender_path.exists():
-        logger.error(f"Blender 4.0 introuvable: {blender_path}")
-        logger.info("Téléchargez Blender 4.0 Linux x64 portable et placez-le dans:")
-        logger.info(f"  {ai_models_path / BLENDER_SUBDIR}/")
+    blender_path = None
+    for candidate in candidates:
+        if Path(candidate).exists():
+            blender_path = candidate
+            logger.success(f"Blender trouvé: {blender_path}")
+            break
+
+    if not blender_path:
+        logger.error("Blender 4.0 introuvable dans aucun des chemins candidates")
+        logger.info(f"Candidats testés: {candidates}")
         sys.exit(1)
 
-    logger.success("Blender 4.0 vérifié")
-
-    result = {
-        "blender": str(blender_path),
-    }
+    result = {"blender": blender_path}
 
     rhubarb_path = ai_models_path / "rhubarb" / "rhubarb"
     if rhubarb_path.exists():
@@ -213,6 +225,8 @@ Exemples:
 
     parser.add_argument('--drive-root', required=True,
                         help='Racine du Drive EXODUS')
+    parser.add_argument('--blender-path', default=None,
+                        help='Chemin vers Blender (optionnel, priorité sur auto-détection)')
     parser.add_argument('--body-fbx', required=True,
                         help='Fichier FBX du mouvement corps (cherché dans IN_MIXAMO_BASE/)')
     parser.add_argument('--facial-json', required=True,
@@ -279,7 +293,7 @@ Exemples:
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    ai_paths = check_ai_models(drive_root, logger)
+    ai_paths = check_ai_models(drive_root, logger, blender_path_arg=args.blender_path)
 
     logger.success("Configuration validée")
 

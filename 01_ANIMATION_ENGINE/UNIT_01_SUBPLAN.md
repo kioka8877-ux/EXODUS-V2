@@ -296,4 +296,40 @@ EXODUS_AI_MODELS/
 
 ---
 
+## 🔄 WORKFLOW AUTOMATISÉ — SESSION TYPE
+
+### Pré-requis (une fois par projet)
+- `avatar.glb` ou `actor_arkit.blend` dans `01_ANIMATION_ENGINE/`
+- FBX body motion dans `01_ANIMATION_ENGINE/IN_MIXAMO_BASE/`
+
+### Setup automatique (début de session Colab)
+```bash
+# 1. Installer Blender (local + Drive)
+python 01_ANIMATION_ENGINE/CODEBASE/setup_blender.py --drive-root {DRIVE_ROOT}
+
+# 2. Créer actor_arkit.blend depuis avatar.glb (si pas existant)
+python 01_ANIMATION_ENGINE/CODEBASE/setup_actor.py --drive-root {DRIVE_ROOT}
+
+# 3. Phantom Link U00 → U01 (copie fichiers JSON)
+python EXO_MARSHAL.py --unit U01 --mode link --drive-root {DRIVE_ROOT}
+```
+
+### Lancement Production
+```bash
+python 01_ANIMATION_ENGINE/CODEBASE/EXO_01_TRANSMUTATION.py \
+    --drive-root {DRIVE_ROOT} \
+    --body-fbx body_motion.fbx \
+    --facial-json facial_animation.json \
+    --actor-blend {DRIVE_ROOT}/01_ANIMATION_ENGINE/actor_arkit.blend \
+    --output-name ACTOR_01 \
+    -v
+```
+
+### Outputs attendus
+- `OUT_MOTION_DATA/ACTOR_01.blend` — Master (armature + NLA shape keys)
+- `OUT_MOTION_DATA/ACTOR_01.abc` — Preview Alembic
+- `OUT_MOTION_DATA/ACTOR_01_translated.json` — Debug shape key values
+
+---
+
 *EXODUS SYSTEM — Frégate 01_TRANSMUTATION v2.0.0*

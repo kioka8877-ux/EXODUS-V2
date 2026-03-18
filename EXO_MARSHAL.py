@@ -724,6 +724,31 @@ def main():
         if not ok:
             all_passed = False
 
+        import shutil
+        u00_out = drive_root / "00_CORTEX_HQ" / "OUT_PRODUCTION_PLAN"
+        u01_in  = drive_root / "01_ANIMATION_ENGINE" / "IN_CORTEX_JSON"
+        u01_in.mkdir(parents=True, exist_ok=True)
+
+        FILES_U00_TO_U01 = [
+            "PRODUCTION_PLAN.JSON",
+            "facial_animation.json",
+            "camera_fov_ratio.json",
+            "audio_source.wav",
+        ]
+
+        copied = 0
+        for filename in FILES_U00_TO_U01:
+            src = u00_out / filename
+            dst = u01_in / filename
+            if src.exists() and not dst.exists():
+                shutil.copy2(str(src), str(dst))
+                print(f"   \u2705 {filename} \u2192 IN_CORTEX_JSON/")
+                copied += 1
+            elif dst.exists():
+                print(f"   \u23ed\ufe0f  {filename} d\u00e9j\u00e0 pr\u00e9sent")
+
+        print(f"[MARSHAL] {copied} fichier(s) transf\u00e9r\u00e9s U00 \u2192 U01")
+
     if mode == "cleanup":
         ok, freed = cleanup_outputs(unit, drive_root, force=args.force, verbose=verbose)
         if not ok:

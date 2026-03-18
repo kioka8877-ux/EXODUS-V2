@@ -135,20 +135,35 @@ def import_actor_blend(blend_path: str) -> bpy.types.Object:
 
 
 def find_shape_key_mesh(armature: bpy.types.Object) -> bpy.types.Object:
-    """Trouve le mesh avec shape keys dans les enfants de l'armature."""
-    if not armature:
+    """
+    Trouve le mesh principal (corps/tête) avec shape keys.
+    Exclut les meshes accessoires (Handle, Hair, etc.).
+    Fallback sur le mesh avec le plus de vertices si ambiguïté.
+    """
+    EXCLUDE_KEYWORDS = ["Handle", "Hair", "Accessory", "Tool", "Weapon", "Hat"]
+
+    def is_excluded(name: str) -> bool:
+        return any(kw.lower() in name.lower() for kw in EXCLUDE_KEYWORDS)
+
+    candidates = []
+
+    if armature:
+        for child in armature.children:
+            if child.type == 'MESH' and child.data.shape_keys and not is_excluded(child.name):
+                candidates.append(child)
+
+    if not candidates:
+        for obj in bpy.data.objects:
+            if obj.type == 'MESH' and obj.data.shape_keys and not is_excluded(obj.name):
+                candidates.append(obj)
+
+    if not candidates:
+        all_meshes = [obj for obj in bpy.data.objects if obj.type == 'MESH' and obj.data.shape_keys]
+        if all_meshes:
+            return max(all_meshes, key=lambda m: len(m.data.vertices))
         return None
 
-    for child in armature.children:
-        if child.type == 'MESH' and child.data.shape_keys:
-            return child
-
-    for obj in bpy.data.objects:
-        if obj.type == 'MESH' and obj.data.shape_keys:
-            if obj.parent == armature or obj.parent is None:
-                return obj
-
-    return None
+    return max(candidates, key=lambda m: len(m.data.vertices))
 
 
 def create_missing_shape_keys(mesh_obj: bpy.types.Object, required_keys: list):

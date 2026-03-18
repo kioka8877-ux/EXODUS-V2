@@ -36,7 +36,12 @@ class EmotionalIntentTranslator:
         self.schema = schema or ExpressionSchema()
 
     def load_facial_animation(self, json_path: str) -> dict:
-        """Charge et valide un facial_animation.json de U00."""
+        """
+        Charge et valide un facial_animation.json de U00.
+        Supporte deux formats :
+        - Format principal : {"facial_animation": [...], ...}
+        - Format legacy    : {"segments": [...], ...}  ← auto-conversion
+        """
         path = Path(json_path)
         if not path.exists():
             raise FileNotFoundError(f"facial_animation.json introuvable: {json_path}")
@@ -44,12 +49,17 @@ class EmotionalIntentTranslator:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        if "facial_animation" not in data:
-            raise ValueError("Clé 'facial_animation' absente du JSON")
+        if "facial_animation" in data:
+            segments = data["facial_animation"]
+        elif "segments" in data:
+            print("[TRANSMUTATION:WARN] Format legacy 'segments' détecté — auto-conversion vers 'facial_animation'")
+            segments = data["segments"]
+            data["facial_animation"] = segments
+        else:
+            raise ValueError("Clé 'facial_animation' ou 'segments' absente du JSON")
 
-        segments = data["facial_animation"]
         if not isinstance(segments, list) or len(segments) == 0:
-            raise ValueError("'facial_animation' doit être une liste non vide")
+            raise ValueError("Les segments doivent être une liste non vide")
 
         for i, seg in enumerate(segments):
             for field in REQUIRED_SEGMENT_FIELDS:
@@ -104,7 +114,7 @@ class EmotionalIntentTranslator:
           (via schema.requires_neutral_transition), insérer un segment neutre
           intermédiaire.
         - Retourne une liste de dicts prêts pour blender_fusion.py"""
-        segments = facial_data["facial_animation"]
+        segments = facial_data.get("facial_animation") or facial_data.get("segments", [])
         translated: List[dict] = []
 
         for i, seg in enumerate(segments):
