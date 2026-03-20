@@ -13,6 +13,21 @@ Construire les decors 3D Tri-Layer depuis depth maps DepthAnything V2 et masques
 
 Produire des fichiers `.blend` Tri-Layer avec 5 collections Blender, prets pour le compositing avec les acteurs equipes (de U02).
 
+## WORKFLOW AUTOMATISE (NOUVEAU)
+
+### Lancement en 1 commande
+python /content/drive/MyDrive/EXODUS_V2/U03_RUN.py
+
+### Duree
+- Session 1: ~15-20 min
+- Sessions suivantes: ~10-15 min
+
+### Outputs
+- environment_1.blend
+- environment_2.blend
+- assembler_results.json
+- scenography_report.json
+
 ---
 
 ## Stack Technique V2

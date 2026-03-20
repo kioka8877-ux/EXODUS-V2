@@ -35,10 +35,24 @@ import sys
 import subprocess
 from pathlib import Path
 from datetime import datetime
+import shutil
+
+# AUTO-COPIE phantom_link.py (Patch Session #003)
+# Si l'Empereur n'a pas copié la version racine sur le Drive, on la forge depuis ce CODEBASE.
+drive_root = Path(__file__).resolve().parents[2]
+phantom_src = drive_root / "03_SCENOGRAPHY_DOCK" / "CODEBASE" / "phantom_link.py"
+phantom_dst = drive_root / "phantom_link.py"
+if phantom_src.exists() and not phantom_dst.exists():
+    shutil.copy2(phantom_src, phantom_dst)
+    print("[SETUP] ✅ phantom_link.py copié vers la racine Drive")
 
 # Phantom Link — Phase D.1
 import importlib.util
-_phantom_spec = importlib.util.spec_from_file_location("phantom_link", Path(__file__).resolve().parents[2] / "phantom_link.py")
+
+_phantom_spec = importlib.util.spec_from_file_location(
+    "phantom_link",
+    Path(__file__).resolve().parents[2] / "phantom_link.py",
+)
 if _phantom_spec and _phantom_spec.loader:
     _phantom_mod = importlib.util.module_from_spec(_phantom_spec)
     _phantom_spec.loader.exec_module(_phantom_mod)
