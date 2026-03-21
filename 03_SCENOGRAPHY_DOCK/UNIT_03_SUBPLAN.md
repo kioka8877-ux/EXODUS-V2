@@ -28,6 +28,15 @@ python /content/drive/MyDrive/EXODUS_V2/U03_RUN.py
 - assembler_results.json
 - scenography_report.json
 
+### Diagnostic geometrie (headless, optionnel)
+Script **U03** : `CODEBASE/geometry_probe_u03.py` — verifie les modificateurs (SUBSURF/DISPLACE), vertices evalues (depsgraph), ecrit un JSON (pas de parse de stdout Blender).
+
+```bash
+blender --background OUT_PREMIUM_SCENE/environment_1.blend \
+  --python CODEBASE/geometry_probe_u03.py -- \
+  --output OUT_PREMIUM_SCENE/U03_geometry_probe.json
+```
+
 ---
 
 ## Stack Technique V2
@@ -59,6 +68,7 @@ python /content/drive/MyDrive/EXODUS_V2/U03_RUN.py
 │   ├── pbr_swap_builder.py           # Couche C — PBR Swap (~6KB)
 │   ├── glass_builder.py              # Reflectivity Hack (~5KB)
 │   ├── requirements.txt              # Dependances Python
+│   ├── geometry_probe_u03.py         # Probe JSON geometrie / modificateurs (U03)
 │   ├── EXO_03_CONTROL.ipynb          # Notebook debug V2
 │   └── EXO_03_PRODUCTION.ipynb       # Notebook batch V2
 ├── IN_MAP_RAW/
