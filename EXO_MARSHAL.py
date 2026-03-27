@@ -86,8 +86,10 @@ MANIFEST = {
                 {"pattern": "PRODUCTION_PLAN.JSON", "required": True, "validate": "json"}
             ],
             "IN_MAP_RAW": [
-                {"pattern": "*.png", "required": True, "min_count": 1, "description": "Depth maps from U00"},
                 {"pattern": "semantic_masks.json", "required": True, "validate": "json", "description": "SAM masks from U00"}
+            ],
+            "IN_MAP_RAW/DEPTH_MAP": [
+                {"pattern": "*.png", "required": True, "min_count": 1, "description": "Depth maps from U00 (IN_MAP_RAW/DEPTH_MAP/)"}
             ]
         },
         "out": {

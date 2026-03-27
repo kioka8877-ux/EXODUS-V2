@@ -435,7 +435,16 @@ Exemples:
 
     hdri_path = resolve_hdri(map_raw_dir, plan, logger)
 
-    depth_map_dir = str(map_raw_dir) if map_raw_dir.exists() else ""
+    depth_map_subdir = map_raw_dir / "DEPTH_MAP"
+    if depth_map_subdir.exists() and any(depth_map_subdir.glob("*.png")):
+        depth_map_dir = str(depth_map_subdir)
+        logger.success(f"Depth maps trouvées : {depth_map_subdir}")
+    elif map_raw_dir.exists() and any(map_raw_dir.glob("*.png")):
+        depth_map_dir = str(map_raw_dir)
+        logger.success(f"Depth maps trouvées (racine) : {map_raw_dir}")
+    else:
+        depth_map_dir = ""
+        logger.warn("Aucune depth map trouvée — displacement mesh sans texture")
     semantic_masks = ""
     sm_path = map_raw_dir / "semantic_masks.json"
     if sm_path.exists():
