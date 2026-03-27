@@ -23,7 +23,13 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from scene_schema import VRAM_PROFILES, OBJECT_SPECS
-from depth_map_cleaner import clean_depth_map_batch
+
+try:
+    from depth_map_cleaner import clean_depth_map_batch
+    _CLEANER_OK = True
+except Exception as _cleaner_err:
+    _CLEANER_OK = False
+    print(f"[DISPLACEMENT] depth_map_cleaner non chargé (PIL absent dans Blender Python) : {_cleaner_err}")
 
 
 def _ensure_collection(name: str) -> bpy.types.Collection:
@@ -43,7 +49,7 @@ def _resolve_depth_map(depth_map_dir: str, semantic_masks_path: str) -> str:
     if not pngs:
         return ""
 
-    if semantic_masks_path and Path(semantic_masks_path).exists():
+    if semantic_masks_path and Path(semantic_masks_path).exists() and _CLEANER_OK:
         cleaned_dir = str(Path(depth_map_dir) / "_cleaned")
         results = clean_depth_map_batch(
             depth_map_dir=depth_map_dir,
