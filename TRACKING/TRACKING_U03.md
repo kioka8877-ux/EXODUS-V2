@@ -48,6 +48,14 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 - [x] Rewrite README_DEV.md (V2)
 - [x] Mettre a jour UNIT_03_SUBPLAN.md (V2)
 
+### Phase D5 — Adaptabilite Multi-Scene (ATOM-IC)
+- [x] Ajouter ENVIRONMENT_TO_SCENE_PROFILE dans scene_schema.py — 18 environment_id mappes
+- [x] Ajouter DEFAULT_SCENE_PROFILE comme fallback universel
+- [x] Ajouter param fallback_color a apply_dome_material() dans dome_builder.py
+- [x] layer_assembler.py v2.1.0 — derive scene_type/mood/dome_fallback depuis environment_id
+- [x] Priority logic : lighting_mood explicite JSON > profil automatique
+- [x] Result dict enrichi : environment_id + scene_type trackes dans assembler_results.json
+
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
@@ -55,7 +63,10 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 | 2026-02-27 | Phase D1 — Dome + Shadow + World + layer_assembler | ✅ | PR #28 merged | N/A |
 | 2026-02-27 | Phase D2 — Displacement Mesh + Anti-ghosting + VRAM cap | ✅ | PR #29 merged | N/A |
 | 2026-02-27 | Phase D3 — PBR Swap + Glass BSDF + Suppression V1 | ✅ | PR #30 merged | N/A |
-| 2026-02-27 | Phase D4 — Documentation V2 | ✅ | PR #31 (this) | N/A |
+| 2026-02-27 | Phase D4 — Documentation V2 | ✅ | PR #31 merged | N/A |
+| 2026-03-28 | Phase D5 — ENVIRONMENT_TO_SCENE_PROFILE (scene_schema) | ✅ | commit 7284ee9c | N/A |
+| 2026-03-28 | Phase D5 — fallback_color param (dome_builder) | ✅ | commit c2637c90 | N/A |
+| 2026-03-28 | Phase D5 — layer_assembler v2.1.0 adaptif | ✅ | commit 532a22ae | N/A |
 
 ## 5. METRIQUES ET VALIDATION
 - Consommation VRAM Max : A mesurer (cible < 6GB)
@@ -63,7 +74,8 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 - [x] scene_schema.py validate_scene() passe
 - [x] Marshal In-Check passe (structure conforme)
 - [x] Marshal Out-Check passe (5 collections, custom properties)
-- [ ] Validation Souveraine
+- [x] Adaptabilite multi-scene : 18 environment_id → profil automatique
+- [ ] Validation Souveraine (test Colab par l'Empereur)
 
 ## REFERENCES
 - [PRD](./EXODUS_V2_PRD.md) — Specifications U03
@@ -73,4 +85,4 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 
 > **Loi du Beton** : Chaque entree dans le Registre de Forge doit pointer vers un commit ou un fichier.
 
-<!-- v2.0 — U03 TRACKING D4 DOCS -->
+<!-- v2.1 — U03 TRACKING D5 ADAPTIVE SCENE PROFILE -->
