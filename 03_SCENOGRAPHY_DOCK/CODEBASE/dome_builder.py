@@ -91,12 +91,15 @@ def build_infinity_dome(
 def apply_dome_material(
     dome_obj: bpy.types.Object,
     video_frame_path: Optional[str] = None,
+    fallback_color: tuple = (0.05, 0.05, 0.1),
 ) -> None:
     """
     Applique la texture vidéo source sur le dome.
 
     Si video_frame_path est fourni : charge l'image comme texture.
-    Sinon : crée un matériau placeholder gris foncé (0.05, 0.05, 0.1).
+    Sinon : crée un matériau placeholder avec fallback_color.
+    La couleur par défaut (0.05, 0.05, 0.1) est sombre mais sera remplacée
+    automatiquement par layer_assembler via ENVIRONMENT_TO_SCENE_PROFILE.
 
     Node setup :
     - ShaderNodeTexCoord (Generated) → ShaderNodeMapping → ShaderNodeTexImage
@@ -107,6 +110,7 @@ def apply_dome_material(
     Args:
         dome_obj: L'objet dome Blender.
         video_frame_path: Chemin optionnel vers une frame vidéo.
+        fallback_color: Tuple RGB (0-1) utilisé si aucune frame vidéo fournie.
     """
     mat_name = "MAT_InfinityDome"
     mat = bpy.data.materials.new(name=mat_name)
@@ -137,11 +141,12 @@ def apply_dome_material(
         tex_image.image = img
         print(f"[DOME] Texture chargée : {video_frame_path}")
     else:
+        r, g, b = fallback_color
         img = bpy.data.images.new("dome_placeholder", width=4, height=4)
-        pixels = [0.05, 0.05, 0.1, 1.0] * (4 * 4)
+        pixels = [r, g, b, 1.0] * (4 * 4)
         img.pixels = pixels
         tex_image.image = img
-        print("[DOME] Texture placeholder appliquée (0.05, 0.05, 0.1)")
+        print(f"[DOME] Texture placeholder appliquée ({r:.2f}, {g:.2f}, {b:.2f})")
 
     links.new(tex_coord.outputs["Generated"], mapping.inputs["Vector"])
     links.new(mapping.outputs["Vector"], tex_image.inputs["Vector"])
