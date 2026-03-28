@@ -41,6 +41,11 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 - [x] Mise à jour documentation (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md) — PR #49
 - [ ] Intégration Marshal Out-Check pour frames rendues PNG 16-bit
 
+### U04-C — ADAPTABILITÉ MULTI-SCÈNE (ATOM-IC D5)
+- [x] `camera_schema.py` — LIGHTING_PRESET_TO_STYLE : mapping preset_id U00 → style U04 (10 presets) — commit 9b43190b
+- [x] `camera_schema.py` — SCENE_TYPE_TO_LIGHTING : mapping scene_type U03 → profil complet (4 types) — commit 9b43190b
+- [x] `camera_director.py` — Chaîne de priorité 3 niveaux (explicit > scene_type > preset_id) — commit f8a1d70b
+
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
@@ -51,6 +56,8 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 | - | cuts_engine.py refactor + EXO_04 câblage + docs | 🟢 | PR #37 | N/A |
 | 2026-03-06 | Brainstorming ATOM-IC U04-B : 1080p + chunks + checkpoint + AI upscale | ✅ | — | — |
 | 2026-03-06 | U04-B Darkroom complet : darkroom_render.py + EXO_04_DARKROOM.py + notebook + docs | ✅ | PR #49 | — |
+| 2026-03-28 | U04-C LIGHTING_PRESET_TO_STYLE + SCENE_TYPE_TO_LIGHTING (camera_schema) | ✅ | commit 9b43190b | N/A |
+| 2026-03-28 | U04-C chaîne priorité éclairage adaptatif (camera_director) | ✅ | commit f8a1d70b | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (U04-A ne rend pas)
@@ -61,6 +68,7 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 - Taille output U04-B : ~1.5 GB pour 60s vidéo (1800 frames PNG 16-bit)
 - [x] 8/8 critères VALIDATION.md satisfaits par U04-B (sauf Marshal Out-Check)
 - [x] camera_schema.py self_test 8/8 (inclut test darkroom preset)
+- [x] Adaptabilité multi-scène : 10 preset_id + 4 scene_type → style automatique
 
 ## RÉFÉRENCES
 - [ARCHITECTURE U04](../04_PHOTOGRAPHY_WING/ARCHITECTURE_U04.md) — **Note technique split A/B**
@@ -69,3 +77,5 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 - [MASTER](./TRACKING_MASTER.md) — Vue d'ensemble
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
+
+<!-- v2.1 — U04 TRACKING C — ADAPTIVE LIGHTING -->
