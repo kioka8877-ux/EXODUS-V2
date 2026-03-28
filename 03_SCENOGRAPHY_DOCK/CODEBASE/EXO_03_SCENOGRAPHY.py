@@ -295,7 +295,7 @@ def generate_report(
         env = scene.get("environment", {})
         scene_info = {
             "scene_id": scene_id,
-            "lighting_mood": env.get("lighting_mood", "natural"),
+            "environment_id": env.get("environment_id", "unknown"),
             "layers_active": "dome,shadow,world_sync",
             "exposure_strength": exposure,
             "vram_profile": vram_profile,
@@ -514,3 +514,4 @@ Exemples:
 
 if __name__ == "__main__":
     sys.exit(main())
+
