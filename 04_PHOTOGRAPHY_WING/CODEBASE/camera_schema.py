@@ -141,6 +141,36 @@ LIGHTING_STYLES: Dict[str, dict] = {
 VALID_LIGHTING_STYLES: List[str] = list(LIGHTING_STYLES.keys())
 DEFAULT_LIGHTING_STYLE = "3point"
 
+# =============================================================================
+# MAPPING U00 → U04 : preset_id (Gemini) → style interne LightingRig
+# Permet à U04 de lire PRODUCTION_PLAN.JSON sans traduction manuelle.
+# =============================================================================
+
+LIGHTING_PRESET_TO_STYLE: Dict[str, str] = {
+    "daylight":  "natural",
+    "sunset":    "dramatic",
+    "sunrise":   "natural",
+    "night":     "neon",
+    "overcast":  "natural",
+    "foggy":     "3point",
+    "neon":      "neon",
+    "dramatic":  "dramatic",
+    "soft":      "studio",
+    "horror":    "dramatic",
+}
+
+# =============================================================================
+# MAPPING U03 scene_type → profil d'éclairage complet
+# Priorité 2 : si scene_type dispo (produit par layer_assembler v2.1.0)
+# =============================================================================
+
+SCENE_TYPE_TO_LIGHTING: Dict[str, dict] = {
+    "interior":        {"style": "studio",   "color_temp": 4000, "intensity": 1.0},
+    "exterior_day":    {"style": "natural",  "color_temp": 5500, "intensity": 1.2},
+    "exterior_urban":  {"style": "neon",     "color_temp": 3200, "intensity": 1.0},
+    "exterior_space":  {"style": "dramatic", "color_temp": 7500, "intensity": 0.8},
+}
+
 COLOR_TEMPS: Dict[int, Tuple[float, float, float]] = {
     2700: (1.0, 0.76, 0.54),
     3200: (1.0, 0.82, 0.65),
