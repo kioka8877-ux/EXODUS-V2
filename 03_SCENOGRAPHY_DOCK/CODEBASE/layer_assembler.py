@@ -29,8 +29,9 @@ from world_sync import setup_world_sync, setup_render_settings
 from displacement_builder import build_displacement_mesh
 from pbr_swap_builder import build_pbr_surfaces
 from glass_builder import build_glass_planes
+from scene_schema import ENVIRONMENT_TO_SCENE_PROFILE, DEFAULT_SCENE_PROFILE
 
-ASSEMBLER_VERSION = "2.0.0"
+ASSEMBLER_VERSION = "2.1.0"
 
 REQUIRED_COLLECTIONS = ["ENV_DOME", "ENV_TERRAIN", "ENV_SHADOW", "ENV_GLASS", "ENV_PBR"]
 
@@ -188,10 +189,18 @@ def assemble_scene(
     """
     scene_id = scene_data.get("scene_id", "unknown")
     env = scene_data.get("environment", {})
-    mood = env.get("lighting_mood", "natural")
+
+    # Dérive le profil visuel depuis environment_id (PRODUCTION_PLAN.JSON → Gemini M1)
+    environment_id = env.get("environment_id", "")
+    scene_profile = ENVIRONMENT_TO_SCENE_PROFILE.get(environment_id, DEFAULT_SCENE_PROFILE)
+    scene_type = scene_profile["scene_type"]
+    dome_fallback = scene_profile["dome_fallback"]
+    # lighting_mood explicite dans le JSON prend priorité sur le profil
+    mood = env.get("lighting_mood") or scene_profile["world_mood"]
 
     print(f"\n[ASSEMBLER] === Assemblage scène {scene_id} ===")
-    print(f"[ASSEMBLER] Mood={mood}, exposure={exposure_strength}, vram={vram_profile}")
+    print(f"[ASSEMBLER] environment_id={environment_id!r} → scene_type={scene_type}, mood={mood}")
+    print(f"[ASSEMBLER] exposure={exposure_strength}, vram={vram_profile}")
 
     _clear_scene()
 
@@ -204,6 +213,8 @@ def assemble_scene(
     video_frame = env.get("video_frame_path")
     if video_frame:
         apply_dome_material(dome_obj, video_frame_path=video_frame)
+    else:
+        apply_dome_material(dome_obj, fallback_color=dome_fallback)
 
     sc_obj = build_shadow_catcher(collection_name="ENV_SHADOW", size=50.0)
 
@@ -260,6 +271,8 @@ def assemble_scene(
         "scene_id": scene_id,
         "blend_file": str(blend_file),
         "layers_active": active_layers,
+        "environment_id": environment_id,
+        "scene_type": scene_type,
         "mood": mood,
         "exposure_strength": exposure_strength,
         "vram_profile": vram_profile,
