@@ -288,6 +288,47 @@ DEFAULT_VRAM_PROFILE: str = "colab_t4"
 
 
 # =============================================================================
+# ENVIRONMENT → SCENE PROFILE MAPPING
+# Permet à U03 de s'adapter automatiquement au type de scène détecté par U00.
+# Chaque environment_id (produit par Gemini M1 dans PRODUCTION_PLAN.JSON)
+# correspond à un profil visuel complet.
+# =============================================================================
+
+ENVIRONMENT_TO_SCENE_PROFILE: Dict[str, Dict] = {
+    # ── INTERIOR ──────────────────────────────────────────────────────────────
+    "office_interior":        {"scene_type": "interior", "world_mood": "studio",   "dome_fallback": (0.85, 0.85, 0.80)},
+    "house_interior":         {"scene_type": "interior", "world_mood": "studio",   "dome_fallback": (0.88, 0.86, 0.82)},
+    "school_interior":        {"scene_type": "interior", "world_mood": "studio",   "dome_fallback": (0.90, 0.90, 0.88)},
+    "hospital_interior":      {"scene_type": "interior", "world_mood": "studio",   "dome_fallback": (0.95, 0.95, 0.95)},
+    "murder_mystery_mansion": {"scene_type": "interior", "world_mood": "dramatic", "dome_fallback": (0.25, 0.22, 0.20)},
+    "jailbreak_prison":       {"scene_type": "interior", "world_mood": "studio",   "dome_fallback": (0.60, 0.60, 0.55)},
+    "adopt_me_house":         {"scene_type": "interior", "world_mood": "studio",   "dome_fallback": (0.85, 0.85, 0.80)},
+    # ── EXTERIOR DAY ──────────────────────────────────────────────────────────
+    "classic_baseplate":      {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.40, 0.60, 0.80)},
+    "grass_terrain":          {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.40, 0.60, 0.80)},
+    "desert_terrain":         {"scene_type": "exterior_day",   "world_mood": "dramatic",  "dome_fallback": (0.70, 0.60, 0.40)},
+    "snow_terrain":           {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.80, 0.85, 0.90)},
+    "water_terrain":          {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.30, 0.50, 0.80)},
+    "mountain_terrain":       {"scene_type": "exterior_day",   "world_mood": "dramatic",  "dome_fallback": (0.50, 0.65, 0.80)},
+    "forest":                 {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.30, 0.50, 0.30)},
+    "medieval_castle":        {"scene_type": "exterior_day",   "world_mood": "dramatic",  "dome_fallback": (0.50, 0.55, 0.65)},
+    "pirate_ship":            {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.30, 0.50, 0.75)},
+    "obby_course":            {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.40, 0.60, 0.80)},
+    "tycoon_base":            {"scene_type": "exterior_day",   "world_mood": "natural",   "dome_fallback": (0.40, 0.60, 0.80)},
+    # ── EXTERIOR URBAN / NIGHT ────────────────────────────────────────────────
+    "city_street":            {"scene_type": "exterior_urban", "world_mood": "neon",      "dome_fallback": (0.05, 0.05, 0.15)},
+    # ── SCI-FI ────────────────────────────────────────────────────────────────
+    "space_station":          {"scene_type": "exterior_space", "world_mood": "dramatic",  "dome_fallback": (0.00, 0.00, 0.05)},
+}
+
+DEFAULT_SCENE_PROFILE: Dict = {
+    "scene_type":    "exterior_day",
+    "world_mood":    "natural",
+    "dome_fallback": (0.40, 0.60, 0.80),
+}
+
+
+# =============================================================================
 # HELPERS INTERNES
 # =============================================================================
 
