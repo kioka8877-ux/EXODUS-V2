@@ -253,6 +253,34 @@ def run_blender_photography(
     return True
 
 
+def load_scene_types(scene_ref_dir: Path, logger: PhotographyLogger) -> dict:
+    """
+    Charge assembler_results.json depuis U03 pour récupérer scene_type par scène.
+    Active Priority 2 de camera_director.py (scene_type → éclairage automatique).
+    """
+    assembler_path = scene_ref_dir / "assembler_results.json"
+    if not assembler_path.exists():
+        logger.warn(f"assembler_results.json introuvable: {assembler_path} — Priority 2 inactive")
+        return {}
+
+    try:
+        with open(assembler_path, "r", encoding="utf-8") as f:
+            assembler_results = json.load(f)
+    except Exception as e:
+        logger.warn(f"Lecture assembler_results.json échouée: {e} — Priority 2 inactive")
+        return {}
+
+    scene_type_map = {}
+    for ar in assembler_results:
+        scene_id = ar.get("scene_id")
+        scene_type = ar.get("scene_report", {}).get("scene_type", "unknown")
+        if scene_id and scene_type != "unknown":
+            scene_type_map[str(scene_id)] = scene_type
+
+    logger.success(f"scene_type chargé pour {len(scene_type_map)} scènes depuis assembler_results.json")
+    return scene_type_map
+
+
 def generate_report(
     output_dir: Path,
     plan: dict,
@@ -396,6 +424,7 @@ Exemples:
     blender_path = check_blender(drive_root, logger, args.blender_path)
     plan = validate_production_plan(plan_path, logger)
     env_mapping = validate_environment_files(scene_ref_dir, plan, logger)
+    scene_type_map = load_scene_types(scene_ref_dir, logger)
     
     output_dir.mkdir(parents=True, exist_ok=True)
     
@@ -425,6 +454,11 @@ Exemples:
     results = {}
     for scene in scenes_to_process:
         scene_id = scene.get("scene_id", "unknown")
+        # Inject scene_type from U03 assembler_results — active Priority 2 in camera_director
+        if str(scene_id) in scene_type_map:
+            scene = dict(scene)
+            scene["scene_type"] = scene_type_map[str(scene_id)]
+            logger.debug(f"Scene {scene_id}: scene_type={scene['scene_type']} (Priority 2 active)")
         env_blend = env_mapping.get(scene_id)
         
         if not env_blend:
@@ -476,3 +510,4 @@ Exemples:
 
 if __name__ == "__main__":
     sys.exit(main())
+
