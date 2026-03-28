@@ -28,6 +28,8 @@ from camera_schema import (
     CUT_PRESETS,
     SHAKE_PRESETS,
     DEFAULT_SHAKE_PRESET,
+    LIGHTING_PRESET_TO_STYLE,
+    SCENE_TYPE_TO_LIGHTING,
 )
 
 try:
@@ -575,16 +577,42 @@ def setup_scene_from_config(config: dict, output_dir: str, scene_id: str, verbos
         cuts_engine.process_cuts(cuts, frame_start, frame_end)
         director.operations.extend(cuts_engine.get_operations())
     
+    from lighting_rig import LightingRig
+    lighting = LightingRig(verbose=verbose)
     lighting_config = config.get("lighting", {})
-    if lighting_config:
-        from lighting_rig import LightingRig
-        lighting = LightingRig(verbose=verbose)
-        lighting.apply_style(
-            lighting_config.get("style", "3point"),
-            lighting_config.get("intensity", 1.0),
-            lighting_config.get("color_temp", 5500)
-        )
-        director.operations.extend(lighting.get_operations())
+    scene_type = config.get("scene_type", "")
+
+    # Priorité 1 : style explicite dans le config (override manuel)
+    if lighting_config.get("style"):
+        light_style = lighting_config["style"]
+        color_temp  = lighting_config.get("color_temp", 5500)
+        intensity   = lighting_config.get("intensity", 1.0)
+        director.log(f"Éclairage explicite : style={light_style}")
+
+    # Priorité 2 : scene_type produit par layer_assembler v2.1.0 (U03)
+    elif scene_type and scene_type in SCENE_TYPE_TO_LIGHTING:
+        profile     = SCENE_TYPE_TO_LIGHTING[scene_type]
+        light_style = profile["style"]
+        color_temp  = profile["color_temp"]
+        intensity   = profile["intensity"]
+        director.log(f"Éclairage auto (scene_type={scene_type}) : style={light_style}")
+
+    # Priorité 3 : preset_id de Gemini M1 (PRODUCTION_PLAN.JSON)
+    elif lighting_config.get("preset_id"):
+        light_style = LIGHTING_PRESET_TO_STYLE.get(lighting_config["preset_id"], "3point")
+        color_temp  = lighting_config.get("color_temp", 5500)
+        intensity   = lighting_config.get("intensity", 1.0)
+        director.log(f"Éclairage preset ({lighting_config['preset_id']}) → style={light_style}")
+
+    # Fallback universel
+    else:
+        light_style = "3point"
+        color_temp  = 5500
+        intensity   = 1.0
+        director.log("Éclairage fallback : 3point")
+
+    lighting.apply_style(light_style, intensity, color_temp)
+    director.operations.extend(lighting.get_operations())
     
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
