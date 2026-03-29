@@ -56,6 +56,14 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 - [x] Priority logic : lighting_mood explicite JSON > profil automatique
 - [x] Result dict enrichi : environment_id + scene_type trackes dans assembler_results.json
 
+### Phase D6 — Corrections Validation Pipeline (ATOM-IC)
+- [x] Fix #1 : Ajouter camera_main default dans assemble_scene() — lens=35mm, pos=(0,-15,8), rot=75deg
+      → layer_assembler.py : cam placeholder overridable par U04, active_layers += "camera"
+- [x] Fix #2 : Ajouter view_layer.update() + depsgraph.update() dans geometry_probe_u03.py
+      → _evaluated_vertex_count() : depsgraph non actualise en background mode → 4 vertices faux
+- [x] Fix #3 : EXO_03_PRODUCTION.ipynb Cell 9 — afficher scene_type depuis assembler_results.json
+      → scene_type n'existe pas dans PRODUCTION_PLAN.JSON — seulement dans assembler_results.json
+
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
@@ -67,6 +75,9 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 | 2026-03-28 | Phase D5 — ENVIRONMENT_TO_SCENE_PROFILE (scene_schema) | ✅ | commit 7284ee9c | N/A |
 | 2026-03-28 | Phase D5 — fallback_color param (dome_builder) | ✅ | commit c2637c90 | N/A |
 | 2026-03-28 | Phase D5 — layer_assembler v2.1.0 adaptif | ✅ | commit 532a22ae | N/A |
+| 2026-03-29 | Fix #1 — camera_main default dans assemble_scene() | ✅ | commit 0cb3057d | N/A |
+| 2026-03-29 | Fix #2 — dg.update() dans geometry_probe_u03.py | ✅ | a livrer | N/A |
+| 2026-03-29 | Fix #3 — EXO_03_PRODUCTION Cell 9 scene_type | ✅ | a livrer | N/A |
 
 ## 5. METRIQUES ET VALIDATION
 - Consommation VRAM Max : A mesurer (cible < 6GB)
