@@ -250,7 +250,18 @@ def assemble_scene(
         semantic_masks_path=semantic_masks_path,
     )
 
-    active_layers = "dome,shadow,world_sync,displacement,pbr,glass"
+    # CAMÉRA DEFAULT — placeholder overridable par U04
+    import math as _math
+    cam_data = bpy.data.cameras.new("camera_main")
+    cam_data.lens = 35.0
+    cam_obj = bpy.data.objects.new("camera_main", cam_data)
+    cam_obj.location = (0.0, -15.0, 8.0)
+    cam_obj.rotation_euler = (_math.radians(75), 0.0, 0.0)
+    bpy.context.scene.collection.objects.link(cam_obj)
+    bpy.context.scene.camera = cam_obj
+    print(f"[ASSEMBLER] Caméra default posée — lens=35mm, pos=(0,-15,8), rot=75°")
+
+    active_layers = "dome,shadow,world_sync,displacement,pbr,glass,camera"
     _stamp_custom_properties(active_layers)
 
     try:
@@ -353,3 +364,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
