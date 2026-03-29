@@ -55,7 +55,9 @@ def _evaluated_vertex_count(obj: bpy.types.Object) -> Optional[int]:
     if obj.type != "MESH" or obj.data is None:
         return None
     try:
+        bpy.context.view_layer.update()
         depsgraph = bpy.context.evaluated_depsgraph_get()
+        depsgraph.update()
         ev_obj = obj.evaluated_get(depsgraph)
         mesh = ev_obj.to_mesh()
         try:
