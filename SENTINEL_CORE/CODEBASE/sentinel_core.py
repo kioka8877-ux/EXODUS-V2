@@ -37,12 +37,15 @@ from typing import Any, Dict, Optional
 # Import des briques
 try:
     from brique2_state import StateSignature
+    from brique3_ghost import GhostRenderer
+    from brique5_diagnostic import Diagnostic
     from brique6_ledger import Ledger
     from brique8_mirror import Mirror
 except ImportError:
-    # Support import depuis racine EXODUS
     sys.path.insert(0, str(Path(__file__).parent))
     from brique2_state import StateSignature
+    from brique3_ghost import GhostRenderer
+    from brique5_diagnostic import Diagnostic
     from brique6_ledger import Ledger
     from brique8_mirror import Mirror
 
@@ -101,6 +104,8 @@ class Sentinel:
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "verdict": "PENDING",
             "state_sig": None,
+            "ghost_result": None,
+            "diagnostic": None,
             "ledger_injections": 0,
             "prompt_vulkan": None,
             "fichiers_sauvegardes": [],
@@ -139,8 +144,65 @@ class Sentinel:
             rapport["erreurs_sentinel"].append(msg)
             print(f"  [B2] ERREUR : {e}")
 
-        # ── ETAPE 2 : B6 — Ledger ────────────────────────────────────────────
-        print(f"[SENTINEL] {fregate} — Etape 2/3 : B6 Ledger")
+        # ── ETAPE 2 : B3 — Ghost Renderer ────────────────────────────────────
+        print(f"[SENTINEL] {fregate} — Etape 2/5 : B3 Ghost Renderer")
+        ghost_result = None
+        ghost_path = self.state_sig_dir / f"GHOST_{fregate}.json"
+
+        try:
+            b3 = GhostRenderer()
+            if frames_dir:
+                ghost_result = b3.analyze_folder(frames_dir)
+            elif blend_path:
+                ghost_out = self.state_sig_dir / f"ghost_{fregate}.png"
+                ghost_result = b3.render(blend_path, str(ghost_out))
+                if ghost_out.exists():
+                    rapport["fichiers_sauvegardes"].append(str(ghost_out))
+
+            if ghost_result:
+                b3.print_report(ghost_result)
+                ghost_data = {k: v for k, v in ghost_result.items()}
+                ghost_path.write_text(
+                    __import__("json").dumps(ghost_data, indent=2, ensure_ascii=False, default=str),
+                    encoding="utf-8"
+                )
+                rapport["ghost_result"] = ghost_result
+                rapport["fichiers_sauvegardes"].append(str(ghost_path))
+                print(f"  [B3] Ghost verdict : {ghost_result.get('verdict','?')} | luma={ghost_result.get('luminance_mean','?')}")
+
+        except Exception as e:
+            msg = f"B3 erreur : {e}"
+            rapport["erreurs_sentinel"].append(msg)
+            print(f"  [B3] ERREUR (non bloquant) : {e}")
+
+        # ── ETAPE 3 : B5 — Diagnostic Differentiel ───────────────────────────
+        print(f"[SENTINEL] {fregate} — Etape 3/5 : B5 Diagnostic Differentiel")
+        diag_path = self.state_sig_dir / f"DIAGNOSTIC_{fregate}.json"
+
+        try:
+            b5 = Diagnostic()
+            diagnostic = b5.analyze(
+                state_sig=state_sig,
+                ghost_result=ghost_result,
+            )
+            b5.print_report(diagnostic)
+            b5.save(diagnostic, str(diag_path))
+            rapport["diagnostic"] = diagnostic
+            rapport["fichiers_sauvegardes"].append(str(diag_path))
+
+            # Mettre a jour le verdict global avec la gravite B5
+            gravite = diagnostic.get("gravite", "NONE")
+            if gravite == "CRITICAL" and rapport["verdict"] not in ("FAIL",):
+                rapport["verdict"] = "FAIL"
+            print(f"  [B5] Conclusion : {diagnostic.get('conclusion','?')} | Gravite : {gravite}")
+
+        except Exception as e:
+            msg = f"B5 erreur : {e}"
+            rapport["erreurs_sentinel"].append(msg)
+            print(f"  [B5] ERREUR (non bloquant) : {e}")
+
+        # ── ETAPE 4 : B6 — Ledger ────────────────────────────────────────────
+        print(f"[SENTINEL] {fregate} — Etape 4/5 : B6 Ledger")
         ledger = Ledger(str(self.memory_path))
 
         if auto_record and state_sig and state_sig.get("verdict") == "FAIL":
@@ -167,7 +229,7 @@ class Sentinel:
         print(f"  [B6] {len(injections)} injection(s) disponible(s) pour ce prompt")
 
         # ── ETAPE 3 : B8 — Le Miroir ─────────────────────────────────────────
-        print(f"[SENTINEL] {fregate} — Etape 3/3 : B8 Assemblage Prompt Vulkan")
+        print(f"[SENTINEL] {fregate} — Etape 5/5 : B8 Assemblage Prompt Vulkan")
         prompt_path = self.prompt_dir / PROMPT_FILENAME.format(fregate=fregate)
 
         try:
@@ -188,8 +250,10 @@ class Sentinel:
 
         # ── Sauvegarde rapport complet ────────────────────────────────────────
         rapport_path = self.base_dir / RAPPORT_FILENAME.format(fregate=fregate, ts=ts)
-        rapport_save = {k: v for k, v in rapport.items() if k != "prompt_vulkan"}
+        rapport_save = {k: v for k, v in rapport.items() if k not in ("prompt_vulkan", "state_sig", "ghost_result", "diagnostic")}
         rapport_save["prompt_path"] = str(prompt_path)
+        rapport_save["diagnostic_conclusion"] = (rapport.get("diagnostic") or {}).get("conclusion", "N/A")
+        rapport_save["ghost_verdict"] = (rapport.get("ghost_result") or {}).get("verdict", "N/A")
         try:
             rapport_path.parent.mkdir(parents=True, exist_ok=True)
             with open(rapport_path, "w", encoding="utf-8") as f:
