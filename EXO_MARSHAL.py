@@ -17,6 +17,17 @@ from datetime import datetime
 # Phantom Link — Phase D.1
 from phantom_link import create_link, resolve_input, validate_link
 
+# ─── SENTINEL — Import optionnel (Phase D7) ──────────────────────────────────
+_SENTINEL_AVAILABLE = False
+try:
+    import sys as _sys
+    _sys.path.insert(0, str(__import__('pathlib').Path(__file__).parent / "SENTINEL_CORE" / "CODEBASE"))
+    from sentinel_core import Sentinel as _Sentinel
+    _SENTINEL_AVAILABLE = True
+except ImportError:
+    pass
+
+
 MANIFEST = {
     "U00": {
         "name": "CORTEX HQ",
@@ -206,7 +217,7 @@ def _build_reverse_routes():
 REVERSE_ROUTES = _build_reverse_routes()
 
 VALID_UNITS = ["U00", "U01", "U02", "U03", "U04", "U05", "U06"]
-VALID_MODES = ["check-out", "check-in", "validate", "link", "cleanup"]
+VALID_MODES = ["check-out", "check-in", "validate", "link", "cleanup", "sentinel"]
 UNIT_ALIASES = {f"F{i:02d}": f"U{i:02d}" for i in range(7)}
 
 
@@ -651,6 +662,54 @@ def log_result(unit, mode, passed, total, issues, drive_root):
         f.write(line)
 
 
+
+# ─── SENTINEL Hook Helper ─────────────────────────────────────────────────────
+
+def _sentinel_pre_check(unit, sentinel_dir, blend_path=None):
+    """Hook pre-execution SENTINEL. Retourne True si OK de continuer."""
+    if not _SENTINEL_AVAILABLE or not sentinel_dir:
+        return True
+    try:
+        s = _Sentinel(base_dir=sentinel_dir)
+        ok = s.pre_check(fregate=unit, blend_path=blend_path)
+        if not ok:
+            print(f"\n[SENTINEL] {unit} — PRE-CHECK FAIL : corriger avant lancement.")
+        return ok
+    except Exception as e:
+        print(f"[SENTINEL] pre_check erreur (non bloquant) : {e}")
+        return True
+
+
+def _sentinel_post_record(unit, sentinel_dir, success, details=""):
+    """Hook post-execution SENTINEL. Enregistre le resultat dans Ledger."""
+    if not _SENTINEL_AVAILABLE or not sentinel_dir:
+        return
+    try:
+        s = _Sentinel(base_dir=sentinel_dir)
+        s.post_record(fregate=unit, success=success, details=details)
+    except Exception as e:
+        print(f"[SENTINEL] post_record erreur (non bloquant) : {e}")
+
+
+def _sentinel_run_full(unit, sentinel_dir, blend_path=None, frames_dir=None):
+    """Lance le pipeline SENTINEL complet B2+B6+B8 et affiche le prompt Vulkan."""
+    if not _SENTINEL_AVAILABLE:
+        print("[SENTINEL] Module non disponible — verifier SENTINEL_CORE/CODEBASE/")
+        return
+    if not sentinel_dir:
+        print("[SENTINEL] --sentinel-dir requis pour le mode sentinel")
+        return
+    try:
+        s = _Sentinel(base_dir=sentinel_dir)
+        rapport = s.run(fregate=unit, blend_path=blend_path, frames_dir=frames_dir)
+        if rapport.get("prompt_vulkan"):
+            print("\n" + "="*60)
+            print("PROMPT VULKAN — A COPIER DANS CLAUDE :")
+            print("="*60)
+            print(rapport["prompt_vulkan"])
+    except Exception as e:
+        print(f"[SENTINEL] run erreur : {e}")
+
 def build_parser():
     parser = argparse.ArgumentParser(
         prog="EXO_MARSHAL",
@@ -676,6 +735,22 @@ def build_parser():
     parser.add_argument(
         "--force", action="store_true",
         help="Force cleanup without checking downstream completion."
+    )
+    parser.add_argument(
+        "--sentinel", action="store_true",
+        help="[SENTINEL] Activer les hooks SENTINEL (pre-check + post-record)."
+    )
+    parser.add_argument(
+        "--sentinel-dir", default=None,
+        help="[SENTINEL] Chemin vers SENTINEL_CORE/ sur Drive."
+    )
+    parser.add_argument(
+        "--sentinel-blend", default=None,
+        help="[SENTINEL] Chemin .blend pour B2 (mode sentinel uniquement)."
+    )
+    parser.add_argument(
+        "--sentinel-frames", default=None,
+        help="[SENTINEL] Chemin dossier frames pour B2 (mode sentinel uniquement)."
     )
     return parser
 
@@ -705,11 +780,29 @@ def main():
 
     mode = args.mode
     verbose = args.verbose
+    sentinel_dir = getattr(args, "sentinel_dir", None)
+    use_sentinel = getattr(args, "sentinel", False)
     all_passed = True
+
+    # SENTINEL — Mode dedie : pipeline complet B2+B6+B8
+    if mode == "sentinel":
+        _sentinel_run_full(
+            unit,
+            sentinel_dir,
+            blend_path=getattr(args, "sentinel_blend", None),
+            frames_dir=getattr(args, "sentinel_frames", None),
+        )
+        sys.exit(0)
+
+    # SENTINEL — Pre-check avant check-in (optionnel)
+    if use_sentinel and mode in ("check-in", "validate"):
+        _sentinel_pre_check(unit, sentinel_dir, blend_path=getattr(args, "sentinel_blend", None))
 
     if mode in ("check-out", "validate"):
         ok, passed, total, issues = check_out(unit, drive_root, verbose)
         log_result(unit, "check-out", passed, total, issues, drive_root)
+        if use_sentinel:
+            _sentinel_post_record(unit, sentinel_dir, success=ok, details="; ".join(issues[:2]))
         if not ok:
             all_passed = False
 
