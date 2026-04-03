@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "last_updated": "2026-04-03",
+    "updated_by": "Vulkan v11.0",
+    "version": "1.0"
+  },
+  "fregates": {
+    "U00": {
+      "name": "CORTEX_HQ",
+      "status": "VALIDE",
+      "last_output": "PRODUCTION_PLAN.JSON + depth_maps",
+      "blocking": null
+    },
+    "U01": {
+      "name": "ANIMATION_ENGINE",
+      "status": "EN_ATTENTE",
+      "last_output": null,
+      "blocking": "premier_run"
+    },
+    "U02": {
+      "name": "LOGISTICS_DEPOT",
+      "status": "EN_ATTENTE",
+      "last_output": null,
+      "blocking": "premier_run"
+    },
+    "U03": {
+      "name": "SCENOGRAPHY_DOCK",
+      "status": "VALIDE",
+      "last_output": "16641_vertices_camera_gpu",
+      "blocking": null
+    },
+    "U04": {
+      "name": "PHOTOGRAPHY_WING",
+      "status": "EN_ATTENTE",
+      "last_output": null,
+      "blocking": "test_10_frames"
+    },
+    "U05": {
+      "name": "ALCHEMIST_LAB",
+      "status": "EN_ATTENTE",
+      "last_output": null,
+      "blocking": "premier_run"
+    },
+    "U06": {
+      "name": "AIRCRAFT_CARRIER",
+      "status": "EN_ATTENTE",
+      "last_output": null,
+      "blocking": "premier_run"
+    }
+  },
+  "tech_pretres": {
+    "SENTINEL": {"status": "OPERATIONNEL", "priorite": 0},
+    "MARSHAL":  {"status": "EXISTE_A_FORMALISER", "priorite": 0},
+    "PHANTOM_LINK": {"status": "EXISTE_A_FORMALISER", "priorite": 0},
+    "VULKAN_FORGE": {"status": "OPERATIONNEL", "priorite": 0},
+    "VOID_FLUSH": {"status": "OPERATIONNEL", "priorite": 1},
+    "ATLAS":     {"status": "OPERATIONNEL", "priorite": 2},
+    "VOX":       {"status": "A_CREER", "priorite": 3},
+    "KRONOS":    {"status": "A_CREER", "priorite": 4}
+  },
+  "pipeline_health": {
+    "fregates_validees": 2,
+    "fregates_total": 7,
+    "tech_pretres_operationnels": 4,
+    "tech_pretres_total": 8,
+    "progression_checklist": "27/48"
+  }
+}
