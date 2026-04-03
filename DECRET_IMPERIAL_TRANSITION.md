@@ -24,13 +24,29 @@
 
 ## I. CONTEXTE — CE QU'EST EXODUS-V2
 
-EXODUS-V2 est un pipeline de production video IA complet.
-Il transforme une video source (acteur humain) en video cinematographique
-avec environnement 3D, acteur Roblox anime, rendu Blender CYCLES,
-post-production et encodage final.
+EXODUS-V2 est un pipeline de clonage viral IA.
+Il prend une video Roblox virale existante, en extrait tous les codes de
+viralite (structure de scene, logique camera, rythme, eclairage, dynamique),
+puis recrée cette video a l'identique MAIS avec un personnage different
+et un environnement different — rendant le resultat 100% original
+et protege du copyright, tout en conservant intacte la formule de viralite.
 
-**Input :** Video source brute (acteur filmé, décor quelconque)
-**Output :** `final_movie.mp4` — scene cinematographique complete
+**La proposition de valeur :** Voler la viralite sans voler le contenu.
+
+```
+INPUT  : Video Roblox virale existante (source de reference)
+         → Codes de viralite extraits : mouvements, camera, rythme,
+           eclairage, composition de scene, timing
+
+PROCESS : Recreation de la structure virale
+         → MEME codes de viralite (ce qui la rend virale est preserve)
+         → NOUVEAU personnage Roblox (DynamicHead custom — zero copyright)
+         → NOUVEL environnement 3D (reconstruit via DepthAnything — zero copyright)
+
+OUTPUT : final_movie.mp4
+         Virale par construction (memes codes de viralite)
+         Originale legalement (personnage + decor entierement nouveaux)
+```
 
 Le pipeline tourne sur **Google Colab** (GPU T4/A100) avec les fichiers
 stockes sur **Google Drive**. Le code source est versionne sur **GitHub**.
@@ -42,32 +58,44 @@ stockes sur **Google Drive**. Le code source est versionne sur **GitHub**.
 Chaque fregate est une etape du pipeline. Elles s'executent en sequence.
 
 ```
-U00 CORTEX HQ          → Analyse IA de la video source
-                          Gemini Vision + SAM + DepthAnything
-                          Output : PRODUCTION_PLAN.JSON + depth_maps/
+U00 CORTEX HQ          → Decryptage de la video virale source
+                          Gemini Vision analyse : structure scenes, codes camera,
+                          rythme, eclairage, composition, dynamique de viralite
+                          SAM extrait les masques semantiques de l'environnement
+                          DepthAnything genere les cartes de profondeur
+                          Output : PRODUCTION_PLAN.JSON (plan de recreation)
+                                   + depth_maps/ (geometrie de la scene source)
 
-U01 ANIMATION ENGINE   → Creation de l'acteur Roblox anime
+U01 ANIMATION ENGINE   → Creation du nouveau personnage Roblox
                           Blender headless + DynamicHead + 52 ARKit ShapeKeys
+                          Le personnage reproduit les memes mouvements que
+                          le personnage original (memes codes de viralite)
                           Output : ACTOR_01.blend + preview.abc
 
-U02 LOGISTICS DEPOT    → Equipement de l'acteur (props, costumes)
+U02 LOGISTICS DEPOT    → Equipement du nouveau personnage (props, costumes)
                           Socketing engine + material baking
+                          Apparence differente de l'original → zero copyright
                           Output : actor_equipped.blend + actor_equipped.abc
 
-U03 SCENOGRAPHY DOCK   → Construction de l'environnement 3D
-                          DepthAnything displacement + HDRI + eclairage
+U03 SCENOGRAPHY DOCK   → Construction du nouvel environnement 3D
+                          DepthAnything reconstruction geometrique
+                          HDRI + eclairage reproduisant l'ambiance source
+                          Decor entierement different → zero copyright
                           Output : environment_{scene_id}.blend
 
-U04 PHOTOGRAPHY WING   → Rendu cinematographique
-                          Blender CYCLES GPU + camera engine
+U04 PHOTOGRAPHY WING   → Rendu cinematographique avec la logique camera source
+                          Blender CYCLES GPU reproduit les angles, mouvements,
+                          et cadrage de la video virale originale
                           Output : render_XXXX.png (frames) + photography_report.json
 
-U05 ALCHEMIST LAB      → Post-production des frames
-                          Color grading + LUT + effets visuels
+U05 ALCHEMIST LAB      → Post-production : reproduction du style visuel source
+                          Color grading + LUT matching l'esthetique originale
+                          Les codes visuels de viralite sont preserves
                           Output : frames post-traitees
 
 U06 CARRIER COMMAND    → Encodage final + audio sync
-                          FFmpeg + assemblage video
+                          FFmpeg assemble la video finale
+                          Resultat : video virale originale sans copyright
                           Output : final_movie.mp4
 ```
 
@@ -276,9 +304,9 @@ EXODUS-V2/ (repo GitHub : kioka8877-ux/EXODUS-V2)
 ## VII. PROTOCOLE DE TEST E2E — CE QUI RESTE A FAIRE
 
 ### Input requis
-- Video source : 10 a 30 secondes, format MP4, 720p ou 1080p
-- Acteur humain dans le plan + décor quelconque
-- Les outputs U02 (`actor_equipped.blend`) sont deja valides
+- Video Roblox virale source : 10 a 30 secondes, format MP4, 720p ou 1080p
+- La video doit contenir un personnage Roblox + un environnement identifiable
+- Les outputs U02 (`actor_equipped.blend`) — nouveau personnage — sont deja valides
 
 ### Sequence d'execution sur Colab
 
@@ -325,16 +353,20 @@ Etape 10 : Valider final_movie.mp4 (>5MB, duree == source)
 | Terme | Definition |
 |-------|-----------|
 | **Fregate** | Une etape du pipeline (U00 a U06) |
-| **Run E2E** | Execution complete U00→U06 sur une vraie video |
+| **Run E2E** | Execution complete U00→U06 sur une vraie video virale |
+| **Codes de viralite** | Les elements qui rendent une video virale : rythme, camera, dynamique |
+| **Video source** | La video Roblox virale originale a cloner (reference) |
+| **Clonage viral** | Recreation de la structure virale avec nouveau perso + nouvel env |
 | **.blend** | Fichier Blender (scene 3D) |
 | **.abc** | Fichier Alembic (animation exportee) |
 | **CYCLES** | Moteur de rendu ray-tracing de Blender (GPU) |
+| **DynamicHead** | Systeme de tete animee Roblox (52 ShapeKeys ARKit) |
 | **ShapeKeys** | Expressions faciales ARKit pour Roblox DynamicHead |
 | **STATE_SIG** | Signature d'etat generee par SENTINEL apres chaque fregate |
 | **memory.json** | Ledger SENTINEL — historique de toutes les erreurs connues |
 | **prompt_vulkan** | Prompt genere par B8 → a copier dans Claude pour correction |
 | **OOM** | Out Of Memory — crash GPU Colab |
-| **PRODUCTION_PLAN.JSON** | Output U00 — plan de toutes les scenes a produire |
+| **PRODUCTION_PLAN.JSON** | Output U00 — plan de recreation de la video virale |
 
 ---
 
