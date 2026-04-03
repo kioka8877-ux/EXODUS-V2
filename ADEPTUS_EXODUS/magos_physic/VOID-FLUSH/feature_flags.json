@@ -1,0 +1,18 @@
+{
+  "gpu_flush": true,
+  "mesh_purge": true,
+  "orphan_purge": true,
+  "verbose": true,
+  "pre_render_hook": true,
+  "post_render_hook": true,
+  "force_depsgraph_update": true,
+  "_notes": {
+    "gpu_flush": "Purge les images et textures GPU non utilisees",
+    "mesh_purge": "Supprime les meshes orphelins de bpy.data",
+    "orphan_purge": "Lance bpy.ops.outliner.orphans_purge(recursive)",
+    "verbose": "Affiche les logs de chaque etape",
+    "pre_render_hook": "Active le flush avant chaque render",
+    "post_render_hook": "Active le flush apres chaque render",
+    "force_depsgraph_update": "Force depsgraph.update() — FIX D6_depsgraph"
+  }
+}
