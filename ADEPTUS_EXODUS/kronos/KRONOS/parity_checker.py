@@ -77,7 +77,7 @@ def check_parity(fregate_a, fregate_b):
     inv_a = get_fregate_inventory(fregate_a)
     inv_b = get_fregate_inventory(fregate_b)
 
-    if not inv_a["exists"] or not inv_b["exists":
+    if not inv_a["exists"] or not inv_b["exists"]:
         return {
             "status": "ERROR",
             "detail": f"{fregate_a if not inv_a['exists'] else fregate_b} introuvable"

@@ -37,6 +37,20 @@ from pathlib import Path
 from datetime import datetime
 import shutil
 
+# ─── VOID-FLUSH integration (Tache 44) ───────────────────────────────────────
+try:
+    from blender_adapter import flush_before_render, flush_after_render
+    _VOID_FLUSH_AVAILABLE = True
+except Exception:
+    _VOID_FLUSH_AVAILABLE = False
+
+# ─── ATLAS integration (Tache 45) ────────────────────────────────────────────
+try:
+    from session_store import SessionStore
+    _ATLAS_AVAILABLE = True
+except Exception:
+    _ATLAS_AVAILABLE = False
+
 # AUTO-COPIE phantom_link.py (Patch Session #003)
 # Si l'Empereur n'a pas copié la version racine sur le Drive, on la forge depuis ce CODEBASE.
 drive_root = Path(__file__).resolve().parents[2]
@@ -225,6 +239,11 @@ def run_blender_scenography(
     Returns:
         True si succès.
     """
+    # VOID-FLUSH: purge memoire avant lancement Blender
+    if _VOID_FLUSH_AVAILABLE:
+        flush_result = flush_before_render(fregate_id="U03")
+        logger.debug(f"VOID-FLUSH pre-render: {flush_result['status']} — {flush_result.get('actions', [])}")
+
     logger.info("Lancement Blender Tri-Layer Engine...")
 
     script_dir = Path(__file__).parent
@@ -402,6 +421,14 @@ Exemples:
     print(f"   Version {SCENOGRAPHY_VERSION}")
     print("=" * 70)
 
+    # ATLAS: afficher session precedente si disponible
+    if _ATLAS_AVAILABLE:
+        _prev = SessionStore("U03")
+        if _prev.get("last_run"):
+            logger.info(f"ATLAS session U03 — dernier run: {_prev.get('last_run')} | "
+                        f"drive_root: {_prev.get('drive_root', '?')} | "
+                        f"vram: {_prev.get('vram_profile', '?')}")
+
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "03_SCENOGRAPHY_DOCK"
 
@@ -499,6 +526,19 @@ Exemples:
     if not success:
         logger.error("Construction Tri-Layer échouée")
         sys.exit(1)
+
+    # ATLAS: sauvegarder etat session apres succes
+    if _ATLAS_AVAILABLE:
+        SessionStore("U03").update({
+            "drive_root": str(drive_root),
+            "output_dir": str(output_dir),
+            "vram_profile": args.vram_profile,
+            "exposure": args.exposure,
+            "hdri_path": hdri_path,
+            "scenes_total": len(plan.get("scenes", [])),
+            "last_run": datetime.now().isoformat(),
+        }).save()
+        logger.info("ATLAS: session U03 sauvegardee")
 
     print(f"\n{'='*70}")
     logger.success("CONSTRUCTION TRI-LAYER TERMINÉE")

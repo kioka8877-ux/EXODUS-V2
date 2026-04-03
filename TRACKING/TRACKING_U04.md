@@ -58,6 +58,9 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 | 2026-03-06 | U04-B Darkroom complet : darkroom_render.py + EXO_04_DARKROOM.py + notebook + docs | ✅ | PR #49 | — |
 | 2026-03-28 | U04-C LIGHTING_PRESET_TO_STYLE + SCENE_TYPE_TO_LIGHTING (camera_schema) | ✅ | commit 9b43190b | N/A |
 | 2026-03-28 | U04-C chaîne priorité éclairage adaptatif (camera_director) | ✅ | commit f8a1d70b | N/A |
+| 2026-04-03 | Phase 5 T44 — VOID-FLUSH: blender_adapter.py + hook pre-render | ✅ | Phase 5 commit | N/A |
+| 2026-04-03 | Phase 5 T45 — ATLAS: session_store.py + SessionStore integration | ✅ | Phase 5 commit | N/A |
+| 2026-04-03 | Phase 5 T46 — VOX: RULES.md + test_u04.py (37 tests Pytest) | ✅ | Phase 5 commit | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (U04-A ne rend pas)
@@ -69,6 +72,10 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 - [x] 8/8 critères VALIDATION.md satisfaits par U04-B (sauf Marshal Out-Check)
 - [x] camera_schema.py self_test 8/8 (inclut test darkroom preset)
 - [x] Adaptabilité multi-scène : 10 preset_id + 4 scene_type → style automatique
+- [x] VOID-FLUSH intégré (blender_adapter.py + hook pre-render)
+- [x] ATLAS intégré (session_store.py + SessionStore save)
+- [x] RULES.md créé (7 règles archit. + 2 VOID-FLUSH + 2 ATLAS + 2 éclairage)
+- [x] test_u04.py — 37 tests Pytest (structure, syntax, intégrations, A/B séparation)
 
 ## RÉFÉRENCES
 - [ARCHITECTURE U04](../04_PHOTOGRAPHY_WING/ARCHITECTURE_U04.md) — **Note technique split A/B**

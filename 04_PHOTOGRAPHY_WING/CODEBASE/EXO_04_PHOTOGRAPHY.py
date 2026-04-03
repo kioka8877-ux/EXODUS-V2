@@ -33,6 +33,20 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+# ─── VOID-FLUSH integration (Tache 44) ───────────────────────────────────────
+try:
+    from blender_adapter import flush_before_render, flush_after_render
+    _VOID_FLUSH_AVAILABLE = True
+except Exception:
+    _VOID_FLUSH_AVAILABLE = False
+
+# ─── ATLAS integration (Tache 45) ────────────────────────────────────────────
+try:
+    from session_store import SessionStore
+    _ATLAS_AVAILABLE = True
+except Exception:
+    _ATLAS_AVAILABLE = False
+
 # Phantom Link — Phase D.1
 import importlib.util
 _phantom_spec = importlib.util.spec_from_file_location("phantom_link", Path(__file__).resolve().parents[2] / "phantom_link.py")
@@ -210,6 +224,11 @@ def run_blender_photography(
     """
     Exécute Blender en mode headless pour configurer caméra et éclairage.
     """
+    # VOID-FLUSH: purge memoire avant lancement Blender
+    if _VOID_FLUSH_AVAILABLE:
+        flush_result = flush_before_render(fregate_id="U04")
+        logger.debug(f"VOID-FLUSH pre-render: {flush_result['status']} — {flush_result.get('actions', [])}")
+
     logger.info(f"Traitement Scene {scene_id}...")
     
     script_dir = Path(__file__).parent
@@ -388,11 +407,19 @@ Exemples:
     
     args = parser.parse_args()
     logger = PhotographyLogger(verbose=args.verbose)
-    
+
     print("=" * 70)
     print("   FRÉGATE 04_PHOTOGRAPHY — EXODUS CINÉMATIQUE")
     print(f"   Version {PHOTOGRAPHY_VERSION}")
     print("=" * 70)
+
+    # ATLAS: afficher session precedente si disponible
+    if _ATLAS_AVAILABLE:
+        _prev = SessionStore("U04")
+        if _prev.get("last_run"):
+            logger.info(f"ATLAS session U04 — dernier run: {_prev.get('last_run')} | "
+                        f"drive_root: {_prev.get('drive_root', '?')} | "
+                        f"scenes: {_prev.get('scenes_total', '?')}")
     
     drive_root = Path(args.drive_root)
     unit_root = drive_root / "04_PHOTOGRAPHY_WING"
@@ -493,11 +520,24 @@ Exemples:
     if total_failed == len(results) and len(results) > 0:
         logger.error("Toutes les scènes ont échoué")
         sys.exit(1)
-    
+
+    # ATLAS: sauvegarder etat session apres succes
+    if _ATLAS_AVAILABLE:
+        SessionStore("U04").update({
+            "drive_root": str(drive_root),
+            "output_dir": str(output_dir),
+            "preset": args.preset,
+            "shake_preset": args.shake_preset,
+            "scenes_total": len(results),
+            "scenes_ok": sum(1 for v in results.values() if v),
+            "last_run": datetime.now().isoformat(),
+        }).save()
+        logger.info("ATLAS: session U04 sauvegardee")
+
     logger.info(f"Pipeline V2: preset={args.preset}, fov_json={'yes' if args.camera_fov_json else 'no'}, "
                 f"dof={'off' if args.no_dof else 'on'}, atmosphere={'off' if args.no_atmosphere else 'on'}, "
                 f"shake={args.shake_preset}")
-    
+
     print("\n" + "=" * 70)
     logger.success(f"PHOTOGRAPHIE COMPLÈTE")
     print(f"  → Scènes traitées: {sum(1 for v in results.values() if v)}/{len(results)}")

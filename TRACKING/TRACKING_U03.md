@@ -78,6 +78,9 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 | 2026-03-29 | Fix #1 — camera_main default dans assemble_scene() | ✅ | commit 0cb3057d | N/A |
 | 2026-03-29 | Fix #2 — dg.update() dans geometry_probe_u03.py | ✅ | a livrer | N/A |
 | 2026-03-29 | Fix #3 — EXO_03_PRODUCTION Cell 9 scene_type | ✅ | a livrer | N/A |
+| 2026-04-03 | Phase 5 T44 — VOID-FLUSH: blender_adapter.py + hook pre-render | ✅ | Phase 5 commit | N/A |
+| 2026-04-03 | Phase 5 T45 — ATLAS: session_store.py + SessionStore integration | ✅ | Phase 5 commit | N/A |
+| 2026-04-03 | Phase 5 T46 — VOX: RULES.md + test_u03.py (35 tests Pytest) | ✅ | Phase 5 commit | N/A |
 
 ## 5. METRIQUES ET VALIDATION
 - Consommation VRAM Max : A mesurer (cible < 6GB)
@@ -86,6 +89,10 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 - [x] Marshal In-Check passe (structure conforme)
 - [x] Marshal Out-Check passe (5 collections, custom properties)
 - [x] Adaptabilite multi-scene : 18 environment_id → profil automatique
+- [x] VOID-FLUSH intégré (blender_adapter.py + hook pre-render)
+- [x] ATLAS intégré (session_store.py + SessionStore save)
+- [x] RULES.md créé (lois de la fregate documentées)
+- [x] test_u03.py — 35 tests Pytest (structure, syntax, intégrations)
 - [ ] Validation Souveraine (test Colab par l'Empereur)
 
 ## REFERENCES
