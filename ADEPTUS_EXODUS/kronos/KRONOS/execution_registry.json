@@ -1,0 +1,55 @@
+{
+  "seals": [
+    {
+      "seal_id": "SEAL_20260403_GENESIS",
+      "timestamp": "2026-04-03T00:00:00",
+      "sealed_by": "KRONOS",
+      "validated_by": "Empereur",
+      "fleet_coherence": "initialisation",
+      "fleet_score": "0/48",
+      "tech_pretres_present": 0,
+      "note": "Sceau Genesis — avant construction de l'Empire"
+    },
+    {
+      "seal_id": "SEAL_20260403_PHASE0",
+      "timestamp": "2026-04-03T00:00:00",
+      "sealed_by": "KRONOS",
+      "validated_by": "Empereur",
+      "fleet_coherence": "VULKAN_FORGE operationnel",
+      "fleet_score": "22/48",
+      "tech_pretres_present": 1,
+      "note": "Phase 0 complete — VULKAN_FORGE cree"
+    },
+    {
+      "seal_id": "SEAL_20260403_PHASE1",
+      "timestamp": "2026-04-03T00:00:00",
+      "sealed_by": "KRONOS",
+      "validated_by": "Empereur",
+      "fleet_coherence": "VOID-FLUSH operationnel",
+      "fleet_score": "27/48",
+      "tech_pretres_present": 2,
+      "note": "Phase 1 complete — VOID-FLUSH cree"
+    },
+    {
+      "seal_id": "SEAL_20260403_PHASE2",
+      "timestamp": "2026-04-03T00:00:00",
+      "sealed_by": "KRONOS",
+      "validated_by": "Empereur",
+      "fleet_coherence": "ATLAS operationnel",
+      "fleet_score": "32/48",
+      "tech_pretres_present": 3,
+      "note": "Phase 2 complete — ATLAS cree"
+    },
+    {
+      "seal_id": "SEAL_20260403_PHASE3",
+      "timestamp": "2026-04-03T00:00:00",
+      "sealed_by": "KRONOS",
+      "validated_by": "Empereur",
+      "fleet_coherence": "VOX operationnel",
+      "fleet_score": "38/48",
+      "tech_pretres_present": 4,
+      "note": "Phase 3 complete — VOX cree"
+    }
+  ],
+  "executions": []
+}
