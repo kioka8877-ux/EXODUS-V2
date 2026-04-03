@@ -1,0 +1,15 @@
+{
+  "fix_id": "D6_camera_fix",
+  "commit": "0cb3057d",
+  "file_modifie": "03_SCENOGRAPHY_DOCK/CODEBASE/layer_assembler.py",
+  "fregate": "U04 — PHOTOGRAPHY_WING",
+  "probleme": "camera_main absente du scene graph -> render echoue sans message d'erreur clair",
+  "symptome": "Render produit frame noire ou crash silencieux",
+  "solution": "Ajout verification + injection automatique de camera_main dans layer_assembler.py",
+  "code_avant": "# aucune verification camera",
+  "code_apres": "camera_main = scene.objects.get('camera_main') or _create_default_camera(scene)",
+  "impact": "U04 peut rendre sans injection manuelle de camera",
+  "validated_by": "Empereur",
+  "date": "2026-03-29",
+  "script_arsenal": "ARSENAL/scripts/fix_camera_missing.py"
+}

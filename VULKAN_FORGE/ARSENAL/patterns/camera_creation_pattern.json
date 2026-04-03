@@ -1,0 +1,37 @@
+{
+  "pattern_id": "camera_creation_v1",
+  "name": "Camera Creation Pattern",
+  "fregates_applicables": ["U03", "U04"],
+  "description": "Pattern standard pour creer et assigner une camera dans une scene Blender",
+  "steps": [
+    {
+      "step": 1,
+      "action": "check_existing",
+      "code": "existing = [obj for obj in scene.objects if obj.type == 'CAMERA']",
+      "condition": "Si len(existing) > 0 -> skip"
+    },
+    {
+      "step": 2,
+      "action": "create_camera",
+      "code": "bpy.ops.object.camera_add(location=(0, -10, 5))",
+      "note": "Position par defaut — ajuster selon scene"
+    },
+    {
+      "step": 3,
+      "action": "name_camera",
+      "code": "cam = bpy.context.active_object; cam.name = 'camera_main'",
+      "note": "Nom canonique de l'Empire"
+    },
+    {
+      "step": 4,
+      "action": "assign_to_scene",
+      "code": "scene.camera = cam",
+      "critical": true,
+      "note": "Sans cette ligne le render echoue silencieusement"
+    }
+  ],
+  "validation": "scene.camera is not None",
+  "origin_fix": "0cb3057d",
+  "validated_by": "Empereur",
+  "date": "2026-04-03"
+}

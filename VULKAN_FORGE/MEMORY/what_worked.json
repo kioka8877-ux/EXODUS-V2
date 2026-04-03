@@ -1,0 +1,29 @@
+[
+  {
+    "id": "WIN_001",
+    "date": "2026-03-29",
+    "fregate": "U03",
+    "contexte": "geometry_probe retournait 4 vertices",
+    "solution": "depsgraph.update() avant evaluated_depsgraph_get()",
+    "resultat": "16,641 vertices — scene validee",
+    "pattern_extrait": "TOUJOURS appeler depsgraph.update() avant evaluation geometrique"
+  },
+  {
+    "id": "WIN_002",
+    "date": "2026-03-29",
+    "fregate": "U04",
+    "contexte": "Render echouait silencieusement",
+    "solution": "Injection automatique camera_main dans layer_assembler.py",
+    "resultat": "U04 rend sans intervention manuelle",
+    "pattern_extrait": "Verifier scene.camera is not None avant tout render"
+  },
+  {
+    "id": "WIN_003",
+    "date": "2026-03-29",
+    "fregate": "U03",
+    "contexte": "scene_type: unknown dans rapports",
+    "solution": "Lecture de assembler_results.json pour determiner scene_type",
+    "resultat": "Rapports corrects et lisibles",
+    "pattern_extrait": "Toujours lire les JSON de resultats precedents avant de deduire le type"
+  }
+]

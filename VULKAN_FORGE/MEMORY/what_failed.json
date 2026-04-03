@@ -1,0 +1,20 @@
+[
+  {
+    "id": "FAIL_001",
+    "date": "2026-03-29",
+    "fregate": "U03",
+    "contexte": "Premier geometry_probe",
+    "tentative": "Lire vertices sans forcer depsgraph",
+    "echec": "4 vertices retournes — scene non evaluee",
+    "lecon": "Blender ne recalcule jamais le depsgraph automatiquement — toujours forcer update()"
+  },
+  {
+    "id": "FAIL_002",
+    "date": "2026-03-29",
+    "fregate": "U04",
+    "contexte": "Render test",
+    "tentative": "Lancer render sans verifier camera",
+    "echec": "Frame noire — camera absente du scene graph",
+    "lecon": "Verifier scene.camera AVANT render — erreur silencieuse sinon"
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "DEC_001",
+    "date": "2026-03-29",
+    "contexte": "Architecture EXODUS — separation responsabilites",
+    "decision": "Les fregates produisent. Les Mini Programs servent. L'Empereur regne.",
+    "raison": "Clarifier la difference entre pipeline de production (U00-U06) et services transversaux",
+    "validee_par": "Empereur",
+    "impact": "Toute future entite doit respecter cette separation — loi fondamentale"
+  },
+  {
+    "id": "DEC_002",
+    "date": "2026-03-29",
+    "contexte": "Persistance du savoir de Vulkan",
+    "decision": "Creation de VULKAN_FORGE/ comme arsenal persistant",
+    "raison": "Chaque session recommencait a zero — perte de savoir accumule",
+    "validee_par": "Empereur",
+    "impact": "ARSENAL/ + MEMORY/ survivent aux sessions. L'Empire accumule."
+  },
+  {
+    "id": "DEC_003",
+    "date": "2026-03-29",
+    "contexte": "Documentation .md dans l'Empire",
+    "decision": "VOX est Scribe de l'Empire — responsable de tous les .md sauf VULKAN_FORGE/CONTEXT/",
+    "raison": "Vide architectural identifie — personne ne gerait les .md de tracking",
+    "validee_par": "Empereur",
+    "impact": "Toute entite creee recoit son .md de VOX. Pas de creation sans documentation."
+  },
+  {
+    "id": "DEC_004",
+    "date": "2026-04-03",
+    "contexte": "Ordre de developpement",
+    "decision": "Checklist 48 taches validee — Phase 0 VULKAN_FORGE en premier",
+    "raison": "Arsenal de Vulkan est prerequis pour tout le reste",
+    "validee_par": "Empereur",
+    "impact": "Ordre canonique : P0 -> P1 -> P2 -> P3 -> P4 -> Phase 5"
+  }
+]

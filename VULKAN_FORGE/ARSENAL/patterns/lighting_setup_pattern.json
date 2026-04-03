@@ -1,0 +1,49 @@
+{
+  "pattern_id": "lighting_setup_v1",
+  "name": "Lighting Setup Pattern",
+  "fregates_applicables": ["U03", "U04"],
+  "description": "Pattern standard pour setup d'eclairage minimal dans une scene Blender",
+  "presets": {
+    "minimal": {
+      "lights": [
+        {
+          "type": "SUN",
+          "name": "sun_key",
+          "location": [5, -5, 10],
+          "energy": 3.0,
+          "role": "Key light principal"
+        }
+      ],
+      "exposure": 1.0
+    },
+    "cinematic": {
+      "lights": [
+        {
+          "type": "SUN",
+          "name": "sun_key",
+          "location": [5, -5, 10],
+          "energy": 2.0,
+          "role": "Key light"
+        },
+        {
+          "type": "AREA",
+          "name": "area_fill",
+          "location": [-5, 5, 5],
+          "energy": 50.0,
+          "role": "Fill light"
+        },
+        {
+          "type": "SPOT",
+          "name": "spot_rim",
+          "location": [0, 10, 8],
+          "energy": 100.0,
+          "role": "Rim light"
+        }
+      ],
+      "exposure": 0.5
+    }
+  },
+  "validation": "len([obj for obj in scene.objects if obj.type == 'LIGHT']) >= 1",
+  "validated_by": "Empereur",
+  "date": "2026-04-03"
+}

@@ -1,0 +1,16 @@
+{
+  "fix_id": "D6_depsgraph_fix",
+  "commit": "6db5311f",
+  "file_modifie": "03_SCENOGRAPHY_DOCK/CODEBASE/geometry_probe_u03.py",
+  "fregate": "U03 — SCENOGRAPHY_DOCK",
+  "probleme": "depsgraph stale -> geometry_probe retourne 4 vertices au lieu de >10K",
+  "symptome": "geometry_probe.vertex_count = 4 malgre scene complexe",
+  "cause_racine": "Blender ne recalcule pas le depsgraph automatiquement apres chargement .blend",
+  "solution": "Appel explicite depsgraph.update() avant toute evaluation geometrique",
+  "code_avant": "depsgraph = bpy.context.evaluated_depsgraph_get()",
+  "code_apres": "depsgraph = bpy.context.evaluated_depsgraph_get()\ndepsgraph.update()",
+  "impact": "Geometrie >10K vertices garantie — U03 scene valide",
+  "validated_by": "Empereur",
+  "date": "2026-03-29",
+  "script_arsenal": "ARSENAL/scripts/fix_displacement_vertices.py"
+}
