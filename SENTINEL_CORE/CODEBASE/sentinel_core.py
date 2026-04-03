@@ -36,17 +36,23 @@ from typing import Any, Dict, Optional
 
 # Import des briques
 try:
+    from brique1_ast import AstAnalyzer
     from brique2_state import StateSignature
     from brique3_ghost import GhostRenderer
+    from brique4_ground_truth import GroundTruth
     from brique5_diagnostic import Diagnostic
     from brique6_ledger import Ledger
+    from brique7_characters import CharacterValidator
     from brique8_mirror import Mirror
 except ImportError:
     sys.path.insert(0, str(Path(__file__).parent))
+    from brique1_ast import AstAnalyzer
     from brique2_state import StateSignature
     from brique3_ghost import GhostRenderer
+    from brique4_ground_truth import GroundTruth
     from brique5_diagnostic import Diagnostic
     from brique6_ledger import Ledger
+    from brique7_characters import CharacterValidator
     from brique8_mirror import Mirror
 
 # ─── Constantes ──────────────────────────────────────────────────────────────
