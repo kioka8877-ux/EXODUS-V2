@@ -5,7 +5,7 @@
     "fregate": "U03",
     "contexte": "geometry_probe retournait 4 vertices",
     "solution": "depsgraph.update() avant evaluated_depsgraph_get()",
-    "resultat": "16,641 vertices — scene validee",
+    "resultat": "16,641 vertices \u2014 scene validee",
     "pattern_extrait": "TOUJOURS appeler depsgraph.update() avant evaluation geometrique"
   },
   {
@@ -25,5 +25,14 @@
     "solution": "Lecture de assembler_results.json pour determiner scene_type",
     "resultat": "Rapports corrects et lisibles",
     "pattern_extrait": "Toujours lire les JSON de resultats precedents avant de deduire le type"
+  },
+  {
+    "id": "WIN_004",
+    "date": "2026-04-05",
+    "fregate": "U04",
+    "contexte": "Error: Cannot render, no camera \u2014 U04-A ne modifie pas les .blend (config only)",
+    "solution": "ARSENAL inject_camera_cinematic.py \u2014 Blender headless injecte camera 35mm+DOF+Sun+Point avant DARKROOM",
+    "resultat": "scene_ready_*.blend ready pour DARKROOM \u2014 frames rendues",
+    "pattern_extrait": "U04-A = planning. Toujours injecter camera via Blender headless AVANT d'appeler DARKROOM"
   }
 ]
