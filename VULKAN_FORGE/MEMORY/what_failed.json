@@ -5,8 +5,8 @@
     "fregate": "U03",
     "contexte": "Premier geometry_probe",
     "tentative": "Lire vertices sans forcer depsgraph",
-    "echec": "4 vertices retournes — scene non evaluee",
-    "lecon": "Blender ne recalcule jamais le depsgraph automatiquement — toujours forcer update()"
+    "echec": "4 vertices retournes \u2014 scene non evaluee",
+    "lecon": "Blender ne recalcule jamais le depsgraph automatiquement \u2014 toujours forcer update()"
   },
   {
     "id": "FAIL_002",
@@ -14,7 +14,16 @@
     "fregate": "U04",
     "contexte": "Render test",
     "tentative": "Lancer render sans verifier camera",
-    "echec": "Frame noire — camera absente du scene graph",
-    "lecon": "Verifier scene.camera AVANT render — erreur silencieuse sinon"
+    "echec": "Frame noire \u2014 camera absente du scene graph",
+    "lecon": "Verifier scene.camera AVANT render \u2014 erreur silencieuse sinon"
+  },
+  {
+    "id": "FAIL_003",
+    "date": "2026-04-05",
+    "fregate": "U04",
+    "contexte": "Fix camera injection VULKAN_CAMERA_FIX_v1",
+    "tentative": "Placer le script fix dans TRACKING/ comme script one-shot",
+    "echec": "Script orphelin \u2014 non integre au workflow fregate, introuvable en session suivante",
+    "lecon": "Fix operationnel = dans la fregate concernee (notebook). TRACKING/ = documentation et tests one-shot uniquement"
   }
 ]
