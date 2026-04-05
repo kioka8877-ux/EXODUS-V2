@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "last_updated": "2026-04-03",
+    "last_updated": "2026-04-05",
     "updated_by": "Vulkan v11.0",
-    "version": "1.0"
+    "version": "1.1"
   },
   "fregates": {
     "U00": {
@@ -31,9 +31,9 @@
     },
     "U04": {
       "name": "PHOTOGRAPHY_WING",
-      "status": "EN_ATTENTE",
-      "last_output": null,
-      "blocking": "test_10_frames"
+      "status": "FIX_INJECTE",
+      "last_output": "camera_injection_ready \u2014 VULKAN_CAMERA_FIX_v1",
+      "blocking": "validation_frames_png"
     },
     "U05": {
       "name": "ALCHEMIST_LAB",
@@ -49,20 +49,45 @@
     }
   },
   "tech_pretres": {
-    "SENTINEL": {"status": "OPERATIONNEL", "priorite": 0},
-    "MARSHAL":  {"status": "EXISTE_A_FORMALISER", "priorite": 0},
-    "PHANTOM_LINK": {"status": "EXISTE_A_FORMALISER", "priorite": 0},
-    "VULKAN_FORGE": {"status": "OPERATIONNEL", "priorite": 0},
-    "VOID_FLUSH": {"status": "OPERATIONNEL", "priorite": 1},
-    "ATLAS":     {"status": "OPERATIONNEL", "priorite": 2},
-    "VOX":       {"status": "A_CREER", "priorite": 3},
-    "KRONOS":    {"status": "A_CREER", "priorite": 4}
+    "SENTINEL": {
+      "status": "OPERATIONNEL",
+      "priorite": 0
+    },
+    "MARSHAL": {
+      "status": "EXISTE_A_FORMALISER",
+      "priorite": 0
+    },
+    "PHANTOM_LINK": {
+      "status": "EXISTE_A_FORMALISER",
+      "priorite": 0
+    },
+    "VULKAN_FORGE": {
+      "status": "OPERATIONNEL",
+      "priorite": 0
+    },
+    "VOID_FLUSH": {
+      "status": "OPERATIONNEL",
+      "priorite": 1
+    },
+    "ATLAS": {
+      "status": "OPERATIONNEL",
+      "priorite": 2
+    },
+    "VOX": {
+      "status": "A_CREER",
+      "priorite": 3
+    },
+    "KRONOS": {
+      "status": "A_CREER",
+      "priorite": 4
+    }
   },
   "pipeline_health": {
     "fregates_validees": 2,
+    "fregates_fix_injecte": 1,
     "fregates_total": 7,
     "tech_pretres_operationnels": 4,
     "tech_pretres_total": 8,
-    "progression_checklist": "27/48"
+    "progression_checklist": "28/48"
   }
 }
