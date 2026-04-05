@@ -2,18 +2,18 @@
   {
     "id": "DEC_001",
     "date": "2026-03-29",
-    "contexte": "Architecture EXODUS — separation responsabilites",
+    "contexte": "Architecture EXODUS \u2014 separation responsabilites",
     "decision": "Les fregates produisent. Les Mini Programs servent. L'Empereur regne.",
-    "raison": "Clarifier la difference entre pipeline de production (U00-U06) et services transversaux",
+    "raison": "Clarifier la difference entre pipeline de production et services transversaux",
     "validee_par": "Empereur",
-    "impact": "Toute future entite doit respecter cette separation — loi fondamentale"
+    "impact": "Toute future entite doit respecter cette separation \u2014 loi fondamentale"
   },
   {
     "id": "DEC_002",
     "date": "2026-03-29",
     "contexte": "Persistance du savoir de Vulkan",
     "decision": "Creation de VULKAN_FORGE/ comme arsenal persistant",
-    "raison": "Chaque session recommencait a zero — perte de savoir accumule",
+    "raison": "Chaque session recommencait a zero \u2014 perte de savoir accumule",
     "validee_par": "Empereur",
     "impact": "ARSENAL/ + MEMORY/ survivent aux sessions. L'Empire accumule."
   },
@@ -21,8 +21,8 @@
     "id": "DEC_003",
     "date": "2026-03-29",
     "contexte": "Documentation .md dans l'Empire",
-    "decision": "VOX est Scribe de l'Empire — responsable de tous les .md sauf VULKAN_FORGE/CONTEXT/",
-    "raison": "Vide architectural identifie — personne ne gerait les .md de tracking",
+    "decision": "VOX est Scribe de l'Empire \u2014 responsable de tous les .md sauf VULKAN_FORGE/CONTEXT/",
+    "raison": "Vide architectural identifie \u2014 personne ne gerait les .md de tracking",
     "validee_par": "Empereur",
     "impact": "Toute entite creee recoit son .md de VOX. Pas de creation sans documentation."
   },
@@ -30,9 +30,18 @@
     "id": "DEC_004",
     "date": "2026-04-03",
     "contexte": "Ordre de developpement",
-    "decision": "Checklist 48 taches validee — Phase 0 VULKAN_FORGE en premier",
+    "decision": "Checklist 48 taches validee \u2014 Phase 0 VULKAN_FORGE en premier",
     "raison": "Arsenal de Vulkan est prerequis pour tout le reste",
     "validee_par": "Empereur",
     "impact": "Ordre canonique : P0 -> P1 -> P2 -> P3 -> P4 -> Phase 5"
+  },
+  {
+    "id": "DEC_005",
+    "date": "2026-04-05",
+    "contexte": "Placement des fixes operationnels dans le workflow",
+    "decision": "Tout fix operationnel s'integre dans le notebook de la fregate concernee \u2014 jamais dans TRACKING/",
+    "raison": "TRACKING/ est documentation + one-shot. Un fix dans TRACKING/ est orphelin et perdu en session suivante.",
+    "validee_par": "Empereur",
+    "impact": "Regle d'or : fregate U04 -> EXO_04_DARKROOM.ipynb. TRACKING/ = rapports et tests one-shot."
   }
 ]
