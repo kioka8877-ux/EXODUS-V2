@@ -76,6 +76,76 @@ def _stamp_custom_properties(active_layers: str) -> None:
     print(f"[ASSEMBLER] Custom properties stampées — layers={active_layers}")
 
 
+def _inject_actor(
+    actor_blend_dir: str,
+    scene_data: Dict,
+    collection_name: str = "ACTOR",
+) -> int:
+    """
+    Appends actor(s) from ACTOR_*.blend files into the current Blender scene.
+
+    Reads characters from scene_data (PRODUCTION_PLAN), finds ACTOR_*.blend
+    files in actor_blend_dir, appends all objects and links them to ACTOR
+    collection at scene origin.
+
+    Returns:
+        Number of actor objects appended (0 if none found or error).
+    """
+    if not actor_blend_dir:
+        print("[ASSEMBLER] actor_blend_dir vide — injection acteur ignorée")
+        return 0
+
+    actor_dir = Path(actor_blend_dir)
+    if not actor_dir.exists():
+        print(f"[ASSEMBLER:WARN] actor_blend_dir introuvable : {actor_dir} — injection ignorée")
+        return 0
+
+    characters = scene_data.get("characters", [])
+    if not characters:
+        print("[ASSEMBLER] Aucun personnage défini dans la scène — injection ignorée")
+        return 0
+
+    actor_blends = sorted(actor_dir.glob("ACTOR_*.blend"))
+    if not actor_blends:
+        print(f"[ASSEMBLER:WARN] Aucun ACTOR_*.blend trouvé dans {actor_dir}")
+        return 0
+
+    actor_coll = _ensure_collection(collection_name)
+    total_appended = 0
+
+    for i, char in enumerate(characters):
+        char_id = char.get("character_id", "unknown")
+        # Use actor blend by index (ACTOR_01 for first char, etc.) or first available
+        blend_path = actor_blends[min(i, len(actor_blends) - 1)]
+        print(f"[ASSEMBLER] Injection acteur : character_id={char_id!r} → {blend_path.name}")
+
+        try:
+            with bpy.data.libraries.load(str(blend_path), link=False) as (data_from, data_to):
+                data_to.objects = list(data_from.objects)
+
+            count = 0
+            for obj in data_to.objects:
+                if obj is None:
+                    continue
+                # Link to scene root if not already present
+                scene_obj_names = [o.name for o in bpy.context.scene.collection.objects]
+                if obj.name not in scene_obj_names:
+                    bpy.context.scene.collection.objects.link(obj)
+                # Also link to ACTOR collection
+                actor_coll_names = [o.name for o in actor_coll.objects]
+                if obj.name not in actor_coll_names:
+                    actor_coll.objects.link(obj)
+                count += 1
+
+            total_appended += count
+            print(f"[ASSEMBLER] {count} objet(s) acteur injecté(s) depuis {blend_path.name}")
+
+        except Exception as e:
+            print(f"[ASSEMBLER:ERROR] Echec injection acteur {blend_path.name} : {e}")
+
+    return total_appended
+
+
 def _collect_glass_planes_info() -> List[Dict]:
     glass_planes_info = []
     for obj in bpy.data.objects:
@@ -158,6 +228,7 @@ def assemble_scene(
     output_dir: str = ".",
     exposure_strength: float = 1.0,
     vram_profile: str = "colab_t4",
+    actor_blend_dir: str = "",
 ) -> Dict:
     """
     Assemble une scène complète Tri-Layer.
@@ -261,7 +332,16 @@ def assemble_scene(
     bpy.context.scene.camera = cam_obj
     print(f"[ASSEMBLER] Caméra default posée — lens=35mm, pos=(0,-15,8), rot=75°")
 
+    # ACTOR INJECTION — Phase Actor (ACTOR_*.blend depuis IN_SCENE_REF)
+    actor_count = _inject_actor(
+        actor_blend_dir=actor_blend_dir,
+        scene_data=scene_data,
+    )
+    actor_injected = actor_count > 0
+
     active_layers = "dome,shadow,world_sync,displacement,pbr,glass,camera"
+    if actor_injected:
+        active_layers += ",actor"
     _stamp_custom_properties(active_layers)
 
     try:
@@ -288,6 +368,8 @@ def assemble_scene(
         "exposure_strength": exposure_strength,
         "vram_profile": vram_profile,
         "hdri_used": resolved_hdri is not None,
+        "actor_injected": actor_injected,
+        "actor_objects_count": actor_count,
         "scene_report": scene_report,
     }
 
@@ -323,6 +405,8 @@ def main() -> None:
     parser.add_argument("--vram-profile", default="colab_t4",
                         choices=["colab_t4", "colab_a100", "local_low"],
                         help="Profil VRAM")
+    parser.add_argument("--actor-blend-dir", default="",
+                        help="Répertoire contenant les ACTOR_*.blend (ex : IN_SCENE_REF/)")
     args = parser.parse_args(argv)
 
     plan_path = Path(args.production_plan)
@@ -352,6 +436,7 @@ def main() -> None:
             output_dir=args.output_dir,
             exposure_strength=args.exposure,
             vram_profile=args.vram_profile,
+            actor_blend_dir=args.actor_blend_dir,
         )
         results.append(result)
 

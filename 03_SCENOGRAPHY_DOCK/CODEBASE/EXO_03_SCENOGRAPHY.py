@@ -232,6 +232,7 @@ def run_blender_scenography(
     depth_map_dir: str,
     semantic_masks: str,
     logger: ScenographyLogger,
+    actor_blend_dir: str = "",
 ) -> bool:
     """
     Exécute Blender en mode headless avec layer_assembler.py.
@@ -273,6 +274,8 @@ def run_blender_scenography(
         cmd.extend(["--depth-map-dir", depth_map_dir])
     if semantic_masks:
         cmd.extend(["--semantic-masks", semantic_masks])
+    if actor_blend_dir:
+        cmd.extend(["--actor-blend-dir", actor_blend_dir])
 
     logger.debug(f"Commande Blender : {' '.join(cmd[:8])}...")
 
@@ -412,6 +415,8 @@ Exemples:
                         help="Profil VRAM (défaut : colab_t4)")
     parser.add_argument("--exposure", type=float, default=1.0,
                         help="World Sync strength (défaut : 1.0)")
+    parser.add_argument("--actor-blend-dir",
+                        help="Répertoire des ACTOR_*.blend (défaut : auto-détection dans U04/IN_SCENE_REF)")
 
     args = parser.parse_args()
     logger = ScenographyLogger(verbose=args.verbose)
@@ -481,6 +486,21 @@ Exemples:
         logger.debug("semantic_masks.json non trouvé (D3 futur)")
 
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Auto-détection du répertoire actor blend
+    actor_blend_dir = ""
+    if args.actor_blend_dir:
+        actor_blend_dir = args.actor_blend_dir
+        logger.success(f"Actor blend dir (manuel) : {actor_blend_dir}")
+    else:
+        # Convention : U04/IN_SCENE_REF contient les ACTOR_*.blend
+        u04_scene_ref = drive_root / "04_PHOTOGRAPHY_WING" / "IN_SCENE_REF"
+        if u04_scene_ref.exists() and list(u04_scene_ref.glob("ACTOR_*.blend")):
+            actor_blend_dir = str(u04_scene_ref)
+            logger.success(f"Actor blend dir auto-détecté : {actor_blend_dir}")
+        else:
+            logger.warn("Aucun ACTOR_*.blend trouvé — scènes assemblées sans acteur")
+
     logger.success("Configuration validée")
 
     if args.dry_run:
@@ -510,6 +530,7 @@ Exemples:
         depth_map_dir=depth_map_dir,
         semantic_masks=semantic_masks,
         logger=logger,
+        actor_blend_dir=actor_blend_dir,
     )
 
     report = generate_report(
