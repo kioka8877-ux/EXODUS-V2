@@ -88,6 +88,14 @@ def parse_args() -> argparse.Namespace:
         "--verbose", "-v", action="store_true",
         help="Logs détaillés",
     )
+    parser.add_argument(
+        "--frame-start", type=int, default=None,
+        help="Frame de debut (default: depuis .blend)",
+    )
+    parser.add_argument(
+        "--frame-end", type=int, default=None,
+        help="Frame de fin (default: depuis .blend — mettre 10 pour test rapide)",
+    )
     return parser.parse_args()
 
 
@@ -157,6 +165,8 @@ def run_darkroom(
     preset: str,
     resume: bool,
     verbose: bool,
+    frame_start: int = None,
+    frame_end: int = None,
 ) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -172,6 +182,10 @@ def run_darkroom(
         cmd.append("--resume")
     if verbose:
         cmd.append("--verbose")
+    if frame_start is not None:
+        cmd += ["--start-frame", str(frame_start)]
+    if frame_end is not None:
+        cmd += ["--end-frame", str(frame_end)]
 
     log(f"Commande : {' '.join(cmd)}")
 
@@ -310,6 +324,8 @@ def main() -> None:
             preset=args.preset,
             resume=args.resume,
             verbose=args.verbose,
+            frame_start=args.frame_start,
+            frame_end=args.frame_end,
         )
         results.append(scene_result)
 
