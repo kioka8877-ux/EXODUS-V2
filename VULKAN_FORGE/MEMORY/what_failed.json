@@ -5,8 +5,8 @@
     "fregate": "U03",
     "contexte": "Premier geometry_probe",
     "tentative": "Lire vertices sans forcer depsgraph",
-    "echec": "4 vertices retournes \u2014 scene non evaluee",
-    "lecon": "Blender ne recalcule jamais le depsgraph automatiquement \u2014 toujours forcer update()"
+    "echec": "4 vertices retournes — scene non evaluee",
+    "lecon": "Blender ne recalcule jamais le depsgraph automatiquement — toujours forcer update()"
   },
   {
     "id": "FAIL_002",
@@ -14,8 +14,8 @@
     "fregate": "U04",
     "contexte": "Render test",
     "tentative": "Lancer render sans verifier camera",
-    "echec": "Frame noire \u2014 camera absente du scene graph",
-    "lecon": "Verifier scene.camera AVANT render \u2014 erreur silencieuse sinon"
+    "echec": "Frame noire — camera absente du scene graph",
+    "lecon": "Verifier scene.camera AVANT render — erreur silencieuse sinon"
   },
   {
     "id": "FAIL_003",
@@ -23,7 +23,23 @@
     "fregate": "U04",
     "contexte": "Fix camera injection VULKAN_CAMERA_FIX_v1",
     "tentative": "Placer le script fix dans TRACKING/ comme script one-shot",
-    "echec": "Script orphelin \u2014 non integre au workflow fregate, introuvable en session suivante",
+    "echec": "Script orphelin — non integre au workflow fregate, introuvable en session suivante",
     "lecon": "Fix operationnel = dans la fregate concernee (notebook). TRACKING/ = documentation et tests one-shot uniquement"
+  },
+  {
+    "id": "FAIL_004",
+    "fix_id": "VULKAN_U04_FRAME_ISOLATION_v1",
+    "date": "2026-04-07",
+    "fregate": "U04",
+    "contexte": "Rendu batch 3 scènes x 10 frames = 30 renders",
+    "tentative": "Passer output_dir identique (OUT_CAMERA_LOGIC/) à toutes les scènes",
+    "echec": "Chaque scène écrasait les frames de la précédente — seulement 10 fichiers sur disque au lieu de 30",
+    "lecon": "Toujours créer un sous-dossier par scène (output_dir / scene_name) avant d'appeler Blender headless",
+    "fix_applique": {
+      "fichier": "04_PHOTOGRAPHY_WING/CODEBASE/EXO_04_DARKROOM.py",
+      "changement": "Ajout de scene_name = bf.stem + scene_output_dir = output_dir / scene_name dans la boucle principale",
+      "commit": "94ebf5168415834438db9bfaf101b5cabe8dff6f"
+    },
+    "output_attendu": "OUT_CAMERA_LOGIC/scene_ready_01/, scene_ready_02/, scene_ready_03/ — 10 frames chacun"
   }
 ]
