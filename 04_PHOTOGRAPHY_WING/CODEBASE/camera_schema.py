@@ -226,7 +226,7 @@ RENDER_PRESETS: Dict[str, dict] = {
     "production": {
         "engine": "CYCLES",
         "samples": 256,
-        "resolution": (2160, 3840),
+        "resolution": (3840, 2160),
         "use_denoising": True,
         "denoiser": "OPENIMAGEDENOISE",
         "use_adaptive_sampling": True,
@@ -237,7 +237,7 @@ RENDER_PRESETS: Dict[str, dict] = {
     "darkroom": {
         "engine": "CYCLES",
         "samples": 128,
-        "resolution": (1080, 1920),
+        "resolution": (1920, 1080),
         "use_denoising": True,
         "denoiser": "OPENIMAGEDENOISE",
         "use_adaptive_sampling": True,
@@ -250,7 +250,7 @@ RENDER_PRESETS: Dict[str, dict] = {
     "preview": {
         "engine": "CYCLES",
         "samples": 64,
-        "resolution": (1080, 1920),
+        "resolution": (1920, 1080),
         "use_denoising": True,
         "denoiser": "OPENIMAGEDENOISE",
         "use_adaptive_sampling": True,
@@ -559,9 +559,9 @@ if __name__ == "__main__":
         if dr["samples"] != 128:
             t7_ok = False
             print(f"  ERREUR darkroom.samples = {dr['samples']} (attendu 128)")
-        if dr["resolution"] != (1080, 1920):
+        if dr["resolution"] != (1920, 1080):
             t7_ok = False
-            print(f"  ERREUR darkroom.resolution = {dr['resolution']} (attendu (1080, 1920))")
+            print(f"  ERREUR darkroom.resolution = {dr['resolution']} (attendu (1920, 1080))")
         if dr["denoiser"] != "OPENIMAGEDENOISE":
             t7_ok = False
             print(f"  ERREUR darkroom.denoiser = {dr['denoiser']} (attendu OPENIMAGEDENOISE)")
