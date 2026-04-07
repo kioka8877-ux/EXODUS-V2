@@ -288,7 +288,9 @@ def run_blender_scenography(
         return False
 
     if result.stdout:
-        logger.debug(f"STDOUT : {result.stdout[-1000:]}")
+        logger.debug(f"STDOUT (complet) :\n{result.stdout}")
+    if result.stderr:
+        logger.debug(f"STDERR (complet) :\n{result.stderr}")
     logger.success("Blender Tri-Layer Engine terminé")
     return True
 
