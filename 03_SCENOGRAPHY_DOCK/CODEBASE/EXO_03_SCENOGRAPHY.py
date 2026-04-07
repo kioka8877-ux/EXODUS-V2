@@ -376,6 +376,71 @@ def generate_report(
 
 
 # =============================================================================
+# OUTPUT COPY — U03 → U04
+# =============================================================================
+
+def copy_outputs_to_u04(
+    output_dir: Path,
+    drive_root: Path,
+    plan: dict,
+    logger: ScenographyLogger,
+) -> int:
+    """
+    Copie et renomme les .blend produits par U03 vers 04_PHOTOGRAPHY_WING/IN_SCENE_REF.
+
+    Mapping :
+        OUT_PREMIUM_SCENE/environment_{scene_id}.blend
+        → 04_PHOTOGRAPHY_WING/IN_SCENE_REF/scene_ready_{XX:02d}.blend
+
+    Copie aussi assembler_results.json pour traçabilité U04.
+
+    Returns:
+        Nombre de fichiers copiés.
+    """
+    u04_scene_ref = drive_root / "04_PHOTOGRAPHY_WING" / "IN_SCENE_REF"
+    u04_scene_ref.mkdir(parents=True, exist_ok=True)
+
+    # Lire assembler_results pour connaître l'ordre des scènes
+    assembler_path = output_dir / "assembler_results.json"
+    assembler_results = []
+    if assembler_path.exists():
+        try:
+            with open(assembler_path, "r", encoding="utf-8") as f:
+                assembler_results = json.load(f)
+        except Exception as e:
+            logger.warn(f"Impossible de lire assembler_results.json : {e}")
+
+    # Fallback : utiliser l'ordre des scènes du PRODUCTION_PLAN
+    if not assembler_results:
+        scenes = plan.get("scenes", [])
+        assembler_results = [{"scene_id": s.get("scene_id")} for s in scenes]
+
+    copied = 0
+    for idx, result in enumerate(assembler_results, start=1):
+        scene_id = result.get("scene_id")
+        if not scene_id:
+            continue
+
+        src = output_dir / f"environment_{scene_id}.blend"
+        if not src.exists():
+            logger.warn(f"Fichier source introuvable, ignoré : {src.name}")
+            continue
+
+        dst = u04_scene_ref / f"scene_ready_{idx:02d}.blend"
+        shutil.copy2(src, dst)
+        logger.success(f"[U03→U04] {src.name} → {dst.name}")
+        copied += 1
+
+    # Copier assembler_results.json pour traçabilité U04
+    if assembler_path.exists():
+        shutil.copy2(assembler_path, u04_scene_ref / "assembler_results.json")
+        logger.success("[U03→U04] assembler_results.json copié vers IN_SCENE_REF")
+
+    logger.success(f"[U03→U04] {copied} scène(s) transférée(s) vers {u04_scene_ref}")
+    return copied
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -561,6 +626,14 @@ Exemples:
         }).save()
         logger.info("ATLAS: session U03 sauvegardee")
 
+    # Copie et renommage outputs U03 → U04
+    copy_outputs_to_u04(
+        output_dir=output_dir,
+        drive_root=drive_root,
+        plan=plan,
+        logger=logger,
+    )
+
     print(f"\n{'='*70}")
     logger.success("CONSTRUCTION TRI-LAYER TERMINÉE")
     print(f"  Pipeline  : TRI-LAYER V2 (D1 — Dome + Shadow + World Sync)")
@@ -575,4 +648,5 @@ Exemples:
 
 if __name__ == "__main__":
     sys.exit(main())
+
 
