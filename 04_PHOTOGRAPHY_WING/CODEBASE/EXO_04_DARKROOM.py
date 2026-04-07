@@ -316,10 +316,16 @@ def main() -> None:
         log(f"SCÈNE {idx}/{len(blend_files)} : {bf.name}")
         log(f"{'=' * 60}")
 
+        # [VULKAN_U04_FRAME_ISOLATION_v1] Sous-dossier isolé par scène
+        scene_name = bf.stem  # ex: "scene_ready_01"
+        scene_output_dir = output_dir / scene_name
+        scene_output_dir.mkdir(parents=True, exist_ok=True)
+        log(f"[DARKROOM] Output isolé : {scene_output_dir}")
+
         scene_result = run_darkroom(
             blender_path=args.blender_path,
             blend_file=bf,
-            output_dir=output_dir,
+            output_dir=scene_output_dir,
             chunk_size=args.chunk_size,
             preset=args.preset,
             resume=args.resume,
