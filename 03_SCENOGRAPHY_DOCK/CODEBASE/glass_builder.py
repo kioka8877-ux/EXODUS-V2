@@ -94,8 +94,13 @@ def build_glass_planes(
     with open(masks_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    masks = data.get("masks", [])
-    image_size = data.get("image_size", [1920, 1080])
+    # semantic_masks.json peut être une liste à la racine OU un dict {"masks": [...]}
+    if isinstance(data, list):
+        masks = data
+        image_size = [1920, 1080]
+    else:
+        masks = data.get("masks", [])
+        image_size = data.get("image_size", [1920, 1080])
     img_w, img_h = image_size[0], image_size[1]
 
     glass_masks = [m for m in masks if m.get("label") == "glass"]

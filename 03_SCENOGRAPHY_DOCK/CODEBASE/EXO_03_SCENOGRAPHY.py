@@ -281,16 +281,19 @@ def run_blender_scenography(
 
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
 
-    if result.returncode != 0:
-        logger.error(f"Blender échoué (code {result.returncode})")
-        if result.stderr:
-            logger.error(f"STDERR : {result.stderr[-2000:]}")
-        return False
-
     if result.stdout:
         logger.debug(f"STDOUT (complet) :\n{result.stdout}")
     if result.stderr:
         logger.debug(f"STDERR (complet) :\n{result.stderr}")
+
+    # Détection crash Python Blender : exit code 0 même en cas d'exception Python
+    stderr_has_crash = result.stderr and "Traceback" in result.stderr
+    if result.returncode != 0 or stderr_has_crash:
+        logger.error(f"Blender crash — code={result.returncode}, traceback_détecté={bool(stderr_has_crash)}")
+        if result.stderr:
+            logger.error(f"STDERR :\n{result.stderr}")
+        return False
+
     logger.success("Blender Tri-Layer Engine terminé")
     return True
 
