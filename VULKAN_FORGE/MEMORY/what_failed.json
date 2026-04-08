@@ -79,5 +79,26 @@
     },
     "structure_u04": "OUT_CAMERA_LOGIC/scene_ready_01/*.png, scene_ready_02/*.png, scene_ready_03/*.png",
     "timestamp": "2026-04-08T00:00:00Z"
+  },
+  {
+    "id": "FAIL_007",
+    "fix_id": "VULKAN_U05_VALIDATION_v1",
+    "date": "2026-04-08",
+    "fregate": "U05",
+    "contexte": "EXO_05_VALIDATION_10F.ipynb — Cell 10 Pre-flight scan",
+    "tentative": "IN_RAW_FRAMES.glob('*.png') + IN_RAW_FRAMES.glob('*.exr') pour trouver frames",
+    "echec": "IN_RAW_FRAMES contient seulement _LINK.json (phantom link). glob plat ne resout pas le lien et ne descend pas dans les sous-dossiers U04. Resultat : all_frames = [] → blocage total.",
+    "lecon": "Toujours resoudre le Phantom Link (resolve_input) AVANT de scanner les frames. Et toujours detecter mode plat vs sous-dossiers (structure U04 isolation).",
+    "fix_applique": {
+      "fichier": "05_ALCHEMIST_LAB/CODEBASE/EXO_05_VALIDATION_10F.ipynb",
+      "changement": "Cell 10 : ajout resolve_input() + validate_link() + detection auto mode plat/sous-dossiers/rglob. Cell 14 : scene ID extrait du sous-dossier parent en priorite. Cell 2 : sys.path DRIVE_ROOT pour import phantom_link.",
+      "commit": "23254d3e1795b1a4ee078c8fd4ffa578dbad95ce"
+    },
+    "symptomes_run": [
+      "Total frames disponibles : 0",
+      "Frames suffisantes (10 requis) : NON",
+      "Pipeline bloque avant execution"
+    ],
+    "timestamp": "2026-04-08T00:00:00Z"
   }
 ]
