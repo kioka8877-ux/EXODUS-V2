@@ -27,6 +27,7 @@ import argparse
 import json
 import os
 import sys
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -147,40 +148,95 @@ def validate_production_plan(plan_path: Path, logger: AlchemistLogger) -> dict:
     return plan
 
 
+def _extract_scene_id_from_name(name: str) -> int:
+    """Extrait un scene ID depuis un nom de fichier ou de dossier."""
+    name = name.lower()
+    if "_scene_" in name:
+        try:
+            parts = name.split("_scene_")
+            return int(parts[1].split("_")[0])
+        except (ValueError, IndexError):
+            pass
+    if "scene" in name:
+        try:
+            idx = name.index("scene")
+            num_str = ""
+            for c in name[idx + 5:]:
+                if c.isdigit():
+                    num_str += c
+                elif num_str:
+                    break
+            if num_str:
+                return int(num_str)
+        except (ValueError, IndexError):
+            pass
+    nums = re.findall(r"\d+", name)
+    if nums:
+        return int(nums[-1])
+    return 1
+
+
 def scan_render_frames(render_dir: Path, logger: AlchemistLogger, scene_id: int = None) -> Dict[int, List[Path]]:
-    """Scanne render_dir pour trouver les frames par scène."""
+    """Scanne render_dir pour trouver les frames par scene.
+
+    Supporte deux structures :
+      - Plat    : render_dir/*.png|*.exr  (ancienne structure)
+      - Sous-dossiers : render_dir/scene_XX/*.png (structure U04 — isolation par scene)
+
+    La structure sous-dossiers prend priorite si aucun fichier image n'est
+    present a la racine de render_dir. L'ID de scene est extrait du nom du
+    sous-dossier (ex. scene_ready_01 -> sid=1).
+    """
     sequences: Dict[int, List[Path]] = {}
 
     if not render_dir.exists():
         logger.warn(f"Dossier render introuvable: {render_dir}")
         return sequences
 
-    all_files = sorted(render_dir.iterdir())
-    for f in all_files:
-        if f.suffix.lower() not in SUPPORTED_INPUT_FORMATS:
-            continue
+    # ── Detecter la structure ─────────────────────────────────────────
+    direct_images = [
+        f for f in render_dir.iterdir()
+        if f.is_file() and f.suffix.lower() in SUPPORTED_INPUT_FORMATS
+    ]
+    subdirs = sorted([
+        d for d in render_dir.iterdir()
+        if d.is_dir() and not d.name.startswith(".")
+    ])
 
-        name = f.stem.lower()
-        sid = 1
-        if "_scene_" in name:
-            try:
-                parts = name.split("_scene_")
-                sid = int(parts[1].split("_")[0])
-            except (ValueError, IndexError):
-                pass
-        elif "scene" in name:
-            try:
-                idx = name.index("scene")
-                num_str = ""
-                for c in name[idx + 5:]:
-                    if c.isdigit():
-                        num_str += c
-                    elif num_str:
-                        break
-                if num_str:
-                    sid = int(num_str)
-            except (ValueError, IndexError):
-                pass
+    if direct_images:
+        # Mode plat — fichiers directement a la racine
+        logger.debug(f"[MARSHAL] Mode plat : {len(direct_images)} fichiers dans {render_dir.name}/")
+        candidates = [(f, render_dir) for f in direct_images]
+
+    elif subdirs:
+        # Mode sous-dossiers — structure U04 isolation par scene
+        logger.debug(f"[MARSHAL] Mode sous-dossiers : {len(subdirs)} dossiers de scenes dans {render_dir.name}/")
+        candidates = []
+        for subdir in subdirs:
+            sub_images = [
+                f for f in sorted(subdir.iterdir())
+                if f.is_file() and f.suffix.lower() in SUPPORTED_INPUT_FORMATS
+            ]
+            logger.debug(f"  {subdir.name}/ → {len(sub_images)} frames")
+            candidates.extend((f, subdir) for f in sub_images)
+
+    else:
+        # Fallback rglob — structure inconnue
+        logger.debug(f"[MARSHAL] Mode rglob (fallback) dans {render_dir.name}/")
+        all_found = sorted(render_dir.rglob("*"))
+        candidates = [
+            (f, f.parent) for f in all_found
+            if f.is_file() and f.suffix.lower() in SUPPORTED_INPUT_FORMATS
+        ]
+
+    # ── Assigner les scene IDs ────────────────────────────────────────
+    for f, parent in candidates:
+        if parent != render_dir:
+            # Scene ID depuis le nom du sous-dossier (priorite)
+            sid = _extract_scene_id_from_name(parent.name)
+        else:
+            # Scene ID depuis le nom du fichier (mode plat)
+            sid = _extract_scene_id_from_name(f.stem)
 
         if scene_id is not None and sid != scene_id:
             continue
@@ -190,7 +246,8 @@ def scan_render_frames(render_dir: Path, logger: AlchemistLogger, scene_id: int 
     for sid in sequences:
         sequences[sid] = sorted(sequences[sid])
 
-    logger.info(f"Frames render trouvées: {sum(len(v) for v in sequences.values())} dans {len(sequences)} scène(s)")
+    total_frames = sum(len(v) for v in sequences.values())
+    logger.info(f"Frames render trouvees: {total_frames} dans {len(sequences)} scene(s)")
     for sid, files in sorted(sequences.items()):
         logger.debug(f"  Scene {sid}: {len(files)} frames")
 
@@ -684,3 +741,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
