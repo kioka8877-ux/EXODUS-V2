@@ -41,5 +41,26 @@
       "commit": "94ebf5168415834438db9bfaf101b5cabe8dff6f"
     },
     "output_attendu": "OUT_CAMERA_LOGIC/scene_ready_01/, scene_ready_02/, scene_ready_03/ — 10 frames chacun"
+  },
+  {
+    "id": "FAIL_005",
+    "fix_id": "VULKAN_U05_PHANTOM_LINK_CONTROL_v1",
+    "date": "2026-04-08",
+    "fregate": "U05",
+    "contexte": "CONTROL notebook section verification structure",
+    "tentative": "Verifier presence physique de fichiers dans IN_RAW_FRAMES/",
+    "echec": "CONTROL cherchait des fichiers physiques dans IN_RAW_FRAMES/ alors que U05 utilise le Phantom Link Marshal — dossier toujours vide par design (zero copie)",
+    "lecon": "Pour toute fregate utilisant le Phantom Link : verifier _LINK.json + resoudre la source, PAS les fichiers physiques dans IN/",
+    "fix_applique": {
+      "fichier": "05_ALCHEMIST_LAB/CODEBASE/EXO_05_CONTROL.ipynb",
+      "changement": "Ajout section 2.5 Marshal Phantom Link Check : validate_link() + mode degrade auto + cellule test Marshal explicite. Checklist mise a jour avec MARSHAL_STATUS.",
+      "commit": "99eb395405849eaef5b9ea06d61e8a9581bfed24"
+    },
+    "solution": "validate_link() retourne LINK_OK | LOCAL_OK | EMPTY. EMPTY → DEGRADED_FLAGS automatiques. Pipeline ne crash plus.",
+    "description": "CONTROL notebook checked physical frames instead of Marshal link",
+    "files_modified": [
+      "05_ALCHEMIST_LAB/CODEBASE/EXO_05_CONTROL.ipynb"
+    ],
+    "timestamp": "2026-04-08T00:00:00Z"
   }
 ]
