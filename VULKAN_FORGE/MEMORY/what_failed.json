@@ -62,5 +62,22 @@
       "05_ALCHEMIST_LAB/CODEBASE/EXO_05_CONTROL.ipynb"
     ],
     "timestamp": "2026-04-08T00:00:00Z"
+  },
+  {
+    "id": "FAIL_006",
+    "fix_id": "VULKAN_U05_SCAN_FRAMES_v1",
+    "date": "2026-04-08",
+    "fregate": "U05",
+    "contexte": "scan_render_frames dans EXO_05_ALCHEMIST.py",
+    "tentative": "render_dir.iterdir() plat pour trouver les frames",
+    "echec": "U04 cree des sous-dossiers par scene (FAIL_004 fix) — iterdir() plat ne descend pas dedans, 0 frames trouvees",
+    "lecon": "Toujours detecter la structure du dossier source : si sous-dossiers present → scanner recursivement. Le systeme de sous-dossiers U04 est intentionnel (isolation anti-ecrasement).",
+    "fix_applique": {
+      "fichier": "05_ALCHEMIST_LAB/CODEBASE/EXO_05_ALCHEMIST.py",
+      "changement": "scan_render_frames reecrite : mode plat (fichiers racine), mode sous-dossiers (structure U04), mode rglob (fallback). Scene ID extrait du nom du sous-dossier en priorite. Ajout _extract_scene_id_from_name() helper.",
+      "commit": "9ea97e66358c6b73078d3fd73bc9331f994fda52"
+    },
+    "structure_u04": "OUT_CAMERA_LOGIC/scene_ready_01/*.png, scene_ready_02/*.png, scene_ready_03/*.png",
+    "timestamp": "2026-04-08T00:00:00Z"
   }
 ]
