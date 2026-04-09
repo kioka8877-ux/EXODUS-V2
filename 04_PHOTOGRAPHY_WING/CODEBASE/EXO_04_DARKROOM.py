@@ -7,6 +7,10 @@
 ║  Lance darkroom_render.py dans Blender headless pour chaque scene_ready.    ║
 ║  Chunks de 300 frames + checkpoint JSON + auto-resume.                      ║
 ║  ATOM-IC : 1080p → U06 Real-ESRGAN → 4K                                    ║
+║                                                                              ║
+║  FIX #3 — VULKAN_FORGE 2026-04-09                                           ║
+║  - generate_report() inclut aspect_ratio_applied par scène                  ║
+║  - Auto-résolution camera_fov_ratio.json si présent dans U00                ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 Usage:
@@ -35,7 +39,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from camera_schema import RENDER_PRESETS, TARGET_FPS
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"  # FIX #3 — aspect_ratio_applied dans rapport
 DARKROOM_SCRIPT = Path(__file__).parent / "darkroom_render.py"
 
 
@@ -98,9 +102,26 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--camera-fov-json", type=str, default=None,
-        help="Chemin vers camera_fov_ratio.json (U00) pour override resolution 9:16",
+        help="Chemin vers camera_fov_ratio.json (U00) pour override résolution 9:16",
     )
     return parser.parse_args()
+
+
+def _auto_detect_fov_json(drive_root: Path) -> str | None:
+    """
+    FIX #3 — Cherche automatiquement camera_fov_ratio.json dans U00.
+    Retourne le chemin si trouvé, None sinon.
+    """
+    candidates = [
+        drive_root / "00_CORTEX_HQ" / "OUT_PRODUCTION_PLAN" / "camera_fov_ratio.json",
+        drive_root / "00_CORTEX_HQ" / "camera_fov_ratio.json",
+        drive_root / "camera_fov_ratio.json",
+    ]
+    for c in candidates:
+        if c.exists():
+            log(f"[U04] camera_fov_ratio.json auto-détecté : {c}")
+            return str(c)
+    return None
 
 
 def find_blend_files(drive_root: Path) -> list[Path]:
@@ -219,20 +240,65 @@ def generate_report(
     preset: str,
     chunk_size: int,
     total_elapsed: float,
+    camera_fov_json: str | None = None,
 ) -> Path:
+    """
+    FIX #3 — Génère darkroom_report.json avec aspect_ratio_applied.
+    Lit camera_fov_ratio.json si disponible pour documenter le ratio.
+    """
     report_path = output_dir / "darkroom_report.json"
 
     total_frames = sum(r["frames_on_disk"] for r in results)
     total_size_mb = sum(r["total_size_mb"] for r in results)
     avg_spf = total_elapsed / total_frames if total_frames > 0 else 0
 
+    # ── FIX #3 : Dériver aspect_ratio_applied depuis camera_fov_ratio.json ──
+    aspect_ratio_applied = "16:9"  # fallback
+    resolution_applied = "1920x1080"
+    fov_deg_applied = None
+    lens_mm_applied = None
+
+    if camera_fov_json and Path(camera_fov_json).exists():
+        try:
+            with open(camera_fov_json, "r", encoding="utf-8") as f:
+                fov_data = json.load(f)
+            ar = fov_data.get("aspect_ratio")
+            if ar is not None:
+                ar = float(ar)
+                if abs(ar - 9.0 / 16.0) < 0.02:
+                    aspect_ratio_applied = "9:16"
+                    resolution_applied = "1080x1920"
+                elif abs(ar - 16.0 / 9.0) < 0.02:
+                    aspect_ratio_applied = "16:9"
+                    resolution_applied = "1920x1080"
+                else:
+                    aspect_ratio_applied = str(round(ar, 4))
+            elif "resolution" in fov_data:
+                res = fov_data["resolution"]
+                if isinstance(res, list) and len(res) == 2:
+                    resolution_applied = f"{res[0]}x{res[1]}"
+                    aspect_ratio_applied = "9:16" if res[0] < res[1] else "16:9"
+            fov_deg_applied = fov_data.get("fov_deg") or fov_data.get("estimated_fov_degrees")
+            lens_mm_applied = fov_data.get("lens_mm") or fov_data.get("focal_length_mm")
+        except Exception as e:
+            log(f"[U04] WARNING — Impossible de lire camera_fov_ratio.json pour rapport : {e}")
+    # ─────────────────────────────────────────────────────────────────────────
+
+    preset_cfg = RENDER_PRESETS.get(preset, {})
     report = {
         "version": VERSION,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "preset": preset,
         "chunk_size": chunk_size,
-        "resolution": list(RENDER_PRESETS.get(preset, {}).get("resolution", (0, 0))),
-        "samples": RENDER_PRESETS.get(preset, {}).get("samples", 0),
+        "resolution": list(preset_cfg.get("resolution", (0, 0))),
+        "samples": preset_cfg.get("samples", 0),
+        # ── FIX #3 : champs aspect ratio ─────────────────────────────────────
+        "aspect_ratio_applied": aspect_ratio_applied,
+        "resolution_applied": resolution_applied,
+        "fov_deg_applied": fov_deg_applied,
+        "lens_mm_applied": lens_mm_applied,
+        "camera_fov_json_used": camera_fov_json is not None and Path(camera_fov_json).exists() if camera_fov_json else False,
+        # ─────────────────────────────────────────────────────────────────────
         "scenes": results,
         "summary": {
             "total_scenes": len(results),
@@ -247,6 +313,7 @@ def generate_report(
     with open(report_path, "w") as f:
         json.dump(report, f, indent=2)
     log(f"Rapport : {report_path}")
+    log(f"[U04] aspect_ratio_applied={aspect_ratio_applied} | resolution={resolution_applied}")
     return report_path
 
 
@@ -265,6 +332,15 @@ def main() -> None:
     log(f"  Chunk size    : {args.chunk_size}")
     log(f"  Resume        : {args.resume}")
     log(f"  Dry-run       : {args.dry_run}")
+
+    # ── FIX #3 : Auto-détection camera_fov_ratio.json si non fourni ──────────
+    camera_fov_json = args.camera_fov_json
+    if not camera_fov_json:
+        camera_fov_json = _auto_detect_fov_json(drive_root)
+        if not camera_fov_json:
+            log("[U04] WARNING — camera_fov_ratio.json introuvable dans U00 — résolution preset (16:9)")
+    log(f"  FOV JSON      : {camera_fov_json or 'N/A (fallback 16:9)'}")
+    # ─────────────────────────────────────────────────────────────────────────
 
     if not validate_preset(args.preset):
         log(f"ERREUR : Preset '{args.preset}' inconnu. "
@@ -301,7 +377,6 @@ def main() -> None:
 
     if args.dry_run:
         log("\n=== DRY-RUN — Plan de rendu ===")
-        preset_cfg = RENDER_PRESETS[args.preset]
         for bf in blend_files:
             log(f"\n  Scene : {bf.name}")
             est = estimate_render(1800, args.preset)
@@ -323,8 +398,7 @@ def main() -> None:
         log(f"SCÈNE {idx}/{len(blend_files)} : {bf.name}")
         log(f"{'=' * 60}")
 
-        # [VULKAN_U04_FRAME_ISOLATION_v1] Sous-dossier isolé par scène
-        scene_name = bf.stem  # ex: "scene_ready_01"
+        scene_name = bf.stem
         scene_output_dir = output_dir / scene_name
         scene_output_dir.mkdir(parents=True, exist_ok=True)
         log(f"[DARKROOM] Output isolé : {scene_output_dir}")
@@ -339,7 +413,7 @@ def main() -> None:
             verbose=args.verbose,
             frame_start=args.frame_start,
             frame_end=args.frame_end,
-            camera_fov_json=args.camera_fov_json,
+            camera_fov_json=camera_fov_json,
         )
         results.append(scene_result)
 
@@ -353,7 +427,10 @@ def main() -> None:
 
     t_total = time.time() - t_total_start
 
-    report_path = generate_report(output_dir, results, args.preset, args.chunk_size, t_total)
+    report_path = generate_report(
+        output_dir, results, args.preset, args.chunk_size, t_total,
+        camera_fov_json=camera_fov_json,
+    )
 
     log("\n" + "=" * 60)
     log("EXO_04_DARKROOM — TERMINÉ")
