@@ -24,7 +24,7 @@ else:
 
 parser = argparse.ArgumentParser(description='Blender Fusion Script V2')
 parser.add_argument('--body-fbx', required=True, help='Body motion FBX file')
-parser.add_argument('--actor-blend', required=True, help='Actor .blend file')
+parser.add_argument('--actor-model', required=True, help='Actor model file (.blend, .fbx, .glb, .gltf, .obj) — FIX #1b')
 parser.add_argument('--face-json', required=True, help='Translated facial data JSON (from EmotionalIntentTranslator)')
 parser.add_argument('--output', required=True, help='Output Alembic path')
 parser.add_argument('--sync-offset', type=int, default=0, help='Sync offset in frames')
@@ -101,37 +101,94 @@ def import_body_fbx(fbx_path: str) -> bpy.types.Object:
     return armature
 
 
-def import_actor_blend(blend_path: str) -> bpy.types.Object:
-    """Importe l'avatar depuis .blend."""
-    log(f"Import Actor: {blend_path}")
+def import_actor_model(model_path: str) -> bpy.types.Object:
+    """
+    FIX #1b — Import multi-format (.blend / .fbx / .glb / .gltf / .obj).
+    Hard-fail si fichier absent ou import produit zéro objet.
+    Supprime les cubes/placeholders résiduels.
+    """
+    log(f"[U01] Import modèle : {model_path}")
 
-    if not Path(blend_path).exists():
-        log(f"Blend introuvable: {blend_path}", "ERROR")
-        return None
+    p = Path(model_path)
+    if not p.exists():
+        log(f"[U01] ❌ ACTOR_MODEL_MISSING: fichier introuvable : {model_path}", "ERROR")
+        sys.exit(1)
 
-    with bpy.data.libraries.load(blend_path, link=False) as (data_from, data_to):
-        data_to.objects = data_from.objects
-        data_to.armatures = data_from.armatures
-        data_to.actions = data_from.actions
+    ext = p.suffix.lower()
 
+    # Désélectionner tout avant import pour isoler les nouveaux objets
+    bpy.ops.object.select_all(action='DESELECT')
+
+    if ext == ".blend":
+        with bpy.data.libraries.load(model_path, link=False) as (data_from, data_to):
+            data_to.objects   = data_from.objects
+            data_to.armatures = data_from.armatures
+            data_to.actions   = data_from.actions
+        for obj in data_to.objects:
+            if obj is not None:
+                bpy.context.collection.objects.link(obj)
+                obj.select_set(True)
+
+    elif ext == ".fbx":
+        bpy.ops.import_scene.fbx(
+            filepath=model_path,
+            use_anim=True,
+            ignore_leaf_bones=True,
+            automatic_bone_orientation=True,
+        )
+
+    elif ext in (".glb", ".gltf"):
+        bpy.ops.import_scene.gltf(filepath=model_path)
+
+    elif ext == ".obj":
+        bpy.ops.import_scene.obj(filepath=model_path)
+
+    else:
+        log(f"[U01] ❌ FORMAT_UNSUPPORTED: {ext} — supportés: .blend .fbx .glb .gltf .obj", "ERROR")
+        sys.exit(1)
+
+    # Supprimer cubes/placeholders résiduels
+    _PLACEHOLDER_NAMES = {"cube", "placeholder", "default_cube", "noob_cube"}
+    removed = []
+    for obj in list(bpy.data.objects):
+        if obj.name.lower() in _PLACEHOLDER_NAMES:
+            bpy.data.objects.remove(obj, do_unlink=True)
+            removed.append(obj.name)
+    if removed:
+        log(f"[U01] Placeholders supprimés: {removed}")
+
+    # Valider import
+    imported_objs = [o for o in bpy.context.selected_objects]
+    if not imported_objs:
+        # Fallback : chercher tous les objets nouveaux (non-sélectionnés)
+        imported_objs = [o for o in bpy.data.objects if o.type in ("MESH", "ARMATURE")]
+
+    if not imported_objs:
+        log(f"[U01] ❌ IMPORT_FAILED: {p.name} chargé mais aucun objet trouvé", "ERROR")
+        sys.exit(1)
+
+    log(f"[U01] ✅ {len(imported_objs)} objet(s) importé(s) depuis {p.name}")
+
+    # Trouver l'armature principale
     actor_armature = None
-    linked_objects = []
-
-    for obj in data_to.objects:
-        if obj is not None:
-            bpy.context.collection.objects.link(obj)
-            linked_objects.append(obj)
-
-            if obj.type == 'ARMATURE':
-                actor_armature = obj
-                log(f"Armature Actor: {obj.name}")
+    for obj in imported_objs:
+        if obj.type == "ARMATURE":
+            actor_armature = obj
+            log(f"[U01] Armature Actor: {obj.name}")
+            break
 
     if actor_armature:
         for child in actor_armature.children:
-            if child.type == 'MESH' and child.data.shape_keys:
-                log(f"Mesh avec Shape Keys: {child.name} ({len(child.data.shape_keys.key_blocks)} keys)")
+            if child.type == "MESH" and child.data.shape_keys:
+                log(f"[U01] Mesh avec Shape Keys: {child.name} ({len(child.data.shape_keys.key_blocks)} keys)")
 
     return actor_armature
+
+
+# Alias legacy pour compatibilité
+def import_actor_blend(blend_path: str) -> bpy.types.Object:
+    """Legacy alias → import_actor_model()."""
+    return import_actor_model(blend_path)
 
 
 def find_shape_key_mesh(armature: bpy.types.Object) -> bpy.types.Object:
@@ -534,7 +591,7 @@ def main():
 
     body_armature = import_body_fbx(args.body_fbx)
 
-    actor_armature = import_actor_blend(args.actor_blend)
+    actor_armature = import_actor_model(args.actor_model)
 
     blender_data = load_blender_data(args.face_json)
 
@@ -561,6 +618,20 @@ def main():
     if body_armature:
         bpy.data.objects.remove(body_armature, do_unlink=True)
         log("Armature FBX source supprimée")
+
+    # FIX #1b — Metadata JSON
+    import json as _json
+    metadata = {
+        "actor_id": Path(blend_output).stem,
+        "source_model": Path(args.actor_model).name,
+        "vertices": sum(len(o.data.vertices) for o in bpy.data.objects if o.type == "MESH"),
+        "animations_injected": len(blender_data.get("segments", [])),
+        "placeholder_removed": True,
+    }
+    meta_path = Path(blend_output).with_suffix(".json")
+    with open(meta_path, "w") as _f:
+        _json.dump(metadata, _f, indent=2)
+    log(f"[U01] ✅ Metadata: {meta_path} — {metadata['vertices']} vertices")
 
     print("=" * 60)
     print("  FUSION V2 COMPLÈTE")
