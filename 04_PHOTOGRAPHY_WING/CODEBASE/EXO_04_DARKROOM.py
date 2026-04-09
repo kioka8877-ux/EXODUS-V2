@@ -96,6 +96,10 @@ def parse_args() -> argparse.Namespace:
         "--frame-end", type=int, default=None,
         help="Frame de fin (default: depuis .blend — mettre 10 pour test rapide)",
     )
+    parser.add_argument(
+        "--camera-fov-json", type=str, default=None,
+        help="Chemin vers camera_fov_ratio.json (U00) pour override resolution 9:16",
+    )
     return parser.parse_args()
 
 
@@ -167,6 +171,7 @@ def run_darkroom(
     verbose: bool,
     frame_start: int = None,
     frame_end: int = None,
+    camera_fov_json: str = None,
 ) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -186,6 +191,8 @@ def run_darkroom(
         cmd += ["--start-frame", str(frame_start)]
     if frame_end is not None:
         cmd += ["--end-frame", str(frame_end)]
+    if camera_fov_json is not None:
+        cmd += ["--camera-fov-json", camera_fov_json]
 
     log(f"Commande : {' '.join(cmd)}")
 
@@ -332,6 +339,7 @@ def main() -> None:
             verbose=args.verbose,
             frame_start=args.frame_start,
             frame_end=args.frame_end,
+            camera_fov_json=args.camera_fov_json,
         )
         results.append(scene_result)
 

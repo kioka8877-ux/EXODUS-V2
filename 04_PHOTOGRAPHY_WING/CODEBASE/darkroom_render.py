@@ -82,6 +82,10 @@ def parse_args() -> argparse.Namespace:
         help="Override du frame de fin",
     )
     parser.add_argument(
+        "--camera-fov-json", type=str, default=None,
+        help="Chemin vers camera_fov_ratio.json (U00) pour override resolution 9:16",
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Logs détaillés",
     )
@@ -127,6 +131,39 @@ def apply_render_settings(preset_name: str, verbose: bool = False) -> dict:
         f"format={preset.get('output_format', 'PNG')} {preset.get('color_depth', '16')}-bit"
     )
     return preset
+
+
+def override_resolution_from_fov_json(fov_json_path: str, verbose: bool = False) -> bool:
+    """Lit camera_fov_ratio.json (U00) et override la resolution Blender.
+    Permet de passer de 16:9 hardcode a 9:16 si la video source est portrait."""
+    fov_path = Path(fov_json_path)
+    if not fov_path.exists():
+        log(f"camera_fov_ratio.json introuvable: {fov_path} — resolution preset conservee")
+        return False
+
+    try:
+        with open(fov_path, 'r', encoding='utf-8') as f:
+            fov_data = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        log(f"Erreur lecture camera_fov_ratio.json: {e} — resolution preset conservee")
+        return False
+
+    resolution = fov_data.get("resolution")
+    if not resolution or not isinstance(resolution, list) or len(resolution) != 2:
+        log(f"camera_fov_ratio.json: champ 'resolution' invalide — resolution preset conservee")
+        return False
+
+    res_x, res_y = int(resolution[0]), int(resolution[1])
+
+    if BLENDER_AVAILABLE:
+        scene = bpy.context.scene
+        scene.render.resolution_x = res_x
+        scene.render.resolution_y = res_y
+        scene.render.resolution_percentage = 100
+
+    ratio = fov_data.get("ratio", f"{res_x}:{res_y}")
+    log(f"Resolution override depuis camera_fov_ratio.json: {res_x}x{res_y} (ratio {ratio})")
+    return True
 
 
 def set_gpu_if_available(verbose: bool = False) -> str:
@@ -214,6 +251,12 @@ def render_chunks(args: argparse.Namespace) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     preset = apply_render_settings(args.preset, args.verbose)
+
+    # Override resolution depuis camera_fov_ratio.json (U00) si fourni
+    # Permet de passer de 16:9 hardcode a 9:16 pour les videos portrait
+    if args.camera_fov_json:
+        override_resolution_from_fov_json(args.camera_fov_json, args.verbose)
+
     device_type = set_gpu_if_available(args.verbose)
 
     if BLENDER_AVAILABLE:

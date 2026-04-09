@@ -13,6 +13,8 @@ Usage (appelé par le pipeline U04):
         --preset production
 """
 
+import json
+from pathlib import Path
 from typing import Dict, List, Optional
 
 try:
@@ -172,6 +174,45 @@ class RenderForge:
             "action": "set_gpu",
             "device": device_type_used,
         })
+
+    def override_resolution_from_fov_json(self, fov_json_path: str) -> bool:
+        """Lit camera_fov_ratio.json (U00) et override la resolution Blender.
+        Permet de passer de 16:9 hardcode a 9:16 si la video source est portrait.
+        Retourne True si override applique, False sinon."""
+        fov_path = Path(fov_json_path)
+        if not fov_path.exists():
+            self.log(f"camera_fov_ratio.json introuvable: {fov_path} — resolution preset conservee")
+            return False
+
+        try:
+            with open(fov_path, 'r', encoding='utf-8') as f:
+                fov_data = json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            self.log(f"Erreur lecture camera_fov_ratio.json: {e} — resolution preset conservee")
+            return False
+
+        resolution = fov_data.get("resolution")
+        if not resolution or not isinstance(resolution, list) or len(resolution) != 2:
+            self.log(f"camera_fov_ratio.json: champ 'resolution' invalide — resolution preset conservee")
+            return False
+
+        res_x, res_y = int(resolution[0]), int(resolution[1])
+
+        if BLENDER_AVAILABLE:
+            scene = bpy.context.scene
+            scene.render.resolution_x = res_x
+            scene.render.resolution_y = res_y
+            scene.render.resolution_percentage = 100
+
+        ratio = fov_data.get("ratio", f"{res_x}:{res_y}")
+        self.log(f"Resolution override depuis camera_fov_ratio.json: {res_x}x{res_y} (ratio {ratio})")
+        self.operations.append({
+            "action": "resolution_override",
+            "source": "camera_fov_ratio.json",
+            "resolution": [res_x, res_y],
+            "ratio": ratio,
+        })
+        return True
 
     def process(self, preset_name: str = "production") -> dict:
         """Pipeline complet : preset → passes → GPU → résumé."""

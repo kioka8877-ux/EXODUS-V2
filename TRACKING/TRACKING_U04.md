@@ -41,6 +41,12 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 - [x] Mise à jour documentation (README_DEV.md, UNIT_04_SUBPLAN.md, ARCHITECTURE_U04.md) — PR #49
 - [ ] Intégration Marshal Out-Check pour frames rendues PNG 16-bit
 
+### U04-D — FIX RESOLUTION 9:16 (VULKAN_U04_RESOLUTION_FIX_v1)
+- [x] `render_forge.py` — `override_resolution_from_fov_json()` : lit camera_fov_ratio.json et override resolution Blender
+- [x] `darkroom_render.py` — `override_resolution_from_fov_json()` + arg `--camera-fov-json` : override au moment du render
+- [x] `EXO_04_DARKROOM.py` — arg `--camera-fov-json` + transmission au darkroom_render.py
+- [x] `EXO_04_DARKROOM.ipynb` — variable `CAMERA_FOV_JSON` + passage automatique si fichier present
+
 ### U04-C — ADAPTABILITÉ MULTI-SCÈNE (ATOM-IC D5)
 - [x] `camera_schema.py` — LIGHTING_PRESET_TO_STYLE : mapping preset_id U00 → style U04 (10 presets) — commit 9b43190b
 - [x] `camera_schema.py` — SCENE_TYPE_TO_LIGHTING : mapping scene_type U03 → profil complet (4 types) — commit 9b43190b
@@ -61,6 +67,7 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 | 2026-04-03 | Phase 5 T44 — VOID-FLUSH: blender_adapter.py + hook pre-render | ✅ | Phase 5 commit | N/A |
 | 2026-04-03 | Phase 5 T45 — ATLAS: session_store.py + SessionStore integration | ✅ | Phase 5 commit | N/A |
 | 2026-04-03 | Phase 5 T46 — VOX: RULES.md + test_u04.py (37 tests Pytest) | ✅ | Phase 5 commit | N/A |
+| 2026-04-09 | U04-D FIX RESOLUTION 9:16 : override depuis camera_fov_ratio.json dans render_forge + darkroom + orchestrateur + notebook | ✅ | VULKAN_U04_RESOLUTION_FIX_v1 | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (U04-A ne rend pas)
