@@ -11,8 +11,8 @@
 | U00 | CORTEX_HQ | VALIDE | PRODUCTION_PLAN.JSON + depth_maps | — |
 | U01 | ANIMATION_ENGINE | EN ATTENTE | Structure creee | Premier run |
 | U02 | LOGISTICS_DEPOT | EN ATTENTE | Structure creee | Premier run |
-| U03 | SCENOGRAPHY_DOCK | VALIDE | 16,641 vertices, camera, GPU | — |
-| U04 | PHOTOGRAPHY_WING | FIX INJECTE | VULKAN_CAMERA_FIX_v1 dans EXO_04_DARKROOM.ipynb | Validation frames PNG |
+| U03 | SCENOGRAPHY_DOCK | FIX INJECTE | FIX #2 — Fallback procédural depth/SAM | Validation blends |
+| U04 | PHOTOGRAPHY_WING | FIX INJECTE | VULKAN_CAMERA_FIX_v1 dans EXO_04_DARKROOM.ipynb | Fix #3 en attente |
 | U05 | ALCHEMIST_LAB | EN ATTENTE | Structure creee | Premier run |
 | U06 | AIRCRAFT_CARRIER | EN ATTENTE | Structure creee | Premier run |
 
@@ -43,11 +43,22 @@
 | 81ca3426 | U03 | Documentation phase D6 | VALIDE |
 | 6ea607a4 | U04 | ARSENAL inject_camera_cinematic.py (35mm/DOF) | VALIDE |
 | a80a85a7 | U04 | EXO_04_DARKROOM.ipynb cellule injection + VOID-FLUSH | VALIDE |
+| b753fa30 | U03 | FIX #2 — Fallback procédural depth/SAM + logging [U03] | INJECTE |
 
 ---
 
 ## Derniere Session
 
-- Date : 2026-04-05
-- Actions : VULKAN_CAMERA_FIX_v1 — injection camera dans EXO_04_DARKROOM.ipynb
-- Prochaine : Executer EXO_04_DARKROOM.ipynb -> valider frames PNG -> U04 VALIDE
+- Date : 2026-04-09
+- Actions : FIX #2 — layer_assembler.py — PROCEDURAL_FALLBACK + depth/SAM detection
+- Prochaine : FIX #3 — U04 camera_fov_ratio.json + résolution 9:16
+
+---
+
+## Ordre Execution Fixes
+
+```
+FIX #1b (U01)  → EN ATTENTE
+FIX #2  (U03)  → INJECTE (commit b753fa30)
+FIX #3  (U04)  → EN ATTENTE
+```
