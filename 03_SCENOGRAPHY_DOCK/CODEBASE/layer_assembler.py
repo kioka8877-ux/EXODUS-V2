@@ -9,12 +9,18 @@
 ║  Phase D1 : Dome + Shadow Catcher + World Sync                              ║
 ║  Phase D2 : Displacement Mesh (ACTIVE)                                       ║
 ║  Phase D3 : PBR Swap + Glass (ACTIVE)                                        ║
+║                                                                              ║
+║  FIX #2 — VULKAN_FORGE 2026-04-09                                           ║
+║  - Détection précoce échec depth/SAM                                        ║
+║  - Mode PROCEDURAL_FALLBACK : sol+murs+porte+PBR (dimensions réelles)       ║
+║  - Log explicite [U03] + JSON depth_status/sam_status                       ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
 import bpy
 import json
 import sys
+import math
 import argparse
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -31,9 +37,137 @@ from pbr_swap_builder import build_pbr_surfaces
 from glass_builder import build_glass_planes
 from scene_schema import ENVIRONMENT_TO_SCENE_PROFILE, DEFAULT_SCENE_PROFILE
 
-ASSEMBLER_VERSION = "2.1.0"
+ASSEMBLER_VERSION = "2.2.0"  # FIX #2 — Fallback procédural
 
 REQUIRED_COLLECTIONS = ["ENV_DOME", "ENV_TERRAIN", "ENV_SHADOW", "ENV_GLASS", "ENV_PBR"]
+
+# ─── STATUTS DEPTH / SAM ──────────────────────────────────────────────────────
+STATUS_OK        = "OK"
+STATUS_FALLBACK  = "FALLBACK"
+
+
+def _detect_depth_sam_status(depth_map_dir: str, semantic_masks_path: str) -> Dict[str, str]:
+    """
+    Détecte la disponibilité réelle des depth maps et masques SAM.
+
+    Retourne un dict avec :
+      - depth_status : "OK" | "FALLBACK"
+      - sam_status   : "OK" | "FALLBACK"
+    """
+    depth_ok = False
+    if depth_map_dir and Path(depth_map_dir).is_dir():
+        pngs = list(Path(depth_map_dir).glob("*.png"))
+        if pngs and any(p.stat().st_size > 0 for p in pngs):
+            depth_ok = True
+
+    sam_ok = False
+    if semantic_masks_path and Path(semantic_masks_path).exists():
+        try:
+            content = Path(semantic_masks_path).read_text().strip()
+            if content and content != "{}":
+                sam_ok = True
+        except Exception:
+            pass
+
+    depth_status = STATUS_OK if depth_ok else STATUS_FALLBACK
+    sam_status   = STATUS_OK if sam_ok   else STATUS_FALLBACK
+
+    if depth_status == STATUS_FALLBACK or sam_status == STATUS_FALLBACK:
+        print(f"[U03] Fallback procédural activé (depth/SAM indisponibles) "
+              f"— depth={depth_status}, sam={sam_status}")
+    else:
+        print(f"[U03] depth={depth_status}, sam={sam_status} — mode normal")
+
+    return {"depth_status": depth_status, "sam_status": sam_status}
+
+
+def _build_procedural_fallback(collection_name: str = "ENV_TERRAIN") -> List[bpy.types.Object]:
+    """
+    Génère un intérieur house_interior procédural en dimensions réelles.
+
+    Géométrie :
+      - Sol        : 4x4m, Z=0
+      - Mur arrière: 4x2.5m, Y=-2, Z=1.25
+      - Mur gauche : 2.5x2.5m, X=-2, Z=1.25
+      - Mur droit  : 2.5x2.5m, X=+2, Z=1.25
+      - Porte      : 0.9x2m (découpe symbolique sur mur arrière)
+      - Plafond    : 4x4m, Z=2.5
+
+    Matériaux PBR par défaut (Principled BSDF, roughness=0.8).
+
+    Returns:
+        Liste des objets créés.
+    """
+    coll = _ensure_collection(collection_name)
+    created = []
+
+    def _make_pbr_mat(name: str, base_color=(0.8, 0.8, 0.8, 1.0),
+                      roughness: float = 0.8) -> bpy.types.Material:
+        mat = bpy.data.materials.new(name)
+        mat.use_nodes = True
+        bsdf = mat.node_tree.nodes.get("Principled BSDF")
+        if bsdf:
+            bsdf.inputs["Base Color"].default_value = base_color
+            bsdf.inputs["Roughness"].default_value = roughness
+        return mat
+
+    def _add_plane(name, size_x, size_y, loc, rot_euler=(0, 0, 0),
+                   mat=None) -> bpy.types.Object:
+        bpy.ops.mesh.primitive_plane_add(size=1.0, location=loc)
+        obj = bpy.context.active_object
+        obj.name = name
+        obj.scale = (size_x, size_y, 1.0)
+        obj.rotation_euler = rot_euler
+        bpy.ops.object.transform_apply(scale=True, rotation=True)
+        if mat:
+            if obj.data.materials:
+                obj.data.materials[0] = mat
+            else:
+                obj.data.materials.append(mat)
+        for c in list(obj.users_collection):
+            c.objects.unlink(obj)
+        coll.objects.link(obj)
+        created.append(obj)
+        return obj
+
+    mat_floor   = _make_pbr_mat("fallback_floor",   (0.55, 0.45, 0.35, 1.0), 0.9)
+    mat_wall    = _make_pbr_mat("fallback_wall",     (0.85, 0.83, 0.80, 1.0), 0.8)
+    mat_ceiling = _make_pbr_mat("fallback_ceiling",  (0.95, 0.95, 0.95, 1.0), 0.7)
+
+    # Sol 4x4m
+    _add_plane("fallback_floor",    4.0, 4.0, (0, 0, 0),     mat=mat_floor)
+
+    # Plafond 4x4m à Z=2.5
+    _add_plane("fallback_ceiling",  4.0, 4.0, (0, 0, 2.5),   mat=mat_ceiling)
+
+    # Mur arrière 4x2.5m
+    _add_plane("fallback_wall_back",  4.0, 2.5,
+               (0, -2.0, 1.25),
+               rot_euler=(math.radians(90), 0, 0),
+               mat=mat_wall)
+
+    # Mur gauche 4x2.5m
+    _add_plane("fallback_wall_left",  4.0, 2.5,
+               (-2.0, 0, 1.25),
+               rot_euler=(math.radians(90), 0, math.radians(90)),
+               mat=mat_wall)
+
+    # Mur droit 4x2.5m
+    _add_plane("fallback_wall_right", 4.0, 2.5,
+               (2.0, 0, 1.25),
+               rot_euler=(math.radians(90), 0, math.radians(90)),
+               mat=mat_wall)
+
+    # Porte symbolique (plan 0.9x2m sur mur arrière, offset légèrement)
+    mat_door = _make_pbr_mat("fallback_door", (0.35, 0.22, 0.10, 1.0), 0.6)
+    _add_plane("fallback_door",  0.9, 2.0,
+               (0.5, -1.99, 1.0),
+               rot_euler=(math.radians(90), 0, 0),
+               mat=mat_door)
+
+    print(f"[U03] PROCEDURAL_FALLBACK construit — {len(created)} objets "
+          f"(sol 4x4m, murs 2.5m, porte 0.9x2m)")
+    return created
 
 
 def _ensure_collection(name: str) -> bpy.types.Collection:
@@ -84,10 +218,6 @@ def _inject_actor(
     """
     Appends actor(s) from ACTOR_*.blend files into the current Blender scene.
 
-    Reads characters from scene_data (PRODUCTION_PLAN), finds ACTOR_*.blend
-    files in actor_blend_dir, appends all objects and links them to ACTOR
-    collection at scene origin.
-
     Returns:
         Number of actor objects appended (0 if none found or error).
     """
@@ -115,7 +245,6 @@ def _inject_actor(
 
     for i, char in enumerate(characters):
         char_id = char.get("character_id", "unknown")
-        # Use actor blend by index (ACTOR_01 for first char, etc.) or first available
         blend_path = actor_blends[min(i, len(actor_blends) - 1)]
         print(f"[ASSEMBLER] Injection acteur : character_id={char_id!r} → {blend_path.name}")
 
@@ -127,11 +256,9 @@ def _inject_actor(
             for obj in data_to.objects:
                 if obj is None:
                     continue
-                # Link to scene root if not already present
                 scene_obj_names = [o.name for o in bpy.context.scene.collection.objects]
                 if obj.name not in scene_obj_names:
                     bpy.context.scene.collection.objects.link(obj)
-                # Also link to ACTOR collection
                 actor_coll_names = [o.name for o in actor_coll.objects]
                 if obj.name not in actor_coll_names:
                     actor_coll.objects.link(obj)
@@ -166,9 +293,6 @@ def _collect_glass_planes_info() -> List[Dict]:
 def _build_scene_report() -> Dict:
     """
     Construit le rapport de scène pour validation par scene_schema.validate_scene().
-
-    Returns:
-        Dict conforme au format scene_report attendu par SceneSchema.
     """
     collections = [c.name for c in bpy.data.collections]
     objects = {}
@@ -233,45 +357,28 @@ def assemble_scene(
     """
     Assemble une scène complète Tri-Layer.
 
-    Phase D1 active :
-    - Couche A : Infinity Dome (dome_builder)
-    - Shadow Catcher (shadow_catcher_builder)
-    - World Sync (world_sync)
-    - Custom Properties exodus_*
-
-    Phase D2 active :
-    - Couche B : Displacement Mesh — depth map displacement (ENV_TERRAIN)
-
-    Phase D3 active :
-    - Couche C : PBR Swap — SAM masks → PBR materials (ENV_PBR)
-    - Reflectivity Hack : Glass BSDF planes (ENV_GLASS)
-
-    Args:
-        scene_data: Données de la scène depuis PRODUCTION_PLAN.
-        depth_map_dir: Répertoire des depth maps (D2 futur).
-        semantic_masks_path: Chemin semantic_masks.json (D3 futur).
-        hdri_path: Chemin vers le HDRi.
-        output_dir: Répertoire de sortie pour le .blend.
-        exposure_strength: Strength d'exposition World Sync.
-        vram_profile: Profil VRAM (colab_t4, colab_a100, local_low).
-
-    Returns:
-        Dict avec les métadonnées de la scène assemblée.
+    FIX #2 : Détection précoce depth/SAM + PROCEDURAL_FALLBACK si indisponibles.
+    Ne skip jamais l'assemblage — produit toujours environment_*.blend.
     """
     scene_id = scene_data.get("scene_id", "unknown")
     env = scene_data.get("environment", {})
 
-    # Dérive le profil visuel depuis environment_id (PRODUCTION_PLAN.JSON → Gemini M1)
     environment_id = env.get("environment_id", "")
     scene_profile = ENVIRONMENT_TO_SCENE_PROFILE.get(environment_id, DEFAULT_SCENE_PROFILE)
     scene_type = scene_profile["scene_type"]
     dome_fallback = scene_profile["dome_fallback"]
-    # lighting_mood explicite dans le JSON prend priorité sur le profil
     mood = env.get("lighting_mood") or scene_profile["world_mood"]
 
     print(f"\n[ASSEMBLER] === Assemblage scène {scene_id} ===")
     print(f"[ASSEMBLER] environment_id={environment_id!r} → scene_type={scene_type}, mood={mood}")
     print(f"[ASSEMBLER] exposure={exposure_strength}, vram={vram_profile}")
+
+    # ── FIX #2 : Détection précoce depth / SAM ───────────────────────────────
+    depth_sam = _detect_depth_sam_status(depth_map_dir, semantic_masks_path)
+    depth_status = depth_sam["depth_status"]
+    sam_status   = depth_sam["sam_status"]
+    use_fallback = (depth_status == STATUS_FALLBACK or sam_status == STATUS_FALLBACK)
+    # ─────────────────────────────────────────────────────────────────────────
 
     _clear_scene()
 
@@ -303,43 +410,49 @@ def assemble_scene(
 
     setup_render_settings(engine="CYCLES", samples=128)
 
-    displacement_obj = build_displacement_mesh(
-        collection_name="ENV_TERRAIN",
-        depth_map_dir=depth_map_dir,
-        semantic_masks_path=semantic_masks_path,
-        vram_profile=vram_profile,
-    )
-
-    # Phase D3 : PBR Swap + Reflectivity Hack
-    pbr_objects = build_pbr_surfaces(
-        collection_name="ENV_PBR",
-        semantic_masks_path=semantic_masks_path,
-    )
-
-    glass_objects = build_glass_planes(
-        collection_name="ENV_GLASS",
-        semantic_masks_path=semantic_masks_path,
-    )
+    # ── FIX #2 : Branche FALLBACK vs NORMAL ──────────────────────────────────
+    if use_fallback:
+        print(f"[U03] Mode PROCEDURAL_FALLBACK — depth={depth_status}, sam={sam_status}")
+        fallback_objects = _build_procedural_fallback(collection_name="ENV_TERRAIN")
+        displacement_obj = None
+        pbr_objects      = []
+        glass_objects    = []
+        print(f"[U03] PROCEDURAL_FALLBACK prêt — {len(fallback_objects)} objets générés")
+    else:
+        displacement_obj = build_displacement_mesh(
+            collection_name="ENV_TERRAIN",
+            depth_map_dir=depth_map_dir,
+            semantic_masks_path=semantic_masks_path,
+            vram_profile=vram_profile,
+        )
+        pbr_objects = build_pbr_surfaces(
+            collection_name="ENV_PBR",
+            semantic_masks_path=semantic_masks_path,
+        )
+        glass_objects = build_glass_planes(
+            collection_name="ENV_GLASS",
+            semantic_masks_path=semantic_masks_path,
+        )
+    # ─────────────────────────────────────────────────────────────────────────
 
     # CAMÉRA DEFAULT — placeholder overridable par U04
-    import math as _math
     cam_data = bpy.data.cameras.new("camera_main")
     cam_data.lens = 35.0
     cam_obj = bpy.data.objects.new("camera_main", cam_data)
     cam_obj.location = (0.0, -15.0, 8.0)
-    cam_obj.rotation_euler = (_math.radians(75), 0.0, 0.0)
+    cam_obj.rotation_euler = (math.radians(75), 0.0, 0.0)
     bpy.context.scene.collection.objects.link(cam_obj)
     bpy.context.scene.camera = cam_obj
     print(f"[ASSEMBLER] Caméra default posée — lens=35mm, pos=(0,-15,8), rot=75°")
 
-    # ACTOR INJECTION — Phase Actor (ACTOR_*.blend depuis IN_SCENE_REF)
     actor_count = _inject_actor(
         actor_blend_dir=actor_blend_dir,
         scene_data=scene_data,
     )
     actor_injected = actor_count > 0
 
-    active_layers = "dome,shadow,world_sync,displacement,pbr,glass,camera"
+    active_layers = "dome,shadow,world_sync,camera"
+    active_layers += ",procedural_fallback" if use_fallback else ",displacement,pbr,glass"
     if actor_injected:
         active_layers += ",actor"
     _stamp_custom_properties(active_layers)
@@ -370,10 +483,16 @@ def assemble_scene(
         "hdri_used": resolved_hdri is not None,
         "actor_injected": actor_injected,
         "actor_objects_count": actor_count,
+        # ── FIX #2 : statuts depth/SAM documentés ──────────────────────────
+        "depth_status": depth_status,
+        "sam_status": sam_status,
+        "procedural_fallback_active": use_fallback,
+        # ───────────────────────────────────────────────────────────────────
         "scene_report": scene_report,
     }
 
-    print(f"[ASSEMBLER] === Scène {scene_id} terminée ===\n")
+    print(f"[ASSEMBLER] === Scène {scene_id} terminée — "
+          f"fallback={'OUI' if use_fallback else 'NON'} ===\n")
     return result
 
 
@@ -391,9 +510,9 @@ def main() -> None:
     parser.add_argument("--production-plan", required=True,
                         help="Chemin vers PRODUCTION_PLAN.JSON")
     parser.add_argument("--depth-map-dir", default="",
-                        help="Répertoire des depth maps (D2 futur)")
+                        help="Répertoire des depth maps")
     parser.add_argument("--semantic-masks", default="",
-                        help="Chemin semantic_masks.json (D3 futur)")
+                        help="Chemin semantic_masks.json")
     parser.add_argument("--hdri-path", default="",
                         help="Chemin vers le fichier HDRi")
     parser.add_argument("--output-dir", required=True,
@@ -406,7 +525,7 @@ def main() -> None:
                         choices=["colab_t4", "colab_a100", "local_low"],
                         help="Profil VRAM")
     parser.add_argument("--actor-blend-dir", default="",
-                        help="Répertoire contenant les ACTOR_*.blend (ex : IN_SCENE_REF/)")
+                        help="Répertoire contenant les ACTOR_*.blend")
     args = parser.parse_args(argv)
 
     plan_path = Path(args.production_plan)
@@ -449,4 +568,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
