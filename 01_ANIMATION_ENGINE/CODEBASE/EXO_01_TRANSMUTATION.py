@@ -115,6 +115,32 @@ def check_ai_models(drive_root: Path, logger: TransmutationLogger, blender_path_
     return result
 
 
+def auto_detect_actor_model(unit_root, logger) -> str:
+    """
+    FIX #1b — Scanne IN_CORTEX_JSON/actor_models/ pour le premier modèle 3D trouvé.
+    Formats supportés : .blend .fbx .glb .gltf .obj
+    Hard-fail si aucun modèle trouvé.
+    """
+    SUPPORTED = {".blend", ".fbx", ".glb", ".gltf", ".obj"}
+    actor_dir = unit_root / "IN_CORTEX_JSON" / "actor_models"
+
+    if not actor_dir.exists():
+        logger.error(f"[U01] ❌ ACTOR_DIR_MISSING: {actor_dir}")
+        logger.error("[U01]   Créez le dossier et déposez votre modèle 3D")
+        sys.exit(1)
+
+    models = [f for f in actor_dir.iterdir() if f.suffix.lower() in SUPPORTED]
+    if not models:
+        logger.error(f"[U01] ❌ ACTOR_MODEL_MISSING: aucun modèle 3D dans {actor_dir}")
+        logger.error(f"[U01]   Formats supportés: {', '.join(sorted(SUPPORTED))}")
+        sys.exit(1)
+
+    chosen = models[0]
+    logger.info(f"[U01] Modèle auto-détecté : {chosen.name}")
+    return str(chosen)
+
+
+
 def translate_facial_data(
     facial_json_path: str,
     output_path: str,
@@ -174,7 +200,8 @@ def run_blender_fusion(
     sync_offset: int,
     intensity_mode: str,
     logger: TransmutationLogger,
-    lip_sync_json_path: str = None
+    lip_sync_json_path: str = None,
+    actor_model_path: str = None,
 ) -> bool:
     """
     Exécute Blender en mode headless pour la fusion.
@@ -190,7 +217,7 @@ def run_blender_fusion(
         "--python", str(fusion_script),
         "--",
         "--body-fbx", body_fbx,
-        "--actor-blend", actor_blend,
+        "--actor-model", actor_model_path or actor_blend,
         "--face-json", face_json,
         "--output", output_abc,
         "--sync-offset", str(sync_offset),
@@ -231,8 +258,11 @@ Exemples:
                         help='Fichier FBX du mouvement corps (cherché dans IN_MIXAMO_BASE/)')
     parser.add_argument('--facial-json', required=True,
                         help='facial_animation.json (cherché dans IN_CORTEX_JSON/)')
-    parser.add_argument('--actor-blend', required=True,
-                        help='Fichier .blend de l\'avatar Roblox riggé (chemin absolu requis)')
+    parser.add_argument('--actor-model', required=False, default=None,
+                        help='Modèle 3D acteur (.blend/.fbx/.glb/.obj) — auto-détecté dans IN_CORTEX_JSON/actor_models/ si absent')
+    # Alias legacy
+    parser.add_argument('--actor-blend', required=False, default=None,
+                        help='[LEGACY] Alias --actor-model pour compatibilité')
     parser.add_argument('--production-plan',
                         help='PRODUCTION_PLAN.JSON (cherché dans IN_CORTEX_JSON/)')
 
@@ -275,7 +305,12 @@ Exemples:
     if not facial_json_path.is_absolute():
         facial_json_path = cortex_json_dir / args.facial_json
 
-    actor_path = Path(args.actor_blend)
+    # FIX #1b — Résoudre le modèle acteur (--actor-model > --actor-blend > auto-detect)
+    _actor_arg = args.actor_model or args.actor_blend
+    if _actor_arg:
+        actor_path = Path(_actor_arg)
+    else:
+        actor_path = Path(auto_detect_actor_model(unit_root, logger))
 
     logger.info(f"Drive Root: {drive_root}")
     logger.info(f"Body FBX: {body_path}")
@@ -348,6 +383,7 @@ Exemples:
         args.intensity_mode,
         logger,
         lip_sync_json_path=lip_sync_json_path,
+        actor_model_path=str(actor_path),
     )
 
     if not success:
