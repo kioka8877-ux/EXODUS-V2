@@ -42,6 +42,11 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 - [x] Intégrer Rhubarb lip-sync (NLA strip dédié, priorité sur zone bouche)
 - [x] Gérer conflit lip-sync/expressions (désactive shape keys bouche pendant parole)
 
+
+### U01-D — FIX #1b ACTOR MODEL LOADING (VULKAN_U01_BACON_v1)
+- [x] `blender_fusion.py` — `import_actor_model()` : import multi-format .blend/.fbx/.glb/.gltf/.obj + hard-fail + remove placeholder
+- [x] `EXO_01_TRANSMUTATION.py` — `auto_detect_actor_model()` : scan IN_CORTEX_JSON/actor_models/ + --actor-model optionnel + alias --actor-blend legacy
+
 ## 4. REGISTRE DE FORGE (LOGS)
 | Date | Action | Statut | Commit/Lien | VRAM/Temps |
 |------|--------|--------|-------------|------------|
@@ -49,6 +54,7 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 | 2026-02-26 | Pipeline V2 — facial_extractor + blender_fusion + sync_engine + TRANSMUTATION | ✅ | PR #20 | N/A (pure Python + bpy) |
 | 2026-02-26 | Rhubarb lip-sync — rhubarb_bridge.py + NLA integration blender_fusion.py | ✅ | PR #22 | N/A (pure Python + bpy) |
 | 2026-02-27 | Notebooks V2 + README_DEV.md — Documentation Armour | ✅ | PR #23 | N/A (docs) |
+| 2026-04-09 | U01-D FIX #1b — blender_fusion import multi-format + EXO_01 auto-detect modele | ✅ | VULKAN_U01_BACON_v1 | N/A |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : À mesurer (cible < 4GB — RÉDUIT vs V1 car zéro EMOCA)
