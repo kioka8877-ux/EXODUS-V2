@@ -7,6 +7,12 @@
 ║  Rendu 1080p @ 128 samples + OIDN — U06 AI upscale → 4K                    ║
 ║  Chunks de 300 frames + checkpoint JSON pour reprise après timeout          ║
 ║  ATOM-IC : Transmutation 1080p → 4K via Real-ESRGAN (U06)                  ║
+║                                                                              ║
+║  FIX #3 — VULKAN_FORGE 2026-04-09                                           ║
+║  - Lecture camera_fov_ratio.json (aspect_ratio + fov_deg + lens_mm)        ║
+║  - Résolution 9:16 (1080x1920) appliquée si aspect_ratio ≈ 0.5625          ║
+║  - Lens mm injectée dans la caméra active Blender                          ║
+║  - Log [U04] explicite + fallback 16:9 WARNING si JSON absent              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 Usage (appelé par EXO_04_DARKROOM.py ou directement) :
@@ -34,8 +40,13 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent))
 from camera_schema import RENDER_PRESETS, TARGET_FPS
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"  # FIX #3 — camera_fov_ratio.json + 9:16
 CHECKPOINT_FILENAME = "darkroom_checkpoint.json"
+
+# Tolérance pour comparer aspect_ratio
+_PORTRAIT_916_RATIO = 9.0 / 16.0   # 0.5625
+_LANDSCAPE_169_RATIO = 16.0 / 9.0  # 1.7778
+_RATIO_TOLERANCE = 0.02
 
 
 def log(msg: str) -> None:
@@ -83,7 +94,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--camera-fov-json", type=str, default=None,
-        help="Chemin vers camera_fov_ratio.json (U00) pour override resolution 9:16",
+        help="Chemin vers camera_fov_ratio.json (U00) pour override résolution 9:16",
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true",
@@ -133,37 +144,136 @@ def apply_render_settings(preset_name: str, verbose: bool = False) -> dict:
     return preset
 
 
-def override_resolution_from_fov_json(fov_json_path: str, verbose: bool = False) -> bool:
-    """Lit camera_fov_ratio.json (U00) et override la resolution Blender.
-    Permet de passer de 16:9 hardcode a 9:16 si la video source est portrait."""
+def override_resolution_from_fov_json(
+    fov_json_path: str,
+    verbose: bool = False,
+) -> dict:
+    """
+    FIX #3 — Lit camera_fov_ratio.json (généré par U00) et applique :
+      - Résolution Blender selon aspect_ratio (9:16 → 1080x1920)
+      - Lens mm sur la caméra active
+      - Log [U04] explicite
+
+    Format JSON attendu (U00) :
+      {
+        "aspect_ratio": 0.5625,   // 9/16 pour portrait
+        "fov_deg": 60.0,
+        "lens_mm": 28.0
+      }
+    Format legacy supporté :
+      { "resolution": [1080, 1920], ... }
+
+    Returns:
+        dict avec :
+          - applied       : bool
+          - res_x, res_y  : int
+          - aspect_ratio_applied : str (ex: "9:16")
+          - fov_deg       : float | None
+          - lens_mm       : float | None
+    """
+    result = {
+        "applied": False,
+        "res_x": 1920,
+        "res_y": 1080,
+        "aspect_ratio_applied": "16:9",
+        "fov_deg": None,
+        "lens_mm": None,
+    }
+
     fov_path = Path(fov_json_path)
     if not fov_path.exists():
-        log(f"camera_fov_ratio.json introuvable: {fov_path} — resolution preset conservee")
-        return False
+        log(f"[U04] WARNING — camera_fov_ratio.json introuvable : {fov_path}")
+        log("[U04] Fallback résolution : 16:9 (1920x1080)")
+        return result
 
     try:
-        with open(fov_path, 'r', encoding='utf-8') as f:
+        with open(fov_path, "r", encoding="utf-8") as f:
             fov_data = json.load(f)
     except (json.JSONDecodeError, IOError) as e:
-        log(f"Erreur lecture camera_fov_ratio.json: {e} — resolution preset conservee")
-        return False
+        log(f"[U04] WARNING — Erreur lecture camera_fov_ratio.json : {e}")
+        log("[U04] Fallback résolution : 16:9 (1920x1080)")
+        return result
 
-    resolution = fov_data.get("resolution")
-    if not resolution or not isinstance(resolution, list) or len(resolution) != 2:
-        log(f"camera_fov_ratio.json: champ 'resolution' invalide — resolution preset conservee")
-        return False
+    # ── Résolution : format U00 (aspect_ratio) ou format legacy (resolution list) ──
+    res_x, res_y = 1920, 1080
+    aspect_ratio_applied = "16:9"
+    aspect_ratio_val = None
 
-    res_x, res_y = int(resolution[0]), int(resolution[1])
+    if "aspect_ratio" in fov_data:
+        aspect_ratio_val = float(fov_data["aspect_ratio"])
+        ratio_diff_916 = abs(aspect_ratio_val - _PORTRAIT_916_RATIO)
+        ratio_diff_169 = abs(aspect_ratio_val - _LANDSCAPE_169_RATIO)
 
+        if ratio_diff_916 < _RATIO_TOLERANCE:
+            res_x, res_y = 1080, 1920
+            aspect_ratio_applied = "9:16"
+        elif ratio_diff_169 < _RATIO_TOLERANCE:
+            res_x, res_y = 1920, 1080
+            aspect_ratio_applied = "16:9"
+        else:
+            # Ratio personnalisé — calcul dynamique base 1080p
+            if aspect_ratio_val < 1.0:
+                res_x = 1080
+                res_y = round(1080 / aspect_ratio_val)
+                aspect_ratio_applied = f"{res_x}:{res_y}"
+            else:
+                res_y = 1080
+                res_x = round(1080 * aspect_ratio_val)
+                aspect_ratio_applied = f"{res_x}:{res_y}"
+
+    elif "resolution" in fov_data:
+        # Format legacy : [width, height]
+        res_list = fov_data["resolution"]
+        if isinstance(res_list, list) and len(res_list) == 2:
+            res_x, res_y = int(res_list[0]), int(res_list[1])
+            if res_x < res_y:
+                aspect_ratio_applied = "9:16"
+            elif res_x > res_y:
+                aspect_ratio_applied = "16:9"
+            else:
+                aspect_ratio_applied = "1:1"
+    else:
+        log("[U04] WARNING — camera_fov_ratio.json sans 'aspect_ratio' ni 'resolution'")
+        log("[U04] Fallback résolution : 16:9 (1920x1080)")
+        return result
+
+    # ── FOV / Lens ────────────────────────────────────────────────────────────
+    fov_deg = fov_data.get("fov_deg") or fov_data.get("estimated_fov_degrees")
+    lens_mm = fov_data.get("lens_mm") or fov_data.get("focal_length_mm")
+
+    if fov_deg is not None:
+        fov_deg = float(fov_deg)
+    if lens_mm is not None:
+        lens_mm = float(lens_mm)
+
+    # ── Application Blender ───────────────────────────────────────────────────
     if BLENDER_AVAILABLE:
         scene = bpy.context.scene
         scene.render.resolution_x = res_x
         scene.render.resolution_y = res_y
         scene.render.resolution_percentage = 100
 
-    ratio = fov_data.get("ratio", f"{res_x}:{res_y}")
-    log(f"Resolution override depuis camera_fov_ratio.json: {res_x}x{res_y} (ratio {ratio})")
-    return True
+        if lens_mm is not None and scene.camera is not None:
+            scene.camera.data.lens = lens_mm
+            debug(f"[U04] Lens injectée sur camera '{scene.camera.name}' : {lens_mm}mm", verbose)
+        elif lens_mm is not None:
+            log("[U04] WARNING — Aucune caméra active, lens_mm non appliquée")
+
+    # ── Log [U04] ─────────────────────────────────────────────────────────────
+    fov_str  = f"{fov_deg:.1f}°" if fov_deg is not None else "N/A"
+    lens_str = f"{lens_mm:.1f}mm" if lens_mm is not None else "N/A"
+    log(f"[U04] Ratio appliqué : {aspect_ratio_applied} ({res_x}x{res_y}) "
+        f"| FOV: {fov_str} | Lens: {lens_str}")
+
+    result.update({
+        "applied": True,
+        "res_x": res_x,
+        "res_y": res_y,
+        "aspect_ratio_applied": aspect_ratio_applied,
+        "fov_deg": fov_deg,
+        "lens_mm": lens_mm,
+    })
+    return result
 
 
 def set_gpu_if_available(verbose: bool = False) -> str:
@@ -252,10 +362,22 @@ def render_chunks(args: argparse.Namespace) -> dict:
 
     preset = apply_render_settings(args.preset, args.verbose)
 
-    # Override resolution depuis camera_fov_ratio.json (U00) si fourni
-    # Permet de passer de 16:9 hardcode a 9:16 pour les videos portrait
+    # ── FIX #3 : Override résolution depuis camera_fov_ratio.json (U00) ──────
+    fov_override = {
+        "applied": False,
+        "res_x": preset["resolution"][0],
+        "res_y": preset["resolution"][1],
+        "aspect_ratio_applied": "16:9",
+        "fov_deg": None,
+        "lens_mm": None,
+    }
     if args.camera_fov_json:
-        override_resolution_from_fov_json(args.camera_fov_json, args.verbose)
+        fov_override = override_resolution_from_fov_json(
+            args.camera_fov_json, args.verbose
+        )
+    else:
+        log("[U04] WARNING — --camera-fov-json non fourni, résolution preset conservée (16:9)")
+    # ─────────────────────────────────────────────────────────────────────────
 
     device_type = set_gpu_if_available(args.verbose)
 
@@ -272,6 +394,10 @@ def render_chunks(args: argparse.Namespace) -> dict:
     total_frames = frame_end - frame_start + 1
     chunk_size = args.chunk_size
     total_chunks = (total_frames + chunk_size - 1) // chunk_size
+
+    # Résolution effective après override
+    eff_res_x = fov_override["res_x"]
+    eff_res_y = fov_override["res_y"]
 
     checkpoint_path = output_dir / CHECKPOINT_FILENAME
     start_frame = frame_start
@@ -290,6 +416,7 @@ def render_chunks(args: argparse.Namespace) -> dict:
                     "status": "ALREADY_COMPLETE",
                     "total_frames": total_frames,
                     "frames_rendered": frames_already_rendered,
+                    "aspect_ratio_applied": fov_override["aspect_ratio_applied"],
                 }
         else:
             log("Pas de checkpoint trouvé — démarrage depuis le début")
@@ -298,7 +425,7 @@ def render_chunks(args: argparse.Namespace) -> dict:
     log("DARKROOM RENDER — PLAN")
     log(f"  Blend       : {Path(blend_file).name}")
     log(f"  Preset      : {args.preset}")
-    log(f"  Resolution  : {preset['resolution'][0]}x{preset['resolution'][1]}")
+    log(f"  Resolution  : {eff_res_x}x{eff_res_y} ({fov_override['aspect_ratio_applied']})")
     log(f"  Samples     : {preset['samples']}")
     log(f"  Denoiser    : {preset['denoiser']}")
     log(f"  Device      : {device_type} ({get_vram_info()})")
@@ -327,6 +454,7 @@ def render_chunks(args: argparse.Namespace) -> dict:
             "device": device_type,
             "estimated_hours": round(est_total / 3600, 1),
             "estimated_size_gb": round(est_size_mb / 1024, 1),
+            "aspect_ratio_applied": fov_override["aspect_ratio_applied"],
         }
 
     scene = bpy.context.scene
@@ -394,6 +522,7 @@ def render_chunks(args: argparse.Namespace) -> dict:
     log("=" * 60)
     log("DARKROOM RENDER — TERMINÉ")
     log(f"  Frames      : {frames_rendered}/{total_frames}")
+    log(f"  Resolution  : {eff_res_x}x{eff_res_y} ({fov_override['aspect_ratio_applied']})")
     log(f"  Temps total : {t_total / 60:.1f} min ({t_total / 3600:.2f}h)")
     log(f"  Moyenne     : {avg_spf:.1f}s/frame")
     log(f"  Output      : {output_dir}")
@@ -409,6 +538,12 @@ def render_chunks(args: argparse.Namespace) -> dict:
         "avg_seconds_per_frame": round(avg_spf, 2),
         "device": device_type,
         "output_dir": str(output_dir),
+        # ── FIX #3 : champs aspect ratio ──────────────────────────────────────
+        "aspect_ratio_applied": fov_override["aspect_ratio_applied"],
+        "resolution_applied": f"{eff_res_x}x{eff_res_y}",
+        "fov_deg_applied": fov_override["fov_deg"],
+        "lens_mm_applied": fov_override["lens_mm"],
+        # ─────────────────────────────────────────────────────────────────────
     }
 
 
