@@ -571,6 +571,76 @@ def apply_lip_sync_nla(actor: bpy.types.Object, lip_sync_data: dict, sync_offset
     log(f"Lip-sync NLA: {len(segments)} cues appliqués sur {len(all_keys)} MOUTH_KEYS")
 
 
+
+
+def fix_scattered_objects(imported_objs: list) -> bpy.types.Object:
+    """FIX ATOMES EPARPILLES: apply scale + parent meshes orphelins + reframe camera."""
+    import math
+    if not imported_objs:
+        log("[U01] fix_scattered_objects: liste vide", "WARN")
+        return None
+
+    armature = None
+    mesh_objs = []
+    for obj in imported_objs:
+        if obj.type == "ARMATURE":
+            armature = obj
+        elif obj.type == "MESH":
+            mesh_objs.append(obj)
+
+    # Apply SCALE uniquement (preserve rig)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in imported_objs:
+        obj.select_set(True)
+    if imported_objs:
+        bpy.context.view_layer.objects.active = imported_objs[0]
+        try:
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            log(f"[U01] Scale applique sur {len(imported_objs)} objets")
+        except Exception as e:
+            log(f"[U01] transform_apply skip: {e}", "WARN")
+
+    # Parenter meshes orphelins a l armature
+    if armature:
+        orphans = [o for o in mesh_objs if o.parent != armature]
+        for obj in orphans:
+            obj.parent = armature
+            obj.matrix_parent_inverse = armature.matrix_world.inverted()
+        if orphans:
+            log(f"[U01] {len(orphans)} meshes orphelins parentes a {armature.name}")
+
+    # Creer/reframe camera sur bounding box global
+    cam = bpy.context.scene.camera
+    if not cam:
+        bpy.ops.object.camera_add()
+        cam = bpy.context.active_object
+        bpy.context.scene.camera = cam
+        log("[U01] Camera creee (scene vide)")
+
+    all_verts = []
+    for obj in mesh_objs:
+        if obj.data:
+            for corner in obj.bound_box:
+                world_v = obj.matrix_world @ Vector(corner)
+                all_verts.append(world_v)
+
+    if all_verts:
+        xs = [v.x for v in all_verts]
+        ys = [v.y for v in all_verts]
+        zs = [v.z for v in all_verts]
+        center = Vector((
+            (min(xs) + max(xs)) / 2,
+            (min(ys) + max(ys)) / 2,
+            (min(zs) + max(zs)) / 2,
+        ))
+        size = max(max(xs)-min(xs), max(ys)-min(ys), max(zs)-min(zs))
+        dist = max(size * 2.0, 1.5)
+        cam.location = center + Vector((0.0, -dist, size * 0.4))
+        cam.rotation_euler = (math.radians(63), 0.0, 0.0)
+        log(f"[U01] Camera: center={tuple(round(v,2) for v in center)}, size={size:.2f}m, dist={dist:.2f}m")
+
+    return armature
+
 # =========================================================================
 # MAIN
 # =========================================================================
@@ -581,7 +651,7 @@ def main():
     print("=" * 60)
 
     log(f"Body FBX: {args.body_fbx}")
-    log(f"Actor Blend: {args.actor_blend}")
+    log(f"Actor Model: {args.actor_model}")
     log(f"Face JSON: {args.face_json}")
     log(f"Output: {args.output}")
     log(f"Sync Offset: {args.sync_offset}")
@@ -592,6 +662,8 @@ def main():
     body_armature = import_body_fbx(args.body_fbx)
 
     actor_armature = import_actor_model(args.actor_model)
+    all_objs = [o for o in bpy.data.objects]
+    actor_armature = fix_scattered_objects(all_objs) or actor_armature
 
     blender_data = load_blender_data(args.face_json)
 
