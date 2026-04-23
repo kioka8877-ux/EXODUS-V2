@@ -11,18 +11,17 @@
 import bpy
 import bmesh
 import math
+import sys
 from pathlib import Path
 from typing import Optional
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
-def _ensure_collection(name: str) -> bpy.types.Collection:
-    """Crée ou récupère une collection par nom et la linke à la scène."""
-    if name in bpy.data.collections:
-        return bpy.data.collections[name]
-    coll = bpy.data.collections.new(name)
-    bpy.context.scene.collection.children.link(coll)
-    print(f"[DOME] Collection '{name}' créée")
-    return coll
+from blender_layer_base import BlenderLayerBuilder
+
+_ensure_collection = BlenderLayerBuilder._ensure_collection
 
 
 def build_infinity_dome(
@@ -56,6 +55,7 @@ def build_infinity_dome(
     radius = max(50.0, min(200.0, radius))
 
     coll = _ensure_collection(collection_name)
+    print(f"[DOME] Collection '{collection_name}' prête")
 
     bpy.ops.mesh.primitive_uv_sphere_add(
         segments=64,

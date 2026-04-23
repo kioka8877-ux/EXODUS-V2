@@ -21,6 +21,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
+from blender_layer_base import BlenderLayerBuilder
 from scene_schema import OBJECT_SPECS, PBR_MATERIAL_PRESETS
 
 _GLASS_SPEC = OBJECT_SPECS["glass_plane_*"]
@@ -67,12 +68,7 @@ def _create_glass_material(index: int) -> bpy.types.Material:
     return mat
 
 
-def _ensure_collection(name: str) -> bpy.types.Collection:
-    if name in bpy.data.collections:
-        return bpy.data.collections[name]
-    coll = bpy.data.collections.new(name)
-    bpy.context.scene.collection.children.link(coll)
-    return coll
+_ensure_collection = BlenderLayerBuilder._ensure_collection
 
 
 def build_glass_planes(

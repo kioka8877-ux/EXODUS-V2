@@ -15,7 +15,7 @@
 
 ## PROGRESSION GLOBALE
 Empire EXODUS Base V2 : [████████████] 100% — Phase 5 complete — 48/48 taches
-Codex Imperial v6 (Phase 6) : [████████░░░░] 68% — 17/25 décrets IMPLÉMENTÉS — 8 restants (audit 23.04.2026)
+Codex Imperial v6 (Phase 6) : [█████████░░░] 88% — 22/25 décrets IMPLÉMENTÉS — 3 restants (23.04.2026)
 Fregates conformes : 7/7 — Contrats 4/4 chacune (KRONOS audit 2026-04-03)
 Tech-Pretres actifs : 6/6 (SENTINEL, VULKAN_FORGE, VOID-FLUSH, ATLAS, VOX, KRONOS)
 Phase courante : PHASE 6 — FORGE DES DÉCRETS IMPÉRIAUX (Codex v6 — 23.04.2026)
@@ -104,9 +104,9 @@ Fregates :
 | U02 | D-I | Validation pré-socketing (bones check) | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
 | U02 | D-II | Fusion socketing + timeline (actor_assembly.py) | FAIBLE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
 | U02 | D-III | Bypass props automatique | FAIBLE | FAIBLE | ✅ VALIDÉ (session 21.04) |
-| U03 | D-I | Suppression code mort D2/D3 | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
-| U03 | D-II | Classe de base BlenderLayerBuilder | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
-| U03 | D-III | Stabilisation Phantom Link (racine Drive) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| U03 | D-I | Suppression code mort D2/D3 | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| U03 | D-II | Classe de base BlenderLayerBuilder | MOYENNE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| U03 | D-III | Stabilisation Phantom Link (racine Drive) | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
 | U04 | D-I | Mode manuel guidé (priorité Phase 1) | HAUTE | MOYENNE | ✅ VALIDÉ |
 | U04 | D-II | Notebook de production unifié | HAUTE | FAIBLE | ✅ VALIDÉ |
 | U04 | D-III | Reference Frame Background (ffmpeg + Blender) | HAUTE | FAIBLE | ✅ VALIDÉ |
@@ -119,7 +119,7 @@ Fregates :
 | U06 | D-II | RIFE configurable (--target-fps 60/120) | HAUTE | FAIBLE | ⚠️ PARTIEL (target_fps via PRODUCTION_PLAN.framerate — CLI --target-fps non exposé) |
 | U06 | D-III | Real-CUGAN remplace RealESRGAN | HAUTE | FAIBLE | ⬜ A IMPLEMENTER (upscaler.py utilise encore RealESRGAN) |
 
-> Compte (audit 23.04.2026) : 19 IMPLÉMENTÉS/VALIDÉS — 1 PARTIEL (U06 D-II) — 5 A IMPLEMENTER
+> Compte (audit 23.04.2026 → session) : 22 IMPLÉMENTÉS/VALIDÉS — 1 PARTIEL (U06 D-II) — 2 A IMPLEMENTER
 
 ### DOCTRINE IMPÉRIALE (LOIs INVIOLABLES — Codex v6)
 

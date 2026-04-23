@@ -69,7 +69,6 @@ class TestKeyFilesU03:
         "EXO_03_PRODUCTION.ipynb",
         "layer_assembler.py",
         "geometry_probe_u03.py",
-        "depth_map_cleaner.py",
         "dome_builder.py",
         "shadow_catcher_builder.py",
         "scene_schema.py",

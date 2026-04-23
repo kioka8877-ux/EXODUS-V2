@@ -51,16 +51,10 @@ try:
 except Exception:
     _ATLAS_AVAILABLE = False
 
-# AUTO-COPIE phantom_link.py (Patch Session #003)
-# Si l'Empereur n'a pas copié la version racine sur le Drive, on la forge depuis ce CODEBASE.
-drive_root = Path(__file__).resolve().parents[2]
-phantom_src = drive_root / "03_SCENOGRAPHY_DOCK" / "CODEBASE" / "phantom_link.py"
-phantom_dst = drive_root / "phantom_link.py"
-if phantom_src.exists() and not phantom_dst.exists():
-    shutil.copy2(phantom_src, phantom_dst)
-    print("[SETUP] ✅ phantom_link.py copié vers la racine Drive")
-
 # Phantom Link — Phase D.1
+# CONTRAT D-III : phantom_link.py vit UNIQUEMENT à la racine du Drive.
+# L'Empereur est garant de sa présence. Aucune auto-copie ici.
+# Si absent → fallback silencieux (resolve_input retourne le chemin tel quel).
 import importlib.util
 
 _phantom_spec = importlib.util.spec_from_file_location(
@@ -74,7 +68,7 @@ if _phantom_spec and _phantom_spec.loader:
 else:
     resolve_input = lambda p: Path(p)  # fallback si phantom_link.py absent
 
-SCENOGRAPHY_VERSION = "2.0.0"
+SCENOGRAPHY_VERSION = "3.0.0"
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
 BLENDER_SUBDIR = "blender-4.0.0-linux-x64"
@@ -229,8 +223,6 @@ def run_blender_scenography(
     scene_filter: list,
     exposure: float,
     vram_profile: str,
-    depth_map_dir: str,
-    semantic_masks: str,
     logger: ScenographyLogger,
     actor_blend_dir: str = "",
 ) -> bool:
@@ -270,10 +262,6 @@ def run_blender_scenography(
 
     if hdri_path:
         cmd.extend(["--hdri-path", hdri_path])
-    if depth_map_dir:
-        cmd.extend(["--depth-map-dir", depth_map_dir])
-    if semantic_masks:
-        cmd.extend(["--semantic-masks", semantic_masks])
     if actor_blend_dir:
         cmd.extend(["--actor-blend-dir", actor_blend_dir])
 
@@ -363,9 +351,7 @@ def generate_report(
             "vram_profile": vram_profile,
             "exposure_strength": exposure,
             "hdri_resolved": bool(hdri_path),
-            "layers_d1": ["dome", "shadow_catcher", "world_sync"],
-            "layers_d2_stub": ["displacement_mesh"],
-            "layers_d3_stub": ["pbr_swap", "glass_planes"],
+            "layers_d1": ["dome", "shadow_catcher", "world_sync", "procedural_terrain"],
         },
         "scenes": scenes_built,
         "schema_validations": schema_validations,
@@ -537,24 +523,6 @@ Exemples:
 
     hdri_path = resolve_hdri(map_raw_dir, plan, logger)
 
-    depth_map_subdir = map_raw_dir / "DEPTH_MAP"
-    if depth_map_subdir.exists() and any(depth_map_subdir.glob("*.png")):
-        depth_map_dir = str(depth_map_subdir)
-        logger.success(f"Depth maps trouvées : {depth_map_subdir}")
-    elif map_raw_dir.exists() and any(map_raw_dir.glob("*.png")):
-        depth_map_dir = str(map_raw_dir)
-        logger.success(f"Depth maps trouvées (racine) : {map_raw_dir}")
-    else:
-        depth_map_dir = ""
-        logger.warn("Aucune depth map trouvée — displacement mesh sans texture")
-    semantic_masks = ""
-    sm_path = map_raw_dir / "semantic_masks.json"
-    if sm_path.exists():
-        semantic_masks = str(sm_path)
-        logger.success(f"Semantic masks trouvé : {sm_path}")
-    else:
-        logger.debug("semantic_masks.json non trouvé (D3 futur)")
-
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Auto-détection du répertoire actor blend
@@ -582,8 +550,6 @@ Exemples:
         print(f"  VRAM Profile   : {args.vram_profile}")
         print(f"  Exposure       : {args.exposure}")
         print(f"  HDRi           : {hdri_path or 'fallback'}")
-        print(f"  Depth maps     : {depth_map_dir or 'N/A'}")
-        print(f"  Semantic masks : {semantic_masks or 'N/A'}")
         if scene_filter:
             print(f"  Scènes filtrées: {scene_filter}")
         print(f"{'='*70}")
@@ -597,8 +563,6 @@ Exemples:
         scene_filter=scene_filter,
         exposure=args.exposure,
         vram_profile=args.vram_profile,
-        depth_map_dir=depth_map_dir,
-        semantic_masks=semantic_masks,
         logger=logger,
         actor_blend_dir=actor_blend_dir,
     )

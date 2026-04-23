@@ -1,19 +1,13 @@
 #!/usr/bin/env python3
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║      LAYER ASSEMBLER — Assemblage Tri-Layer — Script Blender Headless       ║
+║      LAYER ASSEMBLER — Assemblage Tri-Layer D1 — Script Blender Headless    ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Appelé par EXO_03_SCENOGRAPHY.py via :                                     ║
 ║    blender --background --python layer_assembler.py -- [args]               ║
 ║                                                                              ║
-║  Phase D1 : Dome + Shadow Catcher + World Sync                              ║
-║  Phase D2 : Displacement Mesh (ACTIVE)                                       ║
-║  Phase D3 : PBR Swap + Glass (ACTIVE)                                        ║
-║                                                                              ║
-║  FIX #2 — VULKAN_FORGE 2026-04-09                                           ║
-║  - Détection précoce échec depth/SAM                                        ║
-║  - Mode PROCEDURAL_FALLBACK : sol+murs+porte+PBR (dimensions réelles)       ║
-║  - Log explicite [U03] + JSON depth_status/sam_status                       ║
+║  Phase D1 : Dome + Shadow Catcher + World Sync + Terrain Procédural         ║
+║  Phase D2 / D3 : voir ROADMAP_U03.md (fonctionnalités futures)              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -32,58 +26,16 @@ if str(SCRIPT_DIR) not in sys.path:
 from dome_builder import build_infinity_dome, apply_dome_material
 from shadow_catcher_builder import build_shadow_catcher
 from world_sync import setup_world_sync, setup_render_settings
-from displacement_builder import build_displacement_mesh
-from pbr_swap_builder import build_pbr_surfaces
-from glass_builder import build_glass_planes
 from scene_schema import ENVIRONMENT_TO_SCENE_PROFILE, DEFAULT_SCENE_PROFILE
 
-ASSEMBLER_VERSION = "2.2.0"  # FIX #2 — Fallback procédural
+ASSEMBLER_VERSION = "3.0.0"  # D-I Codex v6 — suppression code mort D2/D3
 
 REQUIRED_COLLECTIONS = ["ENV_DOME", "ENV_TERRAIN", "ENV_SHADOW", "ENV_GLASS", "ENV_PBR"]
 
-# ─── STATUTS DEPTH / SAM ──────────────────────────────────────────────────────
-STATUS_OK        = "OK"
-STATUS_FALLBACK  = "FALLBACK"
 
-
-def _detect_depth_sam_status(depth_map_dir: str, semantic_masks_path: str) -> Dict[str, str]:
+def _build_procedural_interior(collection_name: str = "ENV_TERRAIN") -> List[bpy.types.Object]:
     """
-    Détecte la disponibilité réelle des depth maps et masques SAM.
-
-    Retourne un dict avec :
-      - depth_status : "OK" | "FALLBACK"
-      - sam_status   : "OK" | "FALLBACK"
-    """
-    depth_ok = False
-    if depth_map_dir and Path(depth_map_dir).is_dir():
-        pngs = list(Path(depth_map_dir).glob("*.png"))
-        if pngs and any(p.stat().st_size > 0 for p in pngs):
-            depth_ok = True
-
-    sam_ok = False
-    if semantic_masks_path and Path(semantic_masks_path).exists():
-        try:
-            content = Path(semantic_masks_path).read_text().strip()
-            if content and content != "{}":
-                sam_ok = True
-        except Exception:
-            pass
-
-    depth_status = STATUS_OK if depth_ok else STATUS_FALLBACK
-    sam_status   = STATUS_OK if sam_ok   else STATUS_FALLBACK
-
-    if depth_status == STATUS_FALLBACK or sam_status == STATUS_FALLBACK:
-        print(f"[U03] Fallback procédural activé (depth/SAM indisponibles) "
-              f"— depth={depth_status}, sam={sam_status}")
-    else:
-        print(f"[U03] depth={depth_status}, sam={sam_status} — mode normal")
-
-    return {"depth_status": depth_status, "sam_status": sam_status}
-
-
-def _build_procedural_fallback(collection_name: str = "ENV_TERRAIN") -> List[bpy.types.Object]:
-    """
-    Génère un intérieur house_interior procédural en dimensions réelles.
+    Génère un terrain/intérieur procédural en dimensions réelles (terrain D1 actif).
 
     Géométrie :
       - Sol        : 4x4m, Z=0
@@ -165,7 +117,7 @@ def _build_procedural_fallback(collection_name: str = "ENV_TERRAIN") -> List[bpy
                rot_euler=(math.radians(90), 0, 0),
                mat=mat_door)
 
-    print(f"[U03] PROCEDURAL_FALLBACK construit — {len(created)} objets "
+    print(f"[U03] Terrain procédural construit — {len(created)} objets "
           f"(sol 4x4m, murs 2.5m, porte 0.9x2m)")
     return created
 
@@ -346,8 +298,6 @@ def _build_scene_report() -> Dict:
 
 def assemble_scene(
     scene_data: Dict,
-    depth_map_dir: str = "",
-    semantic_masks_path: str = "",
     hdri_path: Optional[str] = None,
     output_dir: str = ".",
     exposure_strength: float = 1.0,
@@ -355,10 +305,9 @@ def assemble_scene(
     actor_blend_dir: str = "",
 ) -> Dict:
     """
-    Assemble une scène complète Tri-Layer.
+    Assemble une scène Tri-Layer D1 (Dome + Shadow + World Sync + Terrain procédural).
 
-    FIX #2 : Détection précoce depth/SAM + PROCEDURAL_FALLBACK si indisponibles.
-    Ne skip jamais l'assemblage — produit toujours environment_*.blend.
+    Layers D2 (Displacement Mesh) et D3 (PBR Swap) : voir ROADMAP_U03.md.
     """
     scene_id = scene_data.get("scene_id", "unknown")
     env = scene_data.get("environment", {})
@@ -372,13 +321,6 @@ def assemble_scene(
     print(f"\n[ASSEMBLER] === Assemblage scène {scene_id} ===")
     print(f"[ASSEMBLER] environment_id={environment_id!r} → scene_type={scene_type}, mood={mood}")
     print(f"[ASSEMBLER] exposure={exposure_strength}, vram={vram_profile}")
-
-    # ── FIX #2 : Détection précoce depth / SAM ───────────────────────────────
-    depth_sam = _detect_depth_sam_status(depth_map_dir, semantic_masks_path)
-    depth_status = depth_sam["depth_status"]
-    sam_status   = depth_sam["sam_status"]
-    use_fallback = (depth_status == STATUS_FALLBACK or sam_status == STATUS_FALLBACK)
-    # ─────────────────────────────────────────────────────────────────────────
 
     _clear_scene()
 
@@ -410,30 +352,7 @@ def assemble_scene(
 
     setup_render_settings(engine="CYCLES", samples=128)
 
-    # ── FIX #2 : Branche FALLBACK vs NORMAL ──────────────────────────────────
-    if use_fallback:
-        print(f"[U03] Mode PROCEDURAL_FALLBACK — depth={depth_status}, sam={sam_status}")
-        fallback_objects = _build_procedural_fallback(collection_name="ENV_TERRAIN")
-        displacement_obj = None
-        pbr_objects      = []
-        glass_objects    = []
-        print(f"[U03] PROCEDURAL_FALLBACK prêt — {len(fallback_objects)} objets générés")
-    else:
-        displacement_obj = build_displacement_mesh(
-            collection_name="ENV_TERRAIN",
-            depth_map_dir=depth_map_dir,
-            semantic_masks_path=semantic_masks_path,
-            vram_profile=vram_profile,
-        )
-        pbr_objects = build_pbr_surfaces(
-            collection_name="ENV_PBR",
-            semantic_masks_path=semantic_masks_path,
-        )
-        glass_objects = build_glass_planes(
-            collection_name="ENV_GLASS",
-            semantic_masks_path=semantic_masks_path,
-        )
-    # ─────────────────────────────────────────────────────────────────────────
+    _build_procedural_interior(collection_name="ENV_TERRAIN")
 
     # CAMÉRA DEFAULT — placeholder overridable par U04
     cam_data = bpy.data.cameras.new("camera_main")
@@ -451,8 +370,7 @@ def assemble_scene(
     )
     actor_injected = actor_count > 0
 
-    active_layers = "dome,shadow,world_sync,camera"
-    active_layers += ",procedural_fallback" if use_fallback else ",displacement,pbr,glass"
+    active_layers = "dome,shadow,world_sync,procedural_terrain,camera"
     if actor_injected:
         active_layers += ",actor"
     _stamp_custom_properties(active_layers)
@@ -483,16 +401,10 @@ def assemble_scene(
         "hdri_used": resolved_hdri is not None,
         "actor_injected": actor_injected,
         "actor_objects_count": actor_count,
-        # ── FIX #2 : statuts depth/SAM documentés ──────────────────────────
-        "depth_status": depth_status,
-        "sam_status": sam_status,
-        "procedural_fallback_active": use_fallback,
-        # ───────────────────────────────────────────────────────────────────
         "scene_report": scene_report,
     }
 
-    print(f"[ASSEMBLER] === Scène {scene_id} terminée — "
-          f"fallback={'OUI' if use_fallback else 'NON'} ===\n")
+    print(f"[ASSEMBLER] === Scène {scene_id} terminée ===\n")
     return result
 
 
@@ -509,10 +421,6 @@ def main() -> None:
     )
     parser.add_argument("--production-plan", required=True,
                         help="Chemin vers PRODUCTION_PLAN.JSON")
-    parser.add_argument("--depth-map-dir", default="",
-                        help="Répertoire des depth maps")
-    parser.add_argument("--semantic-masks", default="",
-                        help="Chemin semantic_masks.json")
     parser.add_argument("--hdri-path", default="",
                         help="Chemin vers le fichier HDRi")
     parser.add_argument("--output-dir", required=True,
@@ -549,8 +457,6 @@ def main() -> None:
 
         result = assemble_scene(
             scene_data=scene_data,
-            depth_map_dir=args.depth_map_dir,
-            semantic_masks_path=args.semantic_masks,
             hdri_path=hdri,
             output_dir=args.output_dir,
             exposure_strength=args.exposure,
