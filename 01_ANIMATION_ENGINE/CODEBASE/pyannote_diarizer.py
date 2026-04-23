@@ -56,7 +56,7 @@ class SpeakerSegment:
 
 # ── Diarizer ──────────────────────────────────────────────────────────────────
 
-class PyannoteDialrizer:
+class PyannoteDiarizer:
     """
     Speaker diarization via pyannote.audio.
     Génère des pistes audio propres par avatar pour Rhubarb lip-sync.
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    diarizer = PyannoteDialrizer(
+    diarizer = PyannoteDiarizer(
         hf_token=args.hf_token,
         device=args.device,
         verbose=True,
@@ -371,3 +371,7 @@ if __name__ == "__main__":
         print(f"\n[OK] {len(segments)} speakers | {len(tracks)} pistes générées")
     finally:
         diarizer.teardown()
+
+
+# Alias backward-compat (SENTINEL FIX: typo PyannoteDialrizer → PyannoteDiarizer)
+PyannoteDialrizer = PyannoteDiarizer

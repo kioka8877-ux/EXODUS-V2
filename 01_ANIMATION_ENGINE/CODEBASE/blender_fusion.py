@@ -403,14 +403,23 @@ def load_blender_data(json_path: str) -> dict:
 
 
 def apply_nla_facial_animation(actor: bpy.types.Object, blender_data: dict, sync_offset: int):
-    """Applique les shape keys via NLA strips avec keyframes Bézier.
+    """Applique les shape keys via UNE SEULE action NLA fusionnée.
 
-    Pour chaque segment, 3 keyframes:
-      - frame_start : valeurs à intensity 0
-      - frame_apex  : valeurs à pleine intensité
-      - frame_end   : valeurs fade vers 0
+    SENTINEL FIX (PERF): remplace l'approche N-tracks-par-segment par une
+    action globale unique. Toutes les keyframes sont insérées en batch dans
+    un seul fcurve par shape key → évaluation NLA O(1) au lieu de O(N).
+
+    Architecture NLA résultante :
+        Track "facial_animation" (REPLACE) — 1 strip, 1 action fusionnée
+        Track "lip_sync"         (REPLACE) — géré par apply_lip_sync_nla()
+
+    Par segment : 3 keyframes par shape key active
+        frame_start → 0.0   (fade-in)
+        frame_apex  → peak  (intensité max)
+        frame_end   → 0.0   (fade-out)
+    Conflits de frame : valeur max retenue (apex wins over fade).
     """
-    log(f"Application animation faciale NLA (offset: {sync_offset} frames)")
+    log(f"Application animation faciale NLA fusionnée (offset: {sync_offset} frames)")
 
     mesh_obj = find_shape_key_mesh(actor)
     if not mesh_obj:
@@ -431,48 +440,81 @@ def apply_nla_facial_animation(actor: bpy.types.Object, blender_data: dict, sync
     if not shape_keys.animation_data:
         shape_keys.animation_data_create()
 
-    for i, seg in enumerate(segments):
-        frame_start = seg["frame_start"] - sync_offset
-        frame_end = seg["frame_end"] - sync_offset
-        frame_apex = seg["frame_apex"] - sync_offset
+    # ── Accumuler les keyframes par shape key ─────────────────────────────────
+    # kf_map: key_name → {frame: value}  (max value en cas de conflit de frame)
+    kf_map: dict = {}
+    frame_total_start = None
+    frame_total_end = 0
 
-        if frame_end < 0:
+    for seg in segments:
+        fs = max(0, seg["frame_start"] - sync_offset)
+        fe = seg["frame_end"]   - sync_offset
+        fa = max(fs, seg["frame_apex"] - sync_offset)
+
+        if fe < 0:
             continue
-        frame_start = max(0, frame_start)
 
-        action = bpy.data.actions.new(name=f"expr_segment_{i}")
+        if frame_total_start is None or fs < frame_total_start:
+            frame_total_start = fs
+        if fe > frame_total_end:
+            frame_total_end = fe
 
         for key_name, peak_value in seg["values"].items():
-            kb = shape_keys.key_blocks.get(key_name)
-            if not kb:
+            if peak_value <= 0.0:
                 continue
+            if key_name not in kf_map:
+                kf_map[key_name] = {}
+            frame_kf = kf_map[key_name]
+            # fade-in: 0.0 (ne pas écraser un peak existant)
+            if float(fs) not in frame_kf:
+                frame_kf[float(fs)] = 0.0
+            # apex: peak_value (wins)
+            frame_kf[float(fa)] = max(frame_kf.get(float(fa), 0.0), float(peak_value))
+            # fade-out: 0.0 (ne pas écraser un peak existant)
+            if float(fe) not in frame_kf:
+                frame_kf[float(fe)] = 0.0
 
-            data_path = f'key_blocks["{key_name}"].value'
-            fcurve = action.fcurves.new(data_path=data_path)
+    # ── Créer une action unique avec batch keyframe insertion ─────────────────
+    action = bpy.data.actions.new(name="facial_animation")
+    total_kf = 0
 
-            fcurve.keyframe_points.add(3)
-            fcurve.keyframe_points[0].co = (float(frame_start), 0.0)
-            fcurve.keyframe_points[1].co = (float(frame_apex), float(peak_value))
-            fcurve.keyframe_points[2].co = (float(frame_end), 0.0)
+    for key_name, frame_val_map in kf_map.items():
+        kb = shape_keys.key_blocks.get(key_name)
+        if not kb:
+            continue
 
-            for kp in fcurve.keyframe_points:
-                kp.interpolation = 'BEZIER'
-                kp.handle_left_type = 'AUTO_CLAMPED'
-                kp.handle_right_type = 'AUTO_CLAMPED'
+        data_path = f'key_blocks["{key_name}"].value'
+        fcurve = action.fcurves.new(data_path=data_path)
 
-        track = shape_keys.animation_data.nla_tracks.new()
-        track.name = f"segment_{i}"
-        strip = track.strips.new(
-            name=f"segment_{i}",
-            start=frame_start,
-            action=action,
-        )
-        strip.blend_type = 'COMBINE' if seg.get("is_transition", False) else 'REPLACE'
+        sorted_kfs = sorted(frame_val_map.items())  # [(frame, value), ...]
+        fcurve.keyframe_points.add(len(sorted_kfs))
+        for idx, (frame, val) in enumerate(sorted_kfs):
+            kp = fcurve.keyframe_points[idx]
+            kp.co = (frame, val)
+            kp.interpolation = 'BEZIER'
+            kp.handle_left_type  = 'AUTO_CLAMPED'
+            kp.handle_right_type = 'AUTO_CLAMPED'
 
-        tag = " [TRANSITION]" if seg.get("is_transition", False) else ""
-        log(f"NLA strip {i}{tag}: frames {frame_start}-{frame_end} (apex {frame_apex})")
+        total_kf += len(sorted_kfs)
 
-    log(f"Animation faciale NLA: {len(segments)} segments appliqués")
+    # ── 1 seul NLA track + 1 strip ────────────────────────────────────────────
+    if frame_total_start is None:
+        frame_total_start = 0
+
+    track = shape_keys.animation_data.nla_tracks.new()
+    track.name = "facial_animation"
+    strip = track.strips.new(
+        name="facial_animation",
+        start=frame_total_start,
+        action=action,
+    )
+    strip.blend_type = 'REPLACE'
+
+    log(
+        f"NLA fusionné: {len(segments)} segments → 1 track | "
+        f"{len(kf_map)} shape keys | {total_kf} keyframes "
+        f"(frames {frame_total_start}–{frame_total_end})"
+    )
 
 
 def apply_micro_jitter(actor: bpy.types.Object, blender_data: dict):

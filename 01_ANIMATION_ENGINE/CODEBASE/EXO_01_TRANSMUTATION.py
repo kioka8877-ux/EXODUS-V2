@@ -202,12 +202,20 @@ def run_emoca_for_avatar(
     model_path: Optional[str] = None,
     device: str = "cuda",
     verbose: bool = False,
+    extractor=None,  # SENTINEL FIX: instance réutilisable (évite rechargement du modèle)
 ) -> str:
-    """Phase C: EMOCA sur crops visage humain réel → facial_animation.json (D-II)."""
+    """Phase C: EMOCA sur crops visage humain réel → facial_animation.json (D-II).
+
+    Si `extractor` est fourni (instance déjà initialisée), le modèle n'est pas
+    rechargé → gain ~15s par avatar supplémentaire (chargement EMOCA ~4GB VRAM).
+    Le teardown() est délégué à l'appelant (main loop) pour le mode réutilisation.
+    """
     logger.info(f"EMOCA: {avatar_name}...")
     from emoca_extractor import EMOCAExtractor
 
-    extractor = EMOCAExtractor(model_path=model_path, device=device, verbose=verbose)
+    owned = extractor is None  # propriétaire de l'instance → teardown obligatoire
+    if owned:
+        extractor = EMOCAExtractor(model_path=model_path, device=device, verbose=verbose)
     try:
         segments = extractor.extract_from_crops(
             crop_paths, video_fps=video_fps, frame_indices=frame_indices
@@ -219,7 +227,8 @@ def run_emoca_for_avatar(
         logger.success(f"EMOCA {avatar_name}: {len(segments)} segments")
         return out_path
     finally:
-        extractor.teardown()
+        if owned:
+            extractor.teardown()
 
 
 def translate_facial_data(
@@ -315,6 +324,7 @@ def process_avatar(
     video_fps: float,
     logger: Logger,
     args,
+    emoca_extractor=None,  # SENTINEL FIX: instance EMOCA réutilisable
 ) -> dict:
     """Traite un avatar complet (D-IV: boucle for N in avatars)."""
     avatar_name = avatar_blend.stem
@@ -344,6 +354,7 @@ def process_avatar(
             model_path=args.emoca_model_path,
             device=args.device,
             verbose=args.verbose,
+            extractor=emoca_extractor,  # SENTINEL FIX: réutilisation modèle
         )
     else:
         # Neutral fallback
@@ -547,27 +558,51 @@ def main():
         for n in avatar_names:
             avatar_audio_tracks[n] = str(audio_path)
 
-    # ── Boucle Multi-Avatar D-IV ───────────────────────────────────────────────
+    # ── Boucle Multi-Avatar D-IV ──────────────────────────────────────────────
+    # SENTINEL FIX: instance EMOCA hoistée avant la boucle pour N avatars.
+    # Le modèle (~4GB VRAM) est chargé une seule fois et réutilisé par avatar.
     logger.section(f"FORGE — {n_avatars} avatar(s)")
+    shared_emoca = None
+    if not args.skip_emoca:
+        try:
+            from emoca_extractor import EMOCAExtractor
+            shared_emoca = EMOCAExtractor(
+                model_path=args.emoca_model_path,
+                device=args.device,
+                verbose=args.verbose,
+            )
+            shared_emoca.setup()
+            logger.success("EMOCA partagé initialisé (réutilisation N avatars)")
+        except Exception as e:
+            logger.warn(f"EMOCA shared setup échoué: {e} — fallback par avatar")
+            shared_emoca = None
+
     results = []
-    for idx, av_blend in enumerate(avatar_blends):
-        av_name = av_blend.stem
-        fd = avatar_to_face.get(av_name, {})
-        res = process_avatar(
-            idx=idx,
-            avatar_blend=av_blend,
-            face_crops=fd.get("crops", []),
-            face_frame_indices=fd.get("frame_indices", []),
-            avatar_audio=avatar_audio_tracks.get(av_name),
-            rhubarb_path=rhubarb_path,
-            blender_path=blender_path,
-            output_dir=output_dir,
-            tmp_dir=tmp_dir,
-            video_fps=float(args.fps),
-            logger=logger,
-            args=args,
-        )
-        results.append(res)
+    try:
+        for idx, av_blend in enumerate(avatar_blends):
+            av_name = av_blend.stem
+            fd = avatar_to_face.get(av_name, {})
+            res = process_avatar(
+                idx=idx,
+                avatar_blend=av_blend,
+                face_crops=fd.get("crops", []),
+                face_frame_indices=fd.get("frame_indices", []),
+                avatar_audio=avatar_audio_tracks.get(av_name),
+                rhubarb_path=rhubarb_path,
+                blender_path=blender_path,
+                output_dir=output_dir,
+                tmp_dir=tmp_dir,
+                video_fps=float(args.fps),
+                logger=logger,
+                args=args,
+                emoca_extractor=shared_emoca,
+            )
+            results.append(res)
+    finally:
+        # VOID-FLUSH: teardown unique après la boucle complète
+        if shared_emoca is not None:
+            shared_emoca.teardown()
+            logger.success("VOID-FLUSH EMOCA partagé: OK")
 
     # ── Rapport ───────────────────────────────────────────────────────────────
     elapsed_total = time.time() - t_total

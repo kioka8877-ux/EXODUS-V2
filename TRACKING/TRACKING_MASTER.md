@@ -5,7 +5,7 @@
 | # | Unité | Nom | Priorité | Conformité V2 | Statut Mutation | Bloqueur |
 |---|-------|-----|----------|----------------|-----------------|----------|
 | 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟢 CODEX v6 — 4/4 décrets IMPLÉMENTÉS (23.04.2026) | — |
-| 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟢 CODEX v6 — 4/4 décrets IMPLÉMENTÉS (23.04.2026) | — |
+| 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟢 CODEX v6 — 4/4 décrets + SENTINEL 4 fixes + VOX tests (23.04.2026) | — |
 | 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟡 CODEX v6 — 2 décrets à implémenter | — |
 | 3 | U03 | SCENOGRAPHY DOCK | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
 | 4 | U04 | PHOTOGRAPHY WING | ✅ Done | 100% | 🟢 CODEX v6 — 4 décrets VALIDÉS | — |

@@ -109,7 +109,13 @@ INPUTS : avatar-ferrus-N.blend (outil ext.) + video_source.mp4 + audio_original.
 | 23.04.2026 | D-III Lip-sync obligatoire | ✅ | `pyannote_diarizer.py` (NEW + VOID-FLUSH), `EXO_01_TRANSMUTATION.py` (Rhubarb systématique + warn explicite si absent) |
 | 23.04.2026 | D-IV Multi-avatar orchestration | ✅ | `EXO_01_TRANSMUTATION.py` (rewrite v3 — boucle for N in avatars, scalable 1→N), `OUT_ANIMATED_ACTORS/` (NEW dir) |
 | 23.04.2026 | requirements.txt V3 | ✅ | `requirements.txt` (numpy, opencv, insightface, onnxruntime-gpu, pyannote.audio, soundfile, torch) |
+| 23.04.2026 | SENTINEL FIX #1 — typo PyannoteDialrizer → PyannoteDiarizer (alias backward-compat) | ✅ | `pyannote_diarizer.py` |
+| 23.04.2026 | SENTINEL FIX #2 — smoothing.py intégré dans emoca_extractor (_smooth_frame_intensities, SavGol w=5) | ✅ | `emoca_extractor.py` |
+| 23.04.2026 | SENTINEL FIX #3 — NLA fusionné: N tracks/N actions → 1 track/1 action globale (perf O(1)) | ✅ | `blender_fusion.py` (apply_nla_facial_animation rewrite) |
+| 23.04.2026 | SENTINEL FIX #4 — EMOCA shared: modèle hoisté avant boucle multi-avatar (évite N rechargements) | ✅ | `EXO_01_TRANSMUTATION.py` (process_avatar + main VOID-FLUSH) |
+| 23.04.2026 | VOX — RULES.md + test_u01.py (27 tests Pytest, couverture schema+translator+smoothing+diarizer) | ✅ | `RULES.md` (NEW), `CODEBASE/test_u01.py` (NEW) |
 
+<!-- v6.0 — SENTINEL AUDIT + 4 FIXES + VOX tests — 23.04.2026 -->
 <!-- v5.0 — Phase 6 Codex Imperial v6 — 4/4 décrets D-I D-II D-III D-IV IMPLÉMENTÉS — 23.04.2026 -->
 <!-- v4.0 — Codex Imperial v6 — Pivot V1 — 23.04.2026 -->
 <!-- v3.0 — U01 SCELLÉ 100% — B1.1 + B1.2 + B1.3 complétées -->

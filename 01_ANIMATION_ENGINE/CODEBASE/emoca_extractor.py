@@ -231,6 +231,11 @@ class EMOCAExtractor:
             params["frame"] = frame_idx
             frame_data.append(params)
 
+        # ── SMOOTHING (SENTINEL FIX: intégration smoothing.py) ───────────────
+        # Applique Savitzky-Golay sur les intensités brutes avant segmentation.
+        # Réduit le jitter d'expression frame-à-frame → segments plus stables.
+        frame_data = self._smooth_frame_intensities(frame_data)
+
         # Segmenter en intervals temporels
         segments = self._temporalize_params(frame_data, video_fps)
         self._log(f"Extraction: {len(crop_paths)} crops → {len(segments)} segments")
@@ -375,6 +380,31 @@ class EMOCAExtractor:
             "mouth": mouth_preset,
             "intensity": round(intensity, 3),
         }
+
+    # ── Smoothing des intensités brutes ──────────────────────────────────────
+
+    def _smooth_frame_intensities(self, frame_data: List[dict]) -> List[dict]:
+        """
+        Applique un filtre Savitzky-Golay sur les intensités par frame.
+        Réduit le jitter sans effacer les peaks (window=5, order=2).
+        Si numpy/scipy indisponibles, retourne frame_data inchangé.
+        """
+        if not NP_AVAILABLE or len(frame_data) < 5:
+            return frame_data
+        try:
+            from smoothing import savgol_smooth
+            intensities = np.array([fd["intensity"] for fd in frame_data])
+            smoothed = savgol_smooth(intensities, window=5, order=2)
+            result = []
+            for fd, sv in zip(frame_data, smoothed):
+                new_fd = dict(fd)
+                new_fd["intensity"] = float(np.clip(sv, 0.1, 1.0))
+                result.append(new_fd)
+            self._log(f"Smoothing OK: {len(result)} frames lissées (SavGol w=5)")
+            return result
+        except Exception as e:
+            self._log(f"Smoothing skip: {e}")
+            return frame_data
 
     # ── Segmentation temporelle ───────────────────────────────────────────────
 
