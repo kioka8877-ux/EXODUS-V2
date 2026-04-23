@@ -4,7 +4,7 @@
 
 | # | Unité | Nom | Priorité | Conformité V2 | Statut Mutation | Bloqueur |
 |---|-------|-----|----------|----------------|-----------------|----------|
-| 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
+| 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟢 CODEX v6 — 4/4 décrets IMPLÉMENTÉS (23.04.2026) | — |
 | 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
 | 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟡 CODEX v6 — 2 décrets à implémenter | — |
 | 3 | U03 | SCENOGRAPHY DOCK | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
@@ -15,7 +15,7 @@
 
 ## PROGRESSION GLOBALE
 Empire EXODUS Base V2 : [████████████] 100% — Phase 5 complete — 48/48 taches
-Codex Imperial v6 (Phase 6) : [░░░░░░░░░░░░] 20% — 4/20 décrets VALIDÉS — 16 restants
+Codex Imperial v6 (Phase 6) : [██░░░░░░░░░░] 40% — 8/20 décrets VALIDÉS — 12 restants (U00 scellé 23.04.2026)
 Fregates conformes : 7/7 — Contrats 4/4 chacune (KRONOS audit 2026-04-03)
 Tech-Pretres actifs : 6/6 (SENTINEL, VULKAN_FORGE, VOID-FLUSH, ATLAS, VOX, KRONOS)
 Phase courante : PHASE 6 — FORGE DES DÉCRETS IMPÉRIAUX (Codex v6 — 23.04.2026)
@@ -93,10 +93,10 @@ Fregates :
 
 | Frégate | Décret | Titre | Priorité | Complexité | Statut |
 |---------|--------|-------|----------|------------|--------|
-| U00 | D-I | Arsenal externe (arsenal.json) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
-| U00 | D-II | Mode --skip-gpu | MOYENNE | FAIBLE | ⬜ A IMPLEMENTER |
-| U00 | D-III | Validation JSON Gemini (retry x3) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
-| U00 | D-IV | Architecture duale API / Injection | HAUTE | MOYENNE | ⬜ A IMPLEMENTER |
+| U00 | D-I | Arsenal externe (arsenal.json) | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| U00 | D-II | Mode --skip-gpu | MOYENNE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| U00 | D-III | Validation JSON Gemini (retry x3) | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| U00 | D-IV | Architecture duale API / Injection | HAUTE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
 | U01 | D-I | Externalisation corps animé (outil ext.) | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
 | U01 | D-II | EMOCA sur visage humain réel | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
 | U01 | D-III | Lip-sync obligatoire (Rhubarb + pyannote) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |

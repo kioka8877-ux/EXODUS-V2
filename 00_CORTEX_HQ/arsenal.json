@@ -1,0 +1,177 @@
+{
+  "_meta": {
+    "description": "Arsenal Imperial EXODUS V2 — Modifié par l'Empereur sans toucher au code",
+    "version": "1.0",
+    "last_updated": "2026-04-23"
+  },
+  "roblox_characters": {
+    "description": "Personnages Roblox officiels disponibles",
+    "items": [
+      {"id": "bacon_hair", "name": "Bacon Hair", "type": "classic_avatar"},
+      {"id": "noob", "name": "Noob (Oof)", "type": "classic_avatar"},
+      {"id": "guest", "name": "Guest 666", "type": "classic_avatar"},
+      {"id": "builderman", "name": "Builderman", "type": "classic_avatar"},
+      {"id": "robloxian_2_0", "name": "Robloxian 2.0", "type": "modern_avatar"},
+      {"id": "rthro_normal", "name": "Rthro Normal", "type": "rthro_avatar"},
+      {"id": "rthro_slender", "name": "Rthro Slender", "type": "rthro_avatar"},
+      {"id": "korblox_deathspeaker", "name": "Korblox Deathspeaker", "type": "premium_avatar"},
+      {"id": "headless_horseman", "name": "Headless Horseman", "type": "premium_avatar"},
+      {"id": "dominus_infernus", "name": "Dominus Infernus", "type": "legendary_avatar"}
+    ]
+  },
+  "props": {
+    "description": "Objets et accessoires disponibles",
+    "categories": {
+      "weapons": [
+        {"id": "linked_sword", "name": "Linked Sword"},
+        {"id": "firebrand", "name": "Firebrand"},
+        {"id": "darkheart", "name": "Darkheart"},
+        {"id": "ghostwalker", "name": "Ghostwalker"},
+        {"id": "illumina", "name": "Illumina"},
+        {"id": "venomshank", "name": "Venomshank"},
+        {"id": "icedagger", "name": "Icedagger"},
+        {"id": "windforce", "name": "Windforce"},
+        {"id": "classic_bomb", "name": "Classic Bomb"},
+        {"id": "rocket_launcher", "name": "Rocket Launcher"},
+        {"id": "gravity_coil", "name": "Gravity Coil"},
+        {"id": "speed_coil", "name": "Speed Coil"}
+      ],
+      "vehicles": [
+        {"id": "classic_jeep", "name": "Classic Jeep"},
+        {"id": "motorcycle", "name": "Motorcycle"},
+        {"id": "helicopter", "name": "Helicopter"},
+        {"id": "plane", "name": "Plane"},
+        {"id": "boat", "name": "Boat"},
+        {"id": "skateboard", "name": "Skateboard"},
+        {"id": "magic_carpet", "name": "Magic Carpet"}
+      ],
+      "furniture": [
+        {"id": "wooden_chair", "name": "Wooden Chair"},
+        {"id": "office_chair", "name": "Office Chair"},
+        {"id": "couch", "name": "Couch"},
+        {"id": "bed", "name": "Bed"},
+        {"id": "table", "name": "Table"},
+        {"id": "desk", "name": "Desk"},
+        {"id": "lamp", "name": "Lamp"},
+        {"id": "bookshelf", "name": "Bookshelf"}
+      ],
+      "effects": [
+        {"id": "sparkles", "name": "Sparkles"},
+        {"id": "fire", "name": "Fire"},
+        {"id": "smoke", "name": "Smoke"},
+        {"id": "explosion", "name": "Explosion"},
+        {"id": "confetti", "name": "Confetti"},
+        {"id": "hearts", "name": "Hearts"},
+        {"id": "music_notes", "name": "Music Notes"},
+        {"id": "rain", "name": "Rain"},
+        {"id": "snow", "name": "Snow"},
+        {"id": "lightning", "name": "Lightning"}
+      ],
+      "generic": [
+        {"id": "generic_prop", "name": "Generic Prop", "note": "Placeholder for unmatched items"}
+      ]
+    }
+  },
+  "environments": {
+    "description": "Décors et environnements disponibles",
+    "items": [
+      {"id": "classic_baseplate", "name": "Classic Baseplate", "type": "basic"},
+      {"id": "grass_terrain", "name": "Grass Terrain", "type": "nature"},
+      {"id": "desert_terrain", "name": "Desert Terrain", "type": "nature"},
+      {"id": "snow_terrain", "name": "Snow Terrain", "type": "nature"},
+      {"id": "water_terrain", "name": "Water Terrain", "type": "nature"},
+      {"id": "mountain_terrain", "name": "Mountain Terrain", "type": "nature"},
+      {"id": "forest", "name": "Forest", "type": "nature"},
+      {"id": "city_street", "name": "City Street", "type": "urban"},
+      {"id": "office_interior", "name": "Office Interior", "type": "interior"},
+      {"id": "house_interior", "name": "House Interior", "type": "interior"},
+      {"id": "school_interior", "name": "School Interior", "type": "interior"},
+      {"id": "hospital_interior", "name": "Hospital Interior", "type": "interior"},
+      {"id": "space_station", "name": "Space Station", "type": "scifi"},
+      {"id": "medieval_castle", "name": "Medieval Castle", "type": "fantasy"},
+      {"id": "pirate_ship", "name": "Pirate Ship", "type": "fantasy"},
+      {"id": "obby_course", "name": "Obby Course", "type": "game"},
+      {"id": "tycoon_base", "name": "Tycoon Base", "type": "game"},
+      {"id": "murder_mystery_mansion", "name": "Murder Mystery Mansion", "type": "game"},
+      {"id": "jailbreak_prison", "name": "Jailbreak Prison", "type": "game"},
+      {"id": "adopt_me_house", "name": "Adopt Me House", "type": "game"}
+    ]
+  },
+  "animations": {
+    "description": "Animations de base disponibles",
+    "items": [
+      {"id": "idle", "name": "Idle", "type": "basic"},
+      {"id": "walk", "name": "Walk", "type": "locomotion"},
+      {"id": "run", "name": "Run", "type": "locomotion"},
+      {"id": "jump", "name": "Jump", "type": "locomotion"},
+      {"id": "fall", "name": "Fall", "type": "locomotion"},
+      {"id": "climb", "name": "Climb", "type": "locomotion"},
+      {"id": "swim", "name": "Swim", "type": "locomotion"},
+      {"id": "sit", "name": "Sit", "type": "pose"},
+      {"id": "lay", "name": "Lay Down", "type": "pose"},
+      {"id": "wave", "name": "Wave", "type": "emote"},
+      {"id": "point", "name": "Point", "type": "emote"},
+      {"id": "dance1", "name": "Dance 1", "type": "emote"},
+      {"id": "dance2", "name": "Dance 2", "type": "emote"},
+      {"id": "dance3", "name": "Dance 3", "type": "emote"},
+      {"id": "laugh", "name": "Laugh", "type": "emote"},
+      {"id": "cheer", "name": "Cheer", "type": "emote"},
+      {"id": "salute", "name": "Salute", "type": "emote"},
+      {"id": "sword_slash", "name": "Sword Slash", "type": "combat"},
+      {"id": "punch", "name": "Punch", "type": "combat"},
+      {"id": "kick", "name": "Kick", "type": "combat"},
+      {"id": "death", "name": "Death", "type": "combat"},
+      {"id": "victory", "name": "Victory", "type": "combat"}
+    ]
+  },
+  "audio": {
+    "description": "Sons et musiques disponibles",
+    "items": [
+      {"id": "oof", "name": "Oof Sound", "type": "sfx"},
+      {"id": "sword_hit", "name": "Sword Hit", "type": "sfx"},
+      {"id": "explosion_sfx", "name": "Explosion", "type": "sfx"},
+      {"id": "coin_collect", "name": "Coin Collect", "type": "sfx"},
+      {"id": "level_up", "name": "Level Up", "type": "sfx"},
+      {"id": "door_open", "name": "Door Open", "type": "sfx"},
+      {"id": "footstep", "name": "Footstep", "type": "sfx"},
+      {"id": "ambient_nature", "name": "Ambient Nature", "type": "ambient"},
+      {"id": "ambient_city", "name": "Ambient City", "type": "ambient"},
+      {"id": "ambient_horror", "name": "Ambient Horror", "type": "ambient"},
+      {"id": "epic_orchestral", "name": "Epic Orchestral", "type": "music"},
+      {"id": "chill_lofi", "name": "Chill Lo-Fi", "type": "music"},
+      {"id": "action_electronic", "name": "Action Electronic", "type": "music"},
+      {"id": "comedy_quirky", "name": "Comedy Quirky", "type": "music"},
+      {"id": "horror_tension", "name": "Horror Tension", "type": "music"}
+    ]
+  },
+  "camera_styles": {
+    "description": "Styles de caméra disponibles",
+    "items": [
+      {"id": "static", "name": "Static Shot", "description": "Caméra fixe"},
+      {"id": "follow", "name": "Follow Cam", "description": "Suit le personnage"},
+      {"id": "orbit", "name": "Orbit Cam", "description": "Tourne autour du sujet"},
+      {"id": "dolly", "name": "Dolly Shot", "description": "Travelling avant/arrière"},
+      {"id": "pan", "name": "Pan Shot", "description": "Panoramique horizontal"},
+      {"id": "tilt", "name": "Tilt Shot", "description": "Panoramique vertical"},
+      {"id": "crane", "name": "Crane Shot", "description": "Mouvement vertical"},
+      {"id": "handheld", "name": "Handheld", "description": "Caméra à l'épaule"},
+      {"id": "first_person", "name": "First Person", "description": "Vue subjective"},
+      {"id": "cinematic", "name": "Cinematic", "description": "Plans cinématographiques variés"}
+    ]
+  },
+  "lighting_presets": {
+    "description": "Préréglages d'éclairage disponibles",
+    "items": [
+      {"id": "daylight", "name": "Daylight", "description": "Lumière du jour standard"},
+      {"id": "sunset", "name": "Sunset", "description": "Coucher de soleil chaud"},
+      {"id": "sunrise", "name": "Sunrise", "description": "Lever de soleil doux"},
+      {"id": "night", "name": "Night", "description": "Nuit avec lune"},
+      {"id": "overcast", "name": "Overcast", "description": "Ciel couvert"},
+      {"id": "foggy", "name": "Foggy", "description": "Brouillard atmosphérique"},
+      {"id": "neon", "name": "Neon", "description": "Éclairage néon cyberpunk"},
+      {"id": "dramatic", "name": "Dramatic", "description": "Contraste élevé dramatique"},
+      {"id": "soft", "name": "Soft", "description": "Lumière douce diffuse"},
+      {"id": "horror", "name": "Horror", "description": "Éclairage sombre inquiétant"}
+    ]
+  }
+}

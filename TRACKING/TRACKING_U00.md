@@ -84,10 +84,10 @@ Extraire TOUTES les données nécessaires aux frégates en aval en une seule pas
 
 | # | Décret | Description | Priorité | Complexité | Statut |
 |---|--------|-------------|----------|------------|--------|
-| D-I | Arsenal externe | Extraire IMPERIAL_ARSENAL vers arsenal.json dynamique — L'Empereur modifie l'arsenal sans ouvrir le code | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
-| D-II | Mode --skip-gpu | Flag CLI : si activé, bypasse Phase 3 (DepthAnything) + Phase 4 (SAM) → PRODUCTION_PLAN.JSON sans depth/seg | MOYENNE | FAIBLE | ⬜ A IMPLEMENTER |
-| D-III | Validation JSON Gemini | Schéma strict sur le JSON Gemini avant écriture + retry automatique max 3 tentatives + erreur explicite | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
-| D-IV | Architecture duale API / Injection | Cellule 0 : MODE="api"\|"injection". Cellule 2 : Gemini API (mode api). Cellule 2b : Widget JSON + métaprompt (mode injection). Convergence : dispatch_master_json(). Phases GPU identiques dans les deux modes | HAUTE | MOYENNE | ⬜ A IMPLEMENTER |
+| D-I | Arsenal externe | Extraire IMPERIAL_ARSENAL vers arsenal.json dynamique — L'Empereur modifie l'arsenal sans ouvrir le code | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| D-II | Mode --skip-gpu | Flag CLI : si activé, bypasse Phase 3 (DepthAnything) + Phase 4 (SAM) → PRODUCTION_PLAN.JSON sans depth/seg | MOYENNE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| D-III | Validation JSON Gemini | Schéma strict sur le JSON Gemini avant écriture + retry automatique max 3 tentatives + erreur explicite | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| D-IV | Architecture duale API / Injection | Cellule 0 : MODE="api"\|"injection". Cellule 2 : Gemini API (mode api). Cellule 2b : Widget JSON + métaprompt (mode injection). Convergence : dispatch_master_json(). Phases GPU identiques dans les deux modes | HAUTE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
 
 **Architecture duale cible (Codex v6) :**
 ```
@@ -102,3 +102,14 @@ Cellule 3  → M6 Depth + M7 SAM + flags finaux (commun)
 
 <!-- v3.0 — Codex Imperial v6 — 23.04.2026 -->
 <!-- v2.1 — Post-Mutation Alignement -->
+
+## 8. REGISTRE DE FORGE — PHASE 6
+
+| Date | Action | Statut | Fichiers modifiés |
+|------|--------|--------|-------------------|
+| 2026-04-23 | D-I Arsenal externe | ✅ | `00_CORTEX_HQ/arsenal.json` (NEW), `EXO_00_CORTEX.py` (load_arsenal / reload_arsenal_from_drive / _build_arsenal_enums) |
+| 2026-04-23 | D-II --skip-gpu | ✅ | `EXO_00_CORTEX.py` (argparse + run_pipeline wrapping phases 3+4) |
+| 2026-04-23 | D-III Validation JSON Gemini | ✅ | `EXO_00_CORTEX.py` (validate_structure intégrée dans call_gemini_v2 retry loop) |
+| 2026-04-23 | D-IV Architecture duale | ✅ | `EXO_00_CORTEX_PRODUCTION.ipynb` (refonte 7 cellules), `GEMINI_CHAT_METAPROMPT.md` (NEW) |
+
+<!-- v4.0 — Phase 6 Codex Imperial v6 — 4/4 décrets implémentés — 23.04.2026 -->

@@ -6,13 +6,14 @@ Orchestrateur 6-moteurs séquentiel → Master JSON V2
 Phases:
     Phase 1 CPU (0 VRAM)  : M2 Audio + M3 FOV
     Phase 2 API (0 VRAM)  : M1 Gemini (response_schema) → Dispatcher → M4 + M5
-    Phase 3 GPU-A (~3.5GB) : M6 DepthAnything V2
-    Phase 4 GPU-B (~4GB)   : M7 SAM vit_h
+    Phase 3 GPU-A (~3.5GB) : M6 DepthAnything V2  [skip avec --skip-gpu]
+    Phase 4 GPU-B (~4GB)   : M7 SAM vit_h          [skip avec --skip-gpu]
 
 Usage:
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --dry-run
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --rerun audio_extraction
+    python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --skip-gpu
 """
 
 import argparse
@@ -75,10 +76,81 @@ except ImportError:
 
 
 # ============================================================================
-# IMPERIAL ARSENAL — ASSETS AUTORISÉS (HARDCODÉ)
+# IMPERIAL ARSENAL — CHARGÉ DYNAMIQUEMENT DEPUIS arsenal.json (DÉCRET D-I)
+# Modifiez 00_CORTEX_HQ/arsenal.json sans toucher au code.
 # ============================================================================
 
-IMPERIAL_ARSENAL = {
+def load_arsenal(arsenal_path: Path) -> dict:
+    """Charge l'Arsenal Impérial depuis un fichier arsenal.json."""
+    if not arsenal_path.exists():
+        raise FileNotFoundError(
+            f"[ARSENAL] arsenal.json non trouvé: {arsenal_path}\n"
+            f"Créez le fichier ou vérifiez --drive-root."
+        )
+    with open(arsenal_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    data.pop('_meta', None)
+    return data
+
+
+def _build_arsenal_enums(arsenal: dict) -> dict:
+    """Extrait les listes d'IDs depuis l'arsenal pour le schema et la validation."""
+    char_ids = [c["id"] for c in arsenal["roblox_characters"]["items"]]
+    prop_ids = []
+    for cat in arsenal["props"]["categories"].values():
+        prop_ids.extend([p["id"] for p in cat])
+    prop_ids.append("none")
+    return {
+        "CHARACTER_IDS": char_ids,
+        "PROP_IDS": prop_ids,
+        "ENVIRONMENT_IDS": [e["id"] for e in arsenal["environments"]["items"]],
+        "ANIMATION_IDS":   [a["id"] for a in arsenal["animations"]["items"]],
+        "CAMERA_IDS":      [c["id"] for c in arsenal["camera_styles"]["items"]],
+        "LIGHTING_IDS":    [l["id"] for l in arsenal["lighting_presets"]["items"]],
+        "AUDIO_IDS":       [a["id"] for a in arsenal["audio"]["items"]] + ["none"],
+    }
+
+
+def reload_arsenal_from_drive(drive_root: Path) -> None:
+    """Recharge l'Arsenal depuis {drive_root}/00_CORTEX_HQ/arsenal.json.
+    Met à jour les variables globales d'IDs utilisées par le schema Gemini."""
+    global IMPERIAL_ARSENAL, CHARACTER_IDS, PROP_IDS, ENVIRONMENT_IDS
+    global ANIMATION_IDS, CAMERA_IDS, LIGHTING_IDS, AUDIO_IDS
+    arsenal_path = drive_root / "00_CORTEX_HQ" / "arsenal.json"
+    IMPERIAL_ARSENAL = load_arsenal(arsenal_path)
+    enums = _build_arsenal_enums(IMPERIAL_ARSENAL)
+    CHARACTER_IDS  = enums["CHARACTER_IDS"]
+    PROP_IDS       = enums["PROP_IDS"]
+    ENVIRONMENT_IDS = enums["ENVIRONMENT_IDS"]
+    ANIMATION_IDS  = enums["ANIMATION_IDS"]
+    CAMERA_IDS     = enums["CAMERA_IDS"]
+    LIGHTING_IDS   = enums["LIGHTING_IDS"]
+    AUDIO_IDS      = enums["AUDIO_IDS"]
+
+
+def _load_arsenal_auto() -> dict:
+    """Chargement automatique à l'import — cherche arsenal.json dans les emplacements standards."""
+    candidates = [
+        Path(__file__).parent.parent / "arsenal.json",  # 00_CORTEX_HQ/arsenal.json
+        Path.cwd() / "arsenal.json",
+        Path.cwd() / "00_CORTEX_HQ" / "arsenal.json",
+    ]
+    for p in candidates:
+        if p.exists():
+            return load_arsenal(p)
+    # Aucun fichier trouvé — retourne un stub minimal pour ne pas bloquer l'import
+    # reload_arsenal_from_drive() sera appelé par run_pipeline() avant toute exécution réelle
+    print("[WARN] arsenal.json non trouvé à l'import — rechargé depuis --drive-root au lancement")
+    return {"roblox_characters": {"items": []}, "props": {"categories": {}},
+            "environments": {"items": []}, "animations": {"items": []},
+            "audio": {"items": []}, "camera_styles": {"items": []},
+            "lighting_presets": {"items": []}}
+
+
+IMPERIAL_ARSENAL = _load_arsenal_auto()
+
+# -- BLOC SUPPRIMÉ PAR DÉCRET D-I: données déplacées vers arsenal.json --
+_LEGACY_IMPERIAL_ARSENAL = {
     "roblox_characters": {
         "description": "Personnages Roblox officiels disponibles",
         "items": [
@@ -253,21 +325,18 @@ IMPERIAL_ARSENAL = {
 
 
 # ============================================================================
-# ENUMS EXTRAITS DE L'ARSENAL (pour response_schema + validation)
+# ENUMS EXTRAITS DE L'ARSENAL (initialisés depuis IMPERIAL_ARSENAL chargé)
+# reload_arsenal_from_drive() met ces variables à jour avant run_pipeline()
 # ============================================================================
 
-CHARACTER_IDS = [c["id"] for c in IMPERIAL_ARSENAL["roblox_characters"]["items"]]
-
-PROP_IDS = []
-for _category in IMPERIAL_ARSENAL["props"]["categories"].values():
-    PROP_IDS.extend([p["id"] for p in _category])
-PROP_IDS.append("none")
-
-ENVIRONMENT_IDS = [e["id"] for e in IMPERIAL_ARSENAL["environments"]["items"]]
-ANIMATION_IDS = [a["id"] for a in IMPERIAL_ARSENAL["animations"]["items"]]
-CAMERA_IDS = [c["id"] for c in IMPERIAL_ARSENAL["camera_styles"]["items"]]
-LIGHTING_IDS = [l["id"] for l in IMPERIAL_ARSENAL["lighting_presets"]["items"]]
-AUDIO_IDS = [a["id"] for a in IMPERIAL_ARSENAL["audio"]["items"]] + ["none"]
+_initial_enums = _build_arsenal_enums(IMPERIAL_ARSENAL)
+CHARACTER_IDS  = _initial_enums["CHARACTER_IDS"]
+PROP_IDS       = _initial_enums["PROP_IDS"]
+ENVIRONMENT_IDS = _initial_enums["ENVIRONMENT_IDS"]
+ANIMATION_IDS  = _initial_enums["ANIMATION_IDS"]
+CAMERA_IDS     = _initial_enums["CAMERA_IDS"]
+LIGHTING_IDS   = _initial_enums["LIGHTING_IDS"]
+AUDIO_IDS      = _initial_enums["AUDIO_IDS"]
 
 EXPRESSION_ENUM = [
     "joy", "sadness", "anger", "fear", "surprise", "disgust", "neutral",
@@ -1203,10 +1272,20 @@ def call_gemini_v2(video_path: Path, metadata: dict, logger: CortexLogger,
                 except json.JSONDecodeError:
                     logger.warn("response_schema parse échoué, fallback extraction...")
                     json_data = extract_json_from_response(response.text, logger)
-                
+
                 if json_data:
-                    logger.info("Master JSON V2 obtenu avec succès")
-                    return json_data
+                    # DÉCRET D-III — Validation schéma stricte avant acceptation du JSON
+                    is_valid, schema_errors = validate_structure(json_data, logger)
+                    if is_valid:
+                        logger.info("Master JSON V2 validé et accepté")
+                        return json_data
+                    else:
+                        logger.warn(
+                            f"Tentative {attempt + 1}: JSON reçu mais schéma invalide "
+                            f"({len(schema_errors)} erreur(s)) — retry Gemini"
+                        )
+                        for err in schema_errors[:5]:
+                            logger.warn(f"  • {err}")
                 else:
                     logger.warn(f"Tentative {attempt + 1}: JSON invalide")
             else:
@@ -1699,18 +1778,26 @@ def generate_mock_master_json(metadata: dict) -> dict:
 
 def run_pipeline(args, logger: CortexLogger):
     """Orchestrateur principal — exécute les 4 phases séquentiellement."""
-    
+
     drive_root = Path(args.drive_root)
     cortex_dir = drive_root / "00_CORTEX_HQ"
     input_dir = cortex_dir / "IN_VIDEO_SOURCE"
     output_dir = cortex_dir / "OUT_PRODUCTION_PLAN"
-    
+
+    # DÉCRET D-I — Recharge l'Arsenal depuis drive_root avant toute exécution
+    try:
+        reload_arsenal_from_drive(drive_root)
+        logger.info(f"Arsenal chargé: {len(CHARACTER_IDS)} personnages, {len(ENVIRONMENT_IDS)} environnements")
+    except FileNotFoundError as e:
+        logger.error(str(e))
+        sys.exit(1)
+
     video_path = input_dir / args.input_video
-    
+
     if not drive_root.exists():
         logger.error(f"Drive root non trouvé: {drive_root}")
         sys.exit(1)
-    
+
     if not video_path.exists():
         video_path = Path(args.input_video).resolve()
         if not video_path.exists():
@@ -1719,10 +1806,14 @@ def run_pipeline(args, logger: CortexLogger):
             logger.info(f"  - {input_dir / args.input_video}")
             logger.info(f"  - {video_path}")
             sys.exit(1)
-    
+
+    # DÉCRET D-II — Avertissement mode --skip-gpu
+    if getattr(args, 'skip_gpu', False):
+        logger.info("⚡ MODE --skip-gpu ACTIVÉ — Phases GPU (DepthAnything + SAM) ignorées")
+
     logger.info(f"Vidéo source: {video_path}")
     logger.info(f"Output dir: {output_dir}")
-    
+
     metadata = get_video_metadata(video_path, logger)
     motor_status = MotorStatus()
     
@@ -1840,51 +1931,55 @@ def run_pipeline(args, logger: CortexLogger):
         logger.info("M1 Gemini: skip (--rerun != gemini_semantic)")
     
     # =================================================================
-    # PHASE 3 — GPU-A (DepthAnything)
+    # PHASE 3 — GPU-A (DepthAnything)   [DÉCRET D-II: --skip-gpu]
     # =================================================================
-    logger.info("═══ PHASE 3 — GPU-A (DepthAnything) ═══")
-    
-    if not args.rerun or args.rerun == "depth_anything":
-        depth_dir = output_dir / "DEPTH_MAP"
-        depth_dir.mkdir(parents=True, exist_ok=True)
-        drive_root = Path(args.drive_root)
-        depth_model_path = drive_root / "EXODUS_AI_MODELS" / "DEPTH_ANYTHING" / "depth_anything_v2_vitl.pth"
-        depth_ok = run_depth_anything(video_path, depth_dir, logger, model_path=depth_model_path)
-        if depth_ok:
-            depth_count = len(list(depth_dir.glob("frame_*.png")))
-            frames_total = 0
-            if CV2_AVAILABLE:
-                cap = cv2.VideoCapture(str(video_path))
-                frames_total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else 0
-                cap.release()
-            if frames_total > 0 and depth_count < frames_total:
-                motor_status.mark_partial("depth_anything", depth_count, frames_total, depth_dir)
+    if getattr(args, 'skip_gpu', False):
+        logger.info("═══ PHASE 3 — GPU-A (DepthAnything) — IGNORÉE (--skip-gpu) ═══")
+        motor_status.mark_failed("depth_anything", "skipped via --skip-gpu")
+    else:
+        logger.info("═══ PHASE 3 — GPU-A (DepthAnything) ═══")
+        if not args.rerun or args.rerun == "depth_anything":
+            depth_dir = output_dir / "DEPTH_MAP"
+            depth_dir.mkdir(parents=True, exist_ok=True)
+            depth_model_path = drive_root / "EXODUS_AI_MODELS" / "DEPTH_ANYTHING" / "depth_anything_v2_vitl.pth"
+            depth_ok = run_depth_anything(video_path, depth_dir, logger, model_path=depth_model_path)
+            if depth_ok:
+                depth_count = len(list(depth_dir.glob("frame_*.png")))
+                frames_total = 0
+                if CV2_AVAILABLE:
+                    cap = cv2.VideoCapture(str(video_path))
+                    frames_total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else 0
+                    cap.release()
+                if frames_total > 0 and depth_count < frames_total:
+                    motor_status.mark_partial("depth_anything", depth_count, frames_total, depth_dir)
+                else:
+                    motor_status.mark_success("depth_anything", depth_dir)
             else:
-                motor_status.mark_success("depth_anything", depth_dir)
+                motor_status.mark_failed("depth_anything", "DepthAnything V2 failed")
         else:
-            motor_status.mark_failed("depth_anything", "DepthAnything V2 failed")
+            logger.info("M6 DepthAnything: skip (--rerun != depth_anything)")
+
+        # Flush GPU entre Phase 3 et Phase 4
+        flush_gpu(logger)
+
+    # =================================================================
+    # PHASE 4 — GPU-B (SAM)   [DÉCRET D-II: --skip-gpu]
+    # =================================================================
+    if getattr(args, 'skip_gpu', False):
+        logger.info("═══ PHASE 4 — GPU-B (SAM) — IGNORÉE (--skip-gpu) ═══")
+        motor_status.mark_failed("sam_segmentation", "skipped via --skip-gpu")
     else:
-        logger.info("M6 DepthAnything: skip (--rerun != depth_anything)")
-    
-    # Flush GPU entre Phase 3 et Phase 4
-    flush_gpu(logger)
-    
-    # =================================================================
-    # PHASE 4 — GPU-B (SAM)
-    # =================================================================
-    logger.info("═══ PHASE 4 — GPU-B (SAM) ═══")
-    
-    if not args.rerun or args.rerun == "sam_segmentation":
-        sam_out = output_dir / "semantic_masks.json"
-        drive_root = Path(args.drive_root)
-        sam_model_path = drive_root / "EXODUS_AI_MODELS" / "SAM" / "sam_vit_h.pth"
-        sam_ok = run_sam_segmentation(video_path, sam_out, logger, model_path=sam_model_path)
-        if sam_ok:
-            motor_status.mark_success("sam_segmentation", sam_out)
+        logger.info("═══ PHASE 4 — GPU-B (SAM) ═══")
+        if not args.rerun or args.rerun == "sam_segmentation":
+            sam_out = output_dir / "semantic_masks.json"
+            sam_model_path = drive_root / "EXODUS_AI_MODELS" / "SAM" / "sam_vit_h.pth"
+            sam_ok = run_sam_segmentation(video_path, sam_out, logger, model_path=sam_model_path)
+            if sam_ok:
+                motor_status.mark_success("sam_segmentation", sam_out)
+            else:
+                motor_status.mark_failed("sam_segmentation", "SAM segmentation failed")
         else:
-            motor_status.mark_failed("sam_segmentation", "SAM segmentation failed")
-    else:
-        logger.info("M7 SAM: skip (--rerun != sam_segmentation)")
+            logger.info("M7 SAM: skip (--rerun != sam_segmentation)")
     
     # =================================================================
     # FINALISATION
@@ -2009,11 +2104,17 @@ Exemples:
                  "depth_anything", "sam_segmentation"],
         help="Relance un seul moteur sans retoucher les autres outputs"
     )
+    # DÉCRET D-II — Flag --skip-gpu
+    parser.add_argument(
+        "--skip-gpu", action="store_true",
+        help="Ignore les phases GPU (DepthAnything V2 + SAM). Génère le PRODUCTION_PLAN.JSON "
+             "sans données de profondeur/segmentation. Utile pour vidéos simples (~7.5GB VRAM économisés)."
+    )
     parser.add_argument(
         "--verbose", "-v", action="store_true",
         help="Active les logs DEBUG"
     )
-    
+
     args = parser.parse_args()
     
     log_level = "DEBUG" if args.verbose else "INFO"
