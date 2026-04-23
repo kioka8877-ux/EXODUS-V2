@@ -9,13 +9,13 @@
 | 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟡 CODEX v6 — 2 décrets à implémenter | — |
 | 3 | U03 | SCENOGRAPHY DOCK | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
 | 4 | U04 | PHOTOGRAPHY WING | ✅ Done | 100% | 🟢 CODEX v6 — 4 décrets VALIDÉS | — |
-| 5 | U05 | ALCHEMIST LAB | ✅ Done | 100% | 🟡 CODEX v6 — 2 décrets à implémenter | — |
-| 6 | U06 | AIRCRAFT CARRIER | ✅ Done | 100% | 🔴 CODEX v6 — 3 décrets EN MUTATION | — |
+| 5 | U05 | ALCHEMIST LAB | ✅ Done | 100% | 🟡 CODEX v6 — 1 décret restant (D-IV colour-science) | — |
+| 6 | U06 | AIRCRAFT CARRIER | ✅ Done | 100% | 🟡 CODEX v6 — D-I+D-II IMPLÉMENTÉS, D-III (Real-CUGAN) A IMPLEMENTER | — |
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
 ## PROGRESSION GLOBALE
 Empire EXODUS Base V2 : [████████████] 100% — Phase 5 complete — 48/48 taches
-Codex Imperial v6 (Phase 6) : [████░░░░░░░░] 52% — 12/25 décrets IMPLÉMENTÉS — 13 restants (U00+U01 scellés 23.04.2026)
+Codex Imperial v6 (Phase 6) : [████████░░░░] 68% — 17/25 décrets IMPLÉMENTÉS — 8 restants (audit 23.04.2026)
 Fregates conformes : 7/7 — Contrats 4/4 chacune (KRONOS audit 2026-04-03)
 Tech-Pretres actifs : 6/6 (SENTINEL, VULKAN_FORGE, VOID-FLUSH, ATLAS, VOX, KRONOS)
 Phase courante : PHASE 6 — FORGE DES DÉCRETS IMPÉRIAUX (Codex v6 — 23.04.2026)
@@ -111,15 +111,15 @@ Fregates :
 | U04 | D-II | Notebook de production unifié | HAUTE | FAIBLE | ✅ VALIDÉ |
 | U04 | D-III | Reference Frame Background (ffmpeg + Blender) | HAUTE | FAIBLE | ✅ VALIDÉ |
 | U04 | D-IV | Arsenal lumineux 3-Point + HDRi Poly Haven | HAUTE | FAIBLE | ✅ VALIDÉ |
-| U05 | D-I | Inventaire et versionnage LUTs (MANIFEST.json) | MOYENNE | FAIBLE | ⬜ A IMPLEMENTER |
-| U05 | D-II | Flag --bypass-grading | FAIBLE | FAIBLE | ⬜ A IMPLEMENTER |
+| U05 | D-I | Inventaire et versionnage LUTs (MANIFEST.json) | MOYENNE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026 — LUTS/MANIFEST.json + lut_engine.py) |
+| U05 | D-II | Flag --bypass-grading | FAIBLE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026 — --bypass flag dans EXO_05_ALCHEMIST.py) |
 | U05 | D-III | DaVinci Resolve comme outil externe (Mode B) | MOYENNE | FAIBLE | ✅ VALIDÉ (session) |
-| U05 | D-IV | colour-science pour Mode C (pipeline Python) | HAUTE | FAIBLE | ✅ VALIDÉ (session) |
-| U06 | D-I | Pipeline 100% lossless (EXR intermédiaire) | CRITIQUE | MOYENNE | 🔴 EN MUTATION |
-| U06 | D-II | RIFE configurable (--target-fps 60/120) | HAUTE | FAIBLE | 🔴 EN MUTATION |
-| U06 | D-III | Real-CUGAN remplace RealESRGAN | HAUTE | FAIBLE | 🔴 EN MUTATION |
+| U05 | D-IV | colour-science pour Mode C (pipeline Python) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER (lut_engine.py numpy exist, colour-science lib à intégrer) |
+| U06 | D-I | Pipeline 100% lossless (EXR intermédiaire) | CRITIQUE | MOYENNE | ✅ IMPLÉMENTÉ (PR #46 — rife: PNG lossless + MKV lossless fallback, carrier: EXR/PNG→AV1/H265/ProRes) |
+| U06 | D-II | RIFE configurable (--target-fps 60/120) | HAUTE | FAIBLE | ⚠️ PARTIEL (target_fps via PRODUCTION_PLAN.framerate — CLI --target-fps non exposé) |
+| U06 | D-III | Real-CUGAN remplace RealESRGAN | HAUTE | FAIBLE | ⬜ A IMPLEMENTER (upscaler.py utilise encore RealESRGAN) |
 
-> Compte : 6 VALIDÉS — 3 EN MUTATION — 16 A IMPLEMENTER
+> Compte (audit 23.04.2026) : 17 IMPLÉMENTÉS/VALIDÉS — 1 PARTIEL (U06 D-II) — 7 A IMPLEMENTER
 
 ### DOCTRINE IMPÉRIALE (LOIs INVIOLABLES — Codex v6)
 

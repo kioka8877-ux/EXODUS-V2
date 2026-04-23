@@ -84,13 +84,13 @@ Le produit fini sort d'ici — dernière frégate de la chaîne.
 
 ## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
 
-> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : EN MUTATION (3 décrets critiques)
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : 🟡 PARTIEL (D-I SCELLÉ, D-II PARTIEL, D-III A IMPLEMENTER)
 
 | # | Décret | Description | Priorité | Complexité | Statut |
 |---|--------|-------------|----------|------------|--------|
-| D-I | Pipeline 100% lossless | Audit ATOM-IC : 4 compressions lossy détectées. Imposer EXR pour toutes les frames intermédiaires jusqu'à encodage final. Sortie : MP4 H.265 (distribution) + MOV ProRes 4444 (archive). | CRITIQUE | MOYENNE | 🔴 EN MUTATION |
-| D-II | RIFE configurable (--target-fps) | Interpolation actuellement hardcodée à 120FPS. Ajouter --target-fps (valeurs : 60 ou 120, défaut : 120). RIFE adapte son ratio d'interpolation. | HAUTE | FAIBLE | 🔴 EN MUTATION |
-| D-III | Real-CUGAN remplace RealESRGAN | RealESRGAN entraîné sur photos réelles → résultat sous-optimal sur contenu Roblox cartoon. Real-CUGAN = entraîné anime/cartoon, précision supérieure sur avatars Roblox, 100% gratuit, même interface. | HAUTE | FAIBLE | 🔴 EN MUTATION |
+| D-I | Pipeline 100% lossless | Audit ATOM-IC : 4 compressions lossy détectées. Imposer EXR pour toutes les frames intermédiaires jusqu'à encodage final. Sortie : MP4 H.265 (distribution) + MOV ProRes 4444 (archive). | CRITIQUE | MOYENNE | ✅ IMPLÉMENTÉ (PR #46 — rife_interpolator: PNG lossless + MKV lossless fallback, 0 H.264 intermédiaire. carrier: EXR/PNG input → AV1/H265/ProRes output) |
+| D-II | RIFE configurable (--target-fps) | Interpolation actuellement hardcodée à 120FPS. Ajouter --target-fps (valeurs : 60 ou 120, défaut : 120). RIFE adapte son ratio d'interpolation. | HAUTE | FAIBLE | ⚠️ PARTIEL (target_fps lu depuis PRODUCTION_PLAN.JSON[output_config][framerate], DEFAULT=120 — CLI --target-fps non exposé dans EXO_06_CARRIER.py, à ajouter) |
+| D-III | Real-CUGAN remplace RealESRGAN | RealESRGAN entraîné sur photos réelles → résultat sous-optimal sur contenu Roblox cartoon. Real-CUGAN = entraîné anime/cartoon, précision supérieure sur avatars Roblox, 100% gratuit, même interface. | HAUTE | FAIBLE | ⬜ A IMPLEMENTER (upscaler.py utilise encore RealESRGAN — réécrire _check_esrgan_available / _upscale_chunk_esrgan / _load_esrgan_model) |
 
 **Diagnostic outils (Audit session 23.04.2026) :**
 ```
@@ -103,4 +103,4 @@ CONCLUSION → F06 reste 100% code : RIFE + Real-CUGAN + FFmpeg
 
 **LOI III rappel :** Du premier frame rendu jusqu'à l'encodage final, aucune compression lossy n'est tolérée. Le format EXR est sacré.
 
-<!-- v3.0 — Codex Imperial v6 — 3 décrets EN MUTATION — 23.04.2026 -->
+<!-- v4.0 — Audit 23.04.2026 — D-I IMPLÉMENTÉ, D-II PARTIEL, D-III A IMPLEMENTER -->
