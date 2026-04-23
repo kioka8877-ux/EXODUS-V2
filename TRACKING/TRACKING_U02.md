@@ -46,4 +46,17 @@ Suppression de l'input fantôme IN_ROBLOX_AVATAR (l'avatar brut est consommé pa
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
 
+---
+
+## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : SCELLÉE
+
+| # | Décret | Description | Priorité | Complexité | Statut |
+|---|--------|-------------|----------|------------|--------|
+| D-I | Validation pré-socketing | Avant socketing : vérifier que chaque bone cible existe dans l'armature. Lister bones manquants + interrompre avec rapport d'erreur explicite. Fin des props flottants silencieux. | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| D-II | Fusion socketing + timeline | Fusionner socketing_engine.py + timeline_manager.py en actor_assembly.py. Interface externe identique — aucun notebook cassé. Réduit la complexité de maintenance. | FAIBLE | FAIBLE | ⬜ A IMPLEMENTER |
+| D-III | Bypass props automatique | Double mécanisme : (1) PRODUCTION_PLAN.JSON[production_notes][requires_u02]==false, (2) auto-détection 0 props_actions. En bypass : copie F01 → OUT_BAKED_ACTORS + logistics_report.json status:SKIPPED | FAIBLE | FAIBLE | ✅ VALIDÉ (session 21.04 + PR #25) |
+
+<!-- v3.0 — Codex Imperial v6 — 23.04.2026 -->
 <!-- v2.0 — U02 SCELLÉ 100% -->

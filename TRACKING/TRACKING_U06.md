@@ -79,3 +79,28 @@ Le produit fini sort d'ici — dernière frégate de la chaîne.
 - [MASTER](./TRACKING_MASTER.md) — Vue d'ensemble
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
+
+---
+
+## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : EN MUTATION (3 décrets critiques)
+
+| # | Décret | Description | Priorité | Complexité | Statut |
+|---|--------|-------------|----------|------------|--------|
+| D-I | Pipeline 100% lossless | Audit ATOM-IC : 4 compressions lossy détectées. Imposer EXR pour toutes les frames intermédiaires jusqu'à encodage final. Sortie : MP4 H.265 (distribution) + MOV ProRes 4444 (archive). | CRITIQUE | MOYENNE | 🔴 EN MUTATION |
+| D-II | RIFE configurable (--target-fps) | Interpolation actuellement hardcodée à 120FPS. Ajouter --target-fps (valeurs : 60 ou 120, défaut : 120). RIFE adapte son ratio d'interpolation. | HAUTE | FAIBLE | 🔴 EN MUTATION |
+| D-III | Real-CUGAN remplace RealESRGAN | RealESRGAN entraîné sur photos réelles → résultat sous-optimal sur contenu Roblox cartoon. Real-CUGAN = entraîné anime/cartoon, précision supérieure sur avatars Roblox, 100% gratuit, même interface. | HAUTE | FAIBLE | 🔴 EN MUTATION |
+
+**Diagnostic outils (Audit session 23.04.2026) :**
+```
+Topaz Video AI  → meilleure qualité MAIS payant (~300$) — HORS DOCTRINE
+DaVinci Resolve → Optical Flow < RIFE, upscale limité en free
+Flowframes      → GUI wrapper RIFE, interpolation only, Windows only
+FFmpeg seul     → pas d'IA, qualité inférieure
+CONCLUSION → F06 reste 100% code : RIFE + Real-CUGAN + FFmpeg
+```
+
+**LOI III rappel :** Du premier frame rendu jusqu'à l'encodage final, aucune compression lossy n'est tolérée. Le format EXR est sacré.
+
+<!-- v3.0 — Codex Imperial v6 — 3 décrets EN MUTATION — 23.04.2026 -->

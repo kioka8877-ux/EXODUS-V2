@@ -87,3 +87,25 @@ Bloom/Glow bleed, Sharpness transfer. + LUT .cube optionnel (Mode C).
 - [MASTER](./TRACKING_MASTER.md) — Vue d'ensemble
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
+
+---
+
+## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : VALIDÉE (architecture tri-mode confirmée)
+
+| # | Décret | Description | Priorité | Complexité | Statut |
+|---|--------|-------------|----------|------------|--------|
+| D-I | Inventaire et versionnage LUTs | LUTS/MANIFEST.json listant chaque LUT (nom, source, version, usage). LUTs inclus dans le repo GitHub. Garantit reproductibilité des rendus. | MOYENNE | FAIBLE | ✅ VALIDÉ (session 23.04 + LUTS/MANIFEST.json) |
+| D-II | Flag --bypass-grading | Si activé : frames EXR transmises directement à F06 sans traitement LUT. Utile tests rapides. Mode A = équivalent bypass F02. | FAIBLE | FAIBLE | ✅ VALIDÉ (session 23.04 + --bypass flag) |
+| D-III | DaVinci Resolve (Mode B — outil externe) | Opérateur ouvre Resolve Free, importe séquence EXR, applique LUT, exporte. Lecture EXR native + export EXR/PNG 16-bit. Manuel, non scriptable. | MOYENNE | FAIBLE | ✅ VALIDÉ (session 23.04 — outil externe documenté) |
+| D-IV | colour-science pour Mode C (pipeline Python) | colour-science = solution Python 100% gratuite, lit .cube nativement, écrit EXR, compatible imageio. Mode C = automatisation complète sans outil externe. | HAUTE | FAIBLE | ⬜ A IMPLÉMENTER (librairie à intégrer dans EXO_05_ALCHEMIST.py) |
+
+**Architecture tri-mode finale :**
+```
+MODE A : --bypass-grading → copie directe EXR vers F06
+MODE B : DaVinci Resolve Free → transit manuel opérateur
+MODE C : colour-science + imageio → LUT .cube → EXR (automatique)
+```
+
+<!-- v3.0 — Codex Imperial v6 — Architecture tri-mode — 23.04.2026 -->

@@ -92,4 +92,20 @@ Résultat : ~2-4h de rendu au lieu de 15-45h. Fits dans une session Colab.
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
 
+---
+
+## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : VALIDÉE (4/4 décrets confirmés session)
+
+| # | Décret | Description | Priorité | Complexité | Statut |
+|---|--------|-------------|----------|------------|--------|
+| D-I | Mode manuel guidé (Phase 1 prioritaire) | Intentions de cadrage depuis PRODUCTION_PLAN.JSON → keyframes caméra cohérents. Tracking auto (COLMAP/OpenCV) reporté en Phase 2. | HAUTE | MOYENNE | ✅ VALIDÉ |
+| D-II | Notebook de production unifié | Un seul EXO_04_PRODUCTION.ipynb avec cellules conditionnelles (mode manuel / auto). Remplace l'architecture split A/B complexe. | HAUTE | FAIBLE | ✅ VALIDÉ |
+| D-III | Reference Frame Background | Extraire frame de référence par scène (ffmpeg). L'importer comme Background Image viewport Blender. L'opérateur aligne caméra manuellement sur référence. Commande : `ffmpeg -i video_source.mp4 -vf "select=eq(n\,FRAME)" -vsync 0 ref_frame.png` | HAUTE | FAIBLE | ✅ VALIDÉ |
+| D-IV | Arsenal lumineux 3-Point + HDRi Poly Haven | Couche 1 : HDRi Poly Haven (gratuit, libre) via bpy sur World Blender. Couche 2 : rig 3 points (Key + Fill + Rim) scripté bpy par acteur. Addons natifs : Sun Position + Dynamic Sky. Aucun addon externe requis. | HAUTE | FAIBLE | ✅ VALIDÉ |
+
+**Note :** U04 est la frégate la mieux alignée avec le Codex v6 — les 4 décrets sont déjà validés en session brainstorming. Implémentation à confirmer en code.
+
+<!-- v3.0 — Codex Imperial v6 — 23.04.2026 — 4/4 validés -->
 <!-- v2.1 — U04 TRACKING C — ADAPTIVE LIGHTING -->

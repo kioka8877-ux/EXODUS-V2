@@ -73,4 +73,32 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
 
+---
+
+## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : EN MUTATION (Pivot V1)
+
+| # | Décret | Description | Priorité | Complexité | Statut |
+|---|--------|-------------|----------|------------|--------|
+| D-I | Externalisation corps animé | Outil externe livre avatar-ferrus-N.blend par personnage (corps + retarget Roblox). EXODUS reçoit ce .blend comme input. Mixamo éliminé. | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
+| D-II | EMOCA sur visage humain réel | EMOCA opère sur le vrai visage humain de la vidéo source (non plus sur avatar Roblox). InsightFace isole la crop par avatar. Précision maximale dans la plage d'entraînement naturelle. | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
+| D-III | Lip-sync obligatoire | Rhubarb TOUJOURS activé si audio_original.wav présent. pyannote.audio génère piste propre par avatar (silence hors parole). Plus de flag optionnel — obligation de qualité. | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| D-IV | Orchestration multi-avatar | Boucle for N in avatars. Pour chaque avatar : InsightFace → Face_ID stable, pyannote → piste propre, EMOCA + Rhubarb dédiés. Scalable 1→N sans modification de code. | HAUTE | MOYENNE | ⬜ A IMPLEMENTER |
+
+**Schéma architectural cible V1 :**
+```
+INPUTS : avatar-ferrus-N.blend (outil ext.) + video_source.mp4 + audio_original.wav + PRODUCTION_PLAN.JSON
+         ↓                  ↓               ↓
+    InsightFace          pyannote         EMOCA
+    face tracking       diarisation     visage reel
+         ↓                  ↓               ↓
+         for N in avatars: [BLENDER 4.0 HEADLESS]
+              +-- EMOCA  --> shape keys visage
+              +-- Rhubarb --> shape keys bouche
+              ↓
+         avatar-ferrus-N_animated.blend + .abc
+```
+
+<!-- v4.0 — Codex Imperial v6 — Pivot V1 — 23.04.2026 -->
 <!-- v3.0 — U01 SCELLÉ 100% — B1.1 + B1.2 + B1.3 complétées -->

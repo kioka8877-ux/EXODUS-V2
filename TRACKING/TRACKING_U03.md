@@ -103,4 +103,21 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 
 > **Loi du Beton** : Chaque entree dans le Registre de Forge doit pointer vers un commit ou un fichier.
 
+---
+
+## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : SCELLÉE
+
+| # | Décret | Description | Priorité | Complexité | Statut |
+|---|--------|-------------|----------|------------|--------|
+| D-I | Suppression code mort D2/D3 | Supprimer toutes les références aux phases D2 (depth maps) et D3 (semantic masks) du code de production actif. Créer ROADMAP_U03.md pour tracer les fonctionnalités futures. | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| D-II | Classe de base BlenderLayerBuilder | dome_builder + glass_builder + shadow_catcher_builder partagent ~60% logique init Blender. Créer classe de base commune. Centralise gestion erreurs, réduit duplication. | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
+| D-III | Stabilisation Phantom Link | phantom_link.py vit uniquement à la racine Drive. Chaque frégate lit depuis la racine. Supprimer l'auto-copie depuis U03/CODEBASE. L'Empereur est garant de sa présence. | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+
+**Contexte D-I (code mort) :** Layers D2/D3 dans le TRI-LAYER SYSTEM sont marqués `[FUTUR/code mort]` dans le schéma architectural. Les supprimer allège le code sans perte fonctionnelle.
+
+**Contexte D-III (Phantom Link) :** Le couplage caché phantom_link.py U03/CODEBASE → racine crée des risques d'incohérence de version entre fregates.
+
+<!-- v3.0 — Codex Imperial v6 — 23.04.2026 -->
 <!-- v2.1 — U03 TRACKING D5 ADAPTIVE SCENE PROFILE -->

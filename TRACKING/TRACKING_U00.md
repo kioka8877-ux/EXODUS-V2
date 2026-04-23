@@ -76,4 +76,29 @@ Extraire TOUTES les données nécessaires aux frégates en aval en une seule pas
 
 > **Loi du Béton** : Chaque entrée dans le Registre de Forge doit pointer vers un commit ou un fichier.
 
+---
+
+## 7. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : EN MUTATION
+
+| # | Décret | Description | Priorité | Complexité | Statut |
+|---|--------|-------------|----------|------------|--------|
+| D-I | Arsenal externe | Extraire IMPERIAL_ARSENAL vers arsenal.json dynamique — L'Empereur modifie l'arsenal sans ouvrir le code | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| D-II | Mode --skip-gpu | Flag CLI : si activé, bypasse Phase 3 (DepthAnything) + Phase 4 (SAM) → PRODUCTION_PLAN.JSON sans depth/seg | MOYENNE | FAIBLE | ⬜ A IMPLEMENTER |
+| D-III | Validation JSON Gemini | Schéma strict sur le JSON Gemini avant écriture + retry automatique max 3 tentatives + erreur explicite | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| D-IV | Architecture duale API / Injection | Cellule 0 : MODE="api"\|"injection". Cellule 2 : Gemini API (mode api). Cellule 2b : Widget JSON + métaprompt (mode injection). Convergence : dispatch_master_json(). Phases GPU identiques dans les deux modes | HAUTE | MOYENNE | ⬜ A IMPLEMENTER |
+
+**Architecture duale cible (Codex v6) :**
+```
+Cellule 0  → Choix du mode (MODE = "api" | "injection")
+Cellule 1  → Pre-flight + M2 Audio + M3 FOV (commun)
+Cellule 2  → M1 Gemini API (mode api seulement)
+Cellule 2b → Widget injection JSON + validation schéma (mode injection)
+Cellule 3  → M6 Depth + M7 SAM + flags finaux (commun)
+```
+
+**Avantage Mode Injection :** Gemini 2.5 Pro Chat surpasse les modèles API gratuits pour analyse vidéo complexe.
+
+<!-- v3.0 — Codex Imperial v6 — 23.04.2026 -->
 <!-- v2.1 — Post-Mutation Alignement -->

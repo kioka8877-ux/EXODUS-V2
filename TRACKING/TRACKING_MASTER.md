@@ -4,20 +4,21 @@
 
 | # | Unité | Nom | Priorité | Conformité V2 | Statut Mutation | Bloqueur |
 |---|-------|-----|----------|----------------|-----------------|----------|
-| 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟢 SCELLÉ (PR #14-#16) | — |
-| 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟢 SCELLÉ (PR #19-#23) | — |
-| 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟢 SCELLÉ (PR #25) | — |
-| 3 | U03 | SCENOGRAPHY DOCK | ✅ Done | 100% | 🟢 SCELLÉ (PR #27-#31) | — |
-| 4 | U04 | PHOTOGRAPHY WING | ✅ Done | 100% | 🟢 SCELLÉ (PR #34-#37, #48-#49) | — |
-| 5 | U05 | ALCHEMIST LAB | ✅ Done | 100% | 🟢 SCELLÉ (PR #38-#41) | — |
-| 6 | U06 | AIRCRAFT CARRIER | ✅ Done | 100% | 🟢 SCELLÉ (PR #44-#46) | — |
+| 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
+| 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
+| 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟡 CODEX v6 — 2 décrets à implémenter | — |
+| 3 | U03 | SCENOGRAPHY DOCK | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
+| 4 | U04 | PHOTOGRAPHY WING | ✅ Done | 100% | 🟢 CODEX v6 — 4 décrets VALIDÉS | — |
+| 5 | U05 | ALCHEMIST LAB | ✅ Done | 100% | 🟡 CODEX v6 — 2 décrets à implémenter | — |
+| 6 | U06 | AIRCRAFT CARRIER | ✅ Done | 100% | 🔴 CODEX v6 — 3 décrets EN MUTATION | — |
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
 ## PROGRESSION GLOBALE
-Empire EXODUS : [████████████] 100% — Phase 5 complete — 48/48 taches
+Empire EXODUS Base V2 : [████████████] 100% — Phase 5 complete — 48/48 taches
+Codex Imperial v6 (Phase 6) : [░░░░░░░░░░░░] 20% — 4/20 décrets VALIDÉS — 16 restants
 Fregates conformes : 7/7 — Contrats 4/4 chacune (KRONOS audit 2026-04-03)
 Tech-Pretres actifs : 6/6 (SENTINEL, VULKAN_FORGE, VOID-FLUSH, ATLAS, VOX, KRONOS)
-Phase courante : PHASE 5 COMPLETE — Empire operationnel
+Phase courante : PHASE 6 — FORGE DES DÉCRETS IMPÉRIAUX (Codex v6 — 23.04.2026)
 
 ## PHASE 5 — INTEGRATION FREGATES (COMPLETE)
 
@@ -81,4 +82,56 @@ Fregates :
   [V] U06 AIRCRAFT_CARRIER — 4/4 contrats
 ```
 
+---
+
+## PHASE 6 — FORGE DES DÉCRETS IMPÉRIAUX (Codex v6)
+
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx — Session 21-23.04.2026.M41
+> Maître de Forge : Vulkan | Scribe : CAPY-01
+
+### REGISTRE DES 20 DÉCRETS
+
+| Frégate | Décret | Titre | Priorité | Complexité | Statut |
+|---------|--------|-------|----------|------------|--------|
+| U00 | D-I | Arsenal externe (arsenal.json) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| U00 | D-II | Mode --skip-gpu | MOYENNE | FAIBLE | ⬜ A IMPLEMENTER |
+| U00 | D-III | Validation JSON Gemini (retry x3) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| U00 | D-IV | Architecture duale API / Injection | HAUTE | MOYENNE | ⬜ A IMPLEMENTER |
+| U01 | D-I | Externalisation corps animé (outil ext.) | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
+| U01 | D-II | EMOCA sur visage humain réel | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
+| U01 | D-III | Lip-sync obligatoire (Rhubarb + pyannote) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| U01 | D-IV | Orchestration multi-avatar (N personnages) | HAUTE | MOYENNE | ⬜ A IMPLEMENTER |
+| U02 | D-I | Validation pré-socketing (bones check) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| U02 | D-II | Fusion socketing + timeline (actor_assembly.py) | FAIBLE | FAIBLE | ⬜ A IMPLEMENTER |
+| U02 | D-III | Bypass props automatique | FAIBLE | FAIBLE | ✅ VALIDÉ (session 21.04) |
+| U03 | D-I | Suppression code mort D2/D3 | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| U03 | D-II | Classe de base BlenderLayerBuilder | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
+| U03 | D-III | Stabilisation Phantom Link (racine Drive) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
+| U04 | D-I | Mode manuel guidé (priorité Phase 1) | HAUTE | MOYENNE | ✅ VALIDÉ |
+| U04 | D-II | Notebook de production unifié | HAUTE | FAIBLE | ✅ VALIDÉ |
+| U04 | D-III | Reference Frame Background (ffmpeg + Blender) | HAUTE | FAIBLE | ✅ VALIDÉ |
+| U04 | D-IV | Arsenal lumineux 3-Point + HDRi Poly Haven | HAUTE | FAIBLE | ✅ VALIDÉ |
+| U05 | D-I | Inventaire et versionnage LUTs (MANIFEST.json) | MOYENNE | FAIBLE | ⬜ A IMPLEMENTER |
+| U05 | D-II | Flag --bypass-grading | FAIBLE | FAIBLE | ⬜ A IMPLEMENTER |
+| U05 | D-III | DaVinci Resolve comme outil externe (Mode B) | MOYENNE | FAIBLE | ✅ VALIDÉ (session) |
+| U05 | D-IV | colour-science pour Mode C (pipeline Python) | HAUTE | FAIBLE | ✅ VALIDÉ (session) |
+| U06 | D-I | Pipeline 100% lossless (EXR intermédiaire) | CRITIQUE | MOYENNE | 🔴 EN MUTATION |
+| U06 | D-II | RIFE configurable (--target-fps 60/120) | HAUTE | FAIBLE | 🔴 EN MUTATION |
+| U06 | D-III | Real-CUGAN remplace RealESRGAN | HAUTE | FAIBLE | 🔴 EN MUTATION |
+
+> Compte : 6 VALIDÉS — 3 EN MUTATION — 16 A IMPLEMENTER
+
+### DOCTRINE IMPÉRIALE (LOIs INVIOLABLES — Codex v6)
+
+| Loi | Titre | Règle |
+|-----|-------|-------|
+| I | Isolation des Silos | Chaque Frégate lit ses IN_* et écrit ses OUT_* uniquement |
+| II | Transit Manuel | L'Empereur transfère les fichiers entre Frégates. Aucun script inter-frégate |
+| III | Qualité Lossless | EXR obligatoire du premier frame jusqu'à l'encodage final |
+| IV | Notebook Unique | Un seul notebook de production par Frégate |
+| V | Commande Unique | Chaque Frégate se lance par une seule commande CLI |
+
+---
+
+<!-- v5.0 — Phase 6 Codex Imperial v6 — 23.04.2026 -->
 <!-- v4.0 — Phase 5 Complete — Empire EXODUS 100% — 2026-04-03 -->
