@@ -49,6 +49,7 @@ Bloom/Glow bleed, Sharpness transfer. + LUT .cube optionnel (Mode C).
 | 2026-03-06 | match_color.py (305 lignes, histogram LAB) + grain_matcher.py (317 lignes, bilateral decomposition) | 🟢 | PR #40 | N/A (CPU) |
 | 2026-03-06 | bloom_engine.py + sharpness_transfer.py + EXO_05_ALCHEMIST.py v2.0.0 + requirements.txt + README_DEV.md + UNIT_05_SUBPLAN.md | 🟢 | PR #41 | N/A (CPU) |
 | 2026-04-23 | lut_engine.py (LUT .cube 3D, trilineaire numpy) + LUTS/MANIFEST.json + --bypass flag + --lut/--lut-intensity dans EXO_05_ALCHEMIST.py — DECRETS I/II/III valides en session | 🟢 | SESSION 2026-04-23 | N/A (CPU) |
+| 2026-04-23 | DECRET IV — LUTEngine.apply_colour_science() + is_colour_science_available() dans lut_engine.py. --use-colour-science flag + wiring EXR-natif dans EXO_05_ALCHEMIST.py. requirements.txt: colour-science + imageio. | 🟢 | SESSION 2026-04-23 | N/A (CPU) |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (CPU processing — OpenCV + Pillow)
@@ -99,7 +100,7 @@ Bloom/Glow bleed, Sharpness transfer. + LUT .cube optionnel (Mode C).
 | D-I | Inventaire et versionnage LUTs | LUTS/MANIFEST.json listant chaque LUT (nom, source, version, usage). LUTs inclus dans le repo GitHub. Garantit reproductibilité des rendus. | MOYENNE | FAIBLE | ✅ VALIDÉ (session 23.04 + LUTS/MANIFEST.json) |
 | D-II | Flag --bypass-grading | Si activé : frames EXR transmises directement à F06 sans traitement LUT. Utile tests rapides. Mode A = équivalent bypass F02. | FAIBLE | FAIBLE | ✅ VALIDÉ (session 23.04 + --bypass flag) |
 | D-III | DaVinci Resolve (Mode B — outil externe) | Opérateur ouvre Resolve Free, importe séquence EXR, applique LUT, exporte. Lecture EXR native + export EXR/PNG 16-bit. Manuel, non scriptable. | MOYENNE | FAIBLE | ✅ VALIDÉ (session 23.04 — outil externe documenté) |
-| D-IV | colour-science pour Mode C (pipeline Python) | colour-science = solution Python 100% gratuite, lit .cube nativement, écrit EXR, compatible imageio. Mode C = automatisation complète sans outil externe. | HAUTE | FAIBLE | ⬜ A IMPLÉMENTER (librairie à intégrer dans EXO_05_ALCHEMIST.py) |
+| D-IV | colour-science pour Mode C (pipeline Python) | colour-science = solution Python 100% gratuite, lit .cube nativement, écrit EXR, compatible imageio. Mode C = automatisation complète sans outil externe. | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026 — LUTEngine.apply_colour_science() + is_colour_science_available() dans lut_engine.py, --use-colour-science flag dans EXO_05_ALCHEMIST.py + requirements.txt mis à jour) |
 
 **Architecture tri-mode finale :**
 ```

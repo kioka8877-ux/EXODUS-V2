@@ -3,7 +3,7 @@
 ║         FRÉGATE 05_ALCHEMIST — LUT ENGINE (Mode C — Python)                 ║
 ║         Application de LUT .cube 3D via interpolation trilinéaire           ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Stack    : numpy pur — zéro dépendance externe                              ║
+║  Stack    : numpy pur (défaut) + colour-science optionnel (DECRET IV)        ║
 ║  Format   : .cube 3D (standard Adobe/DaVinci)                                ║
 ║  Mission  : Appliquer un grade colorimétrique scriptable et reproductible    ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
@@ -15,11 +15,25 @@ DECRET I — Inventaire et Versionnage des LUTs
 DECRET III — LUT Engine Python (Mode C)
     Activation : --lut path/to/lut.cube [--lut-intensity 0.8]
     Interpolation trilinéaire 3D — précision identique à DaVinci Resolve.
+
+DECRET IV — colour-science pour Mode C (pipeline Python)
+    Activation : --use-colour-science (en combinaison avec --lut)
+    colour.io.read_LUT() lit le .cube nativement.
+    colour.LUT3D.apply() interpole en espace linéaire.
+    imageio lit/écrit les frames EXR (float32 HDR).
+    Mode C complet : EXR → colour-science LUT → EXR.
 """
 
 import numpy as np
 from pathlib import Path
 from typing import Optional, Tuple
+
+try:
+    import colour
+    import imageio
+    HAS_COLOUR_SCIENCE = True
+except ImportError:
+    HAS_COLOUR_SCIENCE = False
 
 
 class LUTEngine:
@@ -216,6 +230,89 @@ class LUTEngine:
     @property
     def loaded_path(self) -> str:
         return self._lut_path
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # DECRET IV — colour-science Mode C (EXR natif)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def is_colour_science_available() -> bool:
+        """Retourne True si colour-science + imageio sont disponibles."""
+        return HAS_COLOUR_SCIENCE
+
+    def apply_colour_science(
+        self,
+        frame_path: Path,
+        output_path: Path,
+        lut_path: Path,
+        intensity: float = 1.0,
+    ) -> bool:
+        """
+        Applique une LUT .cube à une frame EXR/PNG via colour-science.
+
+        Lit le fichier source avec imageio (HDR float32 natif pour EXR),
+        charge la LUT avec colour.io.read_LUT(), applique via LUT3D.apply(),
+        blend avec l'original selon `intensity`, écrit le résultat.
+
+        Args:
+            frame_path  : Chemin de la frame source (.exr ou .png)
+            output_path : Chemin de sortie (.exr ou .png)
+            lut_path    : Fichier .cube 3D
+            intensity   : Blend LUT/original [0.0 = original, 1.0 = LUT pur]
+
+        Returns:
+            True si succès, False sinon.
+        """
+        if not HAS_COLOUR_SCIENCE:
+            if self.verbose:
+                print("  [LUT:WARN] colour-science non disponible — fallback numpy")
+            return False
+
+        try:
+            # Lecture frame — imageio retourne float32 [0,1] pour EXR
+            frame_np = imageio.v3.imread(str(frame_path))
+            if frame_np is None:
+                print(f"  [LUT:ERROR] imageio: impossible de lire {frame_path}")
+                return False
+
+            frame_f32 = frame_np.astype(np.float32)
+            # Normaliser si entier (PNG 8/16 bit)
+            if frame_np.dtype == np.uint8:
+                frame_f32 = frame_f32 / 255.0
+            elif frame_np.dtype == np.uint16:
+                frame_f32 = frame_f32 / 65535.0
+
+            # Charger LUT avec colour-science
+            lut = colour.io.read_LUT(str(lut_path))
+            if self.verbose:
+                print(f"  [LUT:colour] {lut_path.name} — {type(lut).__name__}")
+
+            # Appliquer la LUT (colour travaille en RGB, imageio retourne RGB)
+            graded = lut.apply(np.clip(frame_f32, 0.0, 1.0))
+            graded = np.clip(graded, 0.0, 1.0).astype(np.float32)
+
+            # Blend avec original
+            if intensity < 1.0:
+                graded = frame_f32 * (1.0 - intensity) + graded * intensity
+
+            # Reconvertir au dtype source si PNG entier
+            if frame_np.dtype == np.uint8:
+                out_arr = (graded * 255.0).astype(np.uint8)
+            elif frame_np.dtype == np.uint16:
+                out_arr = (graded * 65535.0).astype(np.uint16)
+            else:
+                out_arr = graded  # float32 pour EXR
+
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            imageio.v3.imwrite(str(output_path), out_arr)
+
+            if self.verbose:
+                print(f"  [LUT:colour] Ecrit: {output_path.name}")
+            return True
+
+        except Exception as e:
+            print(f"  [LUT:ERROR] colour-science: {e}")
+            return False
 
     # ─────────────────────────────────────────────────────────────────────────
     # AUTO-TEST

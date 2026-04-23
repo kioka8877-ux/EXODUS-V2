@@ -4,9 +4,9 @@
 ║                 FRÉGATE 06_AIRCRAFT_CARRIER — EXODUS SYSTEM V2               ║
 ║          Pipeline Frame-Based : ZÉRO compression lossy intermédiaire        ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Version: 2.0.0                                                              ║
-║  Mission: Assembler frames PNG, RIFE 120FPS, upscale 4K, encode UNE FOIS   ║
-║  Stack: FFmpeg + RIFE + Real-ESRGAN + carrier_schema                       ║
+║  Version: 2.1.0                                                              ║
+║  Mission: Assembler frames PNG, RIFE 60/120FPS, upscale 4K, encode UNE FOIS║
+║  Stack: FFmpeg + RIFE + Real-CUGAN + carrier_schema                        ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
 LOI D'ISOLATION DES SILOS:
@@ -64,11 +64,11 @@ from carrier_schema import (
     FALLBACK_CHAIN, DEFAULT_TARGET_FPS, DEFAULT_SOURCE_FPS,
 )
 
-CARRIER_VERSION = "2.0.0"
+CARRIER_VERSION = "2.1.0"
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
 RIFE_SUBDIR = "rife"
-REALESRGAN_SUBDIR = "realesrgan"
+REALCUGAN_SUBDIR = "realcugan"   # DECRET III — remplace realesrgan
 
 
 class CarrierLogger:
@@ -176,22 +176,43 @@ def check_rife_model(drive_root: Path, logger: CarrierLogger) -> Optional[str]:
 
 
 def check_realesrgan_model(drive_root: Path, logger: CarrierLogger) -> Optional[str]:
-    """Vérifie que Real-ESRGAN est disponible (optionnel)."""
+    """
+    Vérifie que Real-CUGAN est disponible (optionnel). DECRET III.
+
+    Cherche dans EXODUS_AI_MODELS/realcugan/ les modèles .pth
+    entraînés anime/cartoon (up2x, up4x, SE series).
+    Rétrocompatibilité : dossier realesrgan/ accepté aussi (transition douce).
+    """
+    import shutil as _shutil
+    # Stratégie 0 — binaire realcugan-ncnn-vulkan dans PATH (pas besoin de .pth)
+    if _shutil.which("realcugan-ncnn-vulkan"):
+        logger.success("Real-CUGAN ncnn-vulkan (binaire) disponible dans PATH")
+        return "binary"
+
     ai_models_path = drive_root / AI_MODELS_SUBDIR
-    esrgan_path = ai_models_path / REALESRGAN_SUBDIR
 
-    model_candidates = [
-        esrgan_path / "realesr-general-x4v3.pth",
-        esrgan_path / "RealESRGAN_x4plus.pth",
-        esrgan_path / "model.pth"
+    # Chercher d'abord dans le nouveau dossier realcugan/
+    cugan_path = ai_models_path / REALCUGAN_SUBDIR
+    cugan_candidates = [
+        cugan_path / "up4x-latest-no-denoise.pth",
+        cugan_path / "up4x-latest-denoise2x.pth",
+        cugan_path / "up4x-latest-denoise3x.pth",
+        cugan_path / "up2x-latest-no-denoise.pth",
+        cugan_path / "model.pth",
     ]
-
-    for candidate in model_candidates:
+    for candidate in cugan_candidates:
         if candidate.exists():
-            logger.success(f"Real-ESRGAN trouvé: {candidate}")
+            logger.success(f"Real-CUGAN trouvé: {candidate}")
             return str(candidate)
 
-    logger.debug(f"Real-ESRGAN non trouvé (optionnel): {esrgan_path}")
+    # Rétrocompatibilité — ancien dossier realesrgan/
+    legacy_path = ai_models_path / "realesrgan"
+    for candidate in [legacy_path / "model.pth"]:
+        if candidate.exists():
+            logger.warn(f"Modèle dans dossier legacy realesrgan/: {candidate} — migrer vers realcugan/")
+            return str(candidate)
+
+    logger.debug(f"Real-CUGAN non trouvé (optionnel): {cugan_path}")
     return None
 
 
@@ -385,6 +406,10 @@ def run_pipeline(
 
         output_config = plan.get("output", {})
         target_fps = output_config.get("framerate", DEFAULT_TARGET_FPS)
+        # DECRET II — --target-fps CLI override (priorité sur le plan)
+        if getattr(args, "target_fps", None) is not None:
+            target_fps = args.target_fps
+            logger.info(f"RIFE target-fps override CLI: {target_fps}fps (DECRET II)")
         if args.no_rife:
             target_fps = source_fps
 
@@ -732,6 +757,9 @@ Exemples:
                         help='Reprendre depuis le dernier checkpoint')
     parser.add_argument('--no-rife', action='store_true',
                         help='Désactive RIFE (utilise FFmpeg pour interpolation)')
+    parser.add_argument('--target-fps', type=int, default=None, choices=[60, 120],
+                        help='FPS cible RIFE (60 ou 120). Override PRODUCTION_PLAN.JSON[output][framerate]. '
+                             'Défaut: 120 si non spécifié dans le plan. (DECRET II)')
     parser.add_argument('--no-upscale', action='store_true',
                         help='Désactive upscale même si résolution < 4K')
     parser.add_argument('--cpu-only', action='store_true',

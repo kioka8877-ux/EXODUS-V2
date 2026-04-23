@@ -61,6 +61,8 @@ Le produit fini sort d'ici — dernière frégate de la chaîne.
 | 2026-03-06 | carrier_schema.py — 6 piliers + self_test 12/12 | ✅ | PR #45 | — |
 | 2026-03-06 | Refactor pipeline frame-based complet (5 modules + orchestrateur) | ✅ | PR #46 | — |
 | 2026-03-06 | Fix 3 bugs HIGH (destructive move, checkpoint nuke, pix_fmt orphan) | ✅ | PR #46 (commit 1db189a) | — |
+| 2026-04-23 | DECRET II — --target-fps CLI (choices=[60,120]) dans EXO_06_CARRIER.py v2.1.0, override PRODUCTION_PLAN | ✅ | SESSION 2026-04-23 | — |
+| 2026-04-23 | DECRET III — upscaler.py: _upscale_chunk_cugan (modes binary+torch), _load_cugan_model, REALCUGAN_SUBDIR, check_realesrgan_model migré vers Real-CUGAN | ✅ | SESSION 2026-04-23 | — |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - [x] Compressions lossy intermédiaires : ✅ 0 (cible atteinte)
@@ -84,13 +86,13 @@ Le produit fini sort d'ici — dernière frégate de la chaîne.
 
 ## 6. DÉCRETS IMPÉRIAUX — CODEX v6 (23.04.2026)
 
-> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : 🟡 PARTIEL (D-I SCELLÉ, D-II PARTIEL, D-III A IMPLEMENTER)
+> Source : EXODUS_V2_CODEX_IMPERIAL_v6.docx | Statut fregate : 🟢 SCELLÉ (D-I + D-II + D-III IMPLÉMENTÉS — 23.04.2026)
 
 | # | Décret | Description | Priorité | Complexité | Statut |
 |---|--------|-------------|----------|------------|--------|
 | D-I | Pipeline 100% lossless | Audit ATOM-IC : 4 compressions lossy détectées. Imposer EXR pour toutes les frames intermédiaires jusqu'à encodage final. Sortie : MP4 H.265 (distribution) + MOV ProRes 4444 (archive). | CRITIQUE | MOYENNE | ✅ IMPLÉMENTÉ (PR #46 — rife_interpolator: PNG lossless + MKV lossless fallback, 0 H.264 intermédiaire. carrier: EXR/PNG input → AV1/H265/ProRes output) |
-| D-II | RIFE configurable (--target-fps) | Interpolation actuellement hardcodée à 120FPS. Ajouter --target-fps (valeurs : 60 ou 120, défaut : 120). RIFE adapte son ratio d'interpolation. | HAUTE | FAIBLE | ⚠️ PARTIEL (target_fps lu depuis PRODUCTION_PLAN.JSON[output_config][framerate], DEFAULT=120 — CLI --target-fps non exposé dans EXO_06_CARRIER.py, à ajouter) |
-| D-III | Real-CUGAN remplace RealESRGAN | RealESRGAN entraîné sur photos réelles → résultat sous-optimal sur contenu Roblox cartoon. Real-CUGAN = entraîné anime/cartoon, précision supérieure sur avatars Roblox, 100% gratuit, même interface. | HAUTE | FAIBLE | ⬜ A IMPLEMENTER (upscaler.py utilise encore RealESRGAN — réécrire _check_esrgan_available / _upscale_chunk_esrgan / _load_esrgan_model) |
+| D-II | RIFE configurable (--target-fps) | Interpolation actuellement hardcodée à 120FPS. Ajouter --target-fps (valeurs : 60 ou 120, défaut : 120). RIFE adapte son ratio d'interpolation. | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026 — --target-fps CLI ajouté dans EXO_06_CARRIER.py v2.1.0, override PRODUCTION_PLAN.JSON[output][framerate]) |
+| D-III | Real-CUGAN remplace RealESRGAN | RealESRGAN entraîné sur photos réelles → résultat sous-optimal sur contenu Roblox cartoon. Real-CUGAN = entraîné anime/cartoon, précision supérieure sur avatars Roblox, 100% gratuit, même interface. | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026 — upscaler.py: _upscale_chunk_cugan (binary+torch), _load_cugan_model, REALCUGAN_SUBDIR. Support realcugan-ncnn-vulkan binaire + wrapper Python) |
 
 **Diagnostic outils (Audit session 23.04.2026) :**
 ```
@@ -103,4 +105,4 @@ CONCLUSION → F06 reste 100% code : RIFE + Real-CUGAN + FFmpeg
 
 **LOI III rappel :** Du premier frame rendu jusqu'à l'encodage final, aucune compression lossy n'est tolérée. Le format EXR est sacré.
 
-<!-- v4.0 — Audit 23.04.2026 — D-I IMPLÉMENTÉ, D-II PARTIEL, D-III A IMPLEMENTER -->
+<!-- v5.0 — 23.04.2026 — D-I + D-II + D-III IMPLÉMENTÉS — FREGATE 06 SCELLÉE -->

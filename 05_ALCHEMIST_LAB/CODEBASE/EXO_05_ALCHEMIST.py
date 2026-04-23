@@ -532,14 +532,28 @@ def process_pipeline(args, logger: AlchemistLogger):
     lut_active = False
     lut_intensity = getattr(args, "lut_intensity", 1.0)
     lut_path_arg = getattr(args, "lut", None)
+    use_colour_science = getattr(args, "use_colour_science", False)
+    lut_path_obj: Optional[Path] = None
     if lut_path_arg and HAS_LUT_ENGINE:
-        lut_path = Path(lut_path_arg)
+        lut_path_obj = Path(lut_path_arg)
         lut_engine = LUTEngine(verbose=args.verbose)
-        lut_active = lut_engine.load(lut_path)
-        if lut_active:
-            logger.success(f"LUT chargee: {lut_path.name} (intensite={lut_intensity:.2f})")
+        if use_colour_science:
+            if lut_engine.is_colour_science_available():
+                lut_active = True
+                logger.success(
+                    f"Mode C colour-science: {lut_path_obj.name} "
+                    f"(intensite={lut_intensity:.2f}) — DECRET IV"
+                )
+            else:
+                logger.warn("colour-science/imageio non disponibles — fallback interpolation numpy")
+                use_colour_science = False
+                lut_active = lut_engine.load(lut_path_obj)
         else:
-            logger.warn(f"LUT non chargee: {lut_path} — step LUT desactive")
+            lut_active = lut_engine.load(lut_path_obj)
+            if lut_active:
+                logger.success(f"LUT chargee: {lut_path_obj.name} (intensite={lut_intensity:.2f})")
+            else:
+                logger.warn(f"LUT non chargee: {lut_path_obj} — step LUT desactive")
     elif lut_path_arg and not HAS_LUT_ENGINE:
         logger.warn("lut_engine non disponible — LUT step ignore")
 
@@ -672,9 +686,24 @@ def process_pipeline(args, logger: AlchemistLogger):
                         intensity=config["sharpness"]["intensity"],
                     )
 
-                # ── LUT (Mode C — DECRET III) ─────────────────────────────
-                if lut_active and lut_engine is not None:
-                    current = lut_engine.apply(current, intensity=lut_intensity)
+                # ── LUT (Mode C — DECRET III + DECRET IV) ────────────────
+                if lut_active and lut_engine is not None and lut_path_obj is not None:
+                    if use_colour_science:
+                        # DECRET IV — colour-science : traitement EXR natif frame par frame
+                        out_name = f"final_{sid:03d}_{frame_idx:06d}.{OUTPUT_FORMAT}"
+                        out_path = output_dir / out_name
+                        cs_ok = lut_engine.apply_colour_science(
+                            render_path, out_path, lut_path_obj, intensity=lut_intensity
+                        )
+                        if cs_ok:
+                            scene_report["frames_processed"] += 1
+                            total_processed += 1
+                            continue  # frame déjà sauvegardée par colour-science
+                        else:
+                            # fallback numpy si colour-science échoue sur cette frame
+                            current = lut_engine.apply(current, intensity=lut_intensity)
+                    else:
+                        current = lut_engine.apply(current, intensity=lut_intensity)
 
                 out_name = f"final_{sid:03d}_{frame_idx:06d}.{OUTPUT_FORMAT}"
                 save_frame(current, output_dir / out_name)
@@ -833,6 +862,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=1.0,
         metavar="FLOAT",
         help="Intensite du blend LUT/original [0.0-1.0]. Defaut: 1.0",
+    )
+
+    # ── DECRET IV — colour-science (Mode C EXR natif) ────────────────────────
+    parser.add_argument(
+        "--use-colour-science",
+        action="store_true",
+        dest="use_colour_science",
+        help=(
+            "Active colour-science pour le grading Mode C. "
+            "Lit les frames EXR nativement via imageio, applique la LUT .cube "
+            "via colour.io.read_LUT() + LUT3D.apply(). "
+            "Requires: pip install colour-science imageio. "
+            "Utilise --lut pour specifier le fichier .cube. (DECRET IV)"
+        ),
     )
 
     return parser
