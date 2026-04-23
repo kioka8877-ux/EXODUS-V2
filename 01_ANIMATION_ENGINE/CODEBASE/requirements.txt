@@ -1,14 +1,37 @@
 # ╔══════════════════════════════════════════════════════════════════════════════╗
-# ║           TRANSMUTATION ENGINE V2 — Python Dependencies                      ║
+# ║           TRANSMUTATION ENGINE V3 — Python Dependencies                      ║
+# ║           Codex Imperial v6 — D-I D-II D-III D-IV (23.04.2026)              ║
 # ╠══════════════════════════════════════════════════════════════════════════════╣
-# ║  ZÉRO EMOCA — Emotional Intent Transfer via expression_schema.py            ║
 # ║  Blender 4.0 headless installé séparément sur le Drive                      ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-# Aucune dépendance externe requise pour le pipeline principal.
-# expression_schema.py et facial_extractor.py sont pure Python stdlib.
-# blender_fusion.py utilise bpy (fourni par Blender headless).
-# scipy reste disponible pour smoothing.py (module legacy, non utilisé en V2).
+# ── Core (pipeline principal) ─────────────────────────────────────────────────
+# expression_schema.py, facial_extractor.py, sync_engine.py → pure Python stdlib
+# blender_fusion.py → bpy (fourni par Blender headless, pas pip-installable)
 
-# Legacy (optionnel, pour compatibilité smoothing.py)
-scipy>=1.10.0
+numpy>=1.24.0             # emoca_extractor + pyannote_diarizer (array audio)
+opencv-python>=4.8.0      # insightface_tracker (vidéo) + emoca_extractor (fallback)
+
+# ── D-II: InsightFace + EMOCA ─────────────────────────────────────────────────
+insightface>=0.7.3        # face detection + embeddings (insightface_tracker.py)
+onnxruntime-gpu>=1.16.0   # backend InsightFace GPU
+# EMOCA: installation manuelle requise (voir README_DEV.md)
+#   git clone https://github.com/radekd91/emoca /opt/emoca
+#   cd /opt/emoca && pip install -r requirements.txt
+
+# ── D-III: pyannote.audio (speaker diarization) ───────────────────────────────
+pyannote.audio>=3.1.0     # speaker diarization (pyannote_diarizer.py)
+soundfile>=0.12.0         # I/O audio WAV (pyannote_diarizer.py)
+# HF_TOKEN requis pour pyannote/speaker-diarization-3.1
+# Accepter les conditions: huggingface.co/pyannote/speaker-diarization-3.1
+
+# ── GPU / Torch ───────────────────────────────────────────────────────────────
+torch>=2.0.0              # InsightFace GPU + EMOCA + VOID-FLUSH protocol
+torchvision>=0.15.0       # EMOCA image transforms (optionnel si fallback OpenCV)
+
+# ── Legacy (optionnel) ────────────────────────────────────────────────────────
+scipy>=1.10.0             # smoothing.py legacy (non utilisé en V3)
+
+# ── Installation rapide Colab ─────────────────────────────────────────────────
+# !pip install -q numpy opencv-python insightface onnxruntime-gpu \
+#              pyannote.audio soundfile torch torchvision scipy

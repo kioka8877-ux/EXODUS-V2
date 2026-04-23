@@ -81,10 +81,10 @@ Export dual : `.blend` + `.abc` (Alembic cache).
 
 | # | Décret | Description | Priorité | Complexité | Statut |
 |---|--------|-------------|----------|------------|--------|
-| D-I | Externalisation corps animé | Outil externe livre avatar-ferrus-N.blend par personnage (corps + retarget Roblox). EXODUS reçoit ce .blend comme input. Mixamo éliminé. | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
-| D-II | EMOCA sur visage humain réel | EMOCA opère sur le vrai visage humain de la vidéo source (non plus sur avatar Roblox). InsightFace isole la crop par avatar. Précision maximale dans la plage d'entraînement naturelle. | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
-| D-III | Lip-sync obligatoire | Rhubarb TOUJOURS activé si audio_original.wav présent. pyannote.audio génère piste propre par avatar (silence hors parole). Plus de flag optionnel — obligation de qualité. | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
-| D-IV | Orchestration multi-avatar | Boucle for N in avatars. Pour chaque avatar : InsightFace → Face_ID stable, pyannote → piste propre, EMOCA + Rhubarb dédiés. Scalable 1→N sans modification de code. | HAUTE | MOYENNE | ⬜ A IMPLEMENTER |
+| D-I | Externalisation corps animé | Outil externe livre avatar-ferrus-N.blend par personnage (corps + retarget Roblox). EXODUS reçoit ce .blend comme input. Mixamo éliminé. | MOYENNE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| D-II | EMOCA sur visage humain réel | EMOCA opère sur le vrai visage humain de la vidéo source (non plus sur avatar Roblox). InsightFace isole la crop par avatar. Précision maximale dans la plage d'entraînement naturelle. | MOYENNE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| D-III | Lip-sync obligatoire | Rhubarb TOUJOURS activé si audio_original.wav présent. pyannote.audio génère piste propre par avatar (silence hors parole). Plus de flag optionnel — obligation de qualité. | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| D-IV | Orchestration multi-avatar | Boucle for N in avatars. Pour chaque avatar : InsightFace → Face_ID stable, pyannote → piste propre, EMOCA + Rhubarb dédiés. Scalable 1→N sans modification de code. | HAUTE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
 
 **Schéma architectural cible V1 :**
 ```
@@ -100,5 +100,16 @@ INPUTS : avatar-ferrus-N.blend (outil ext.) + video_source.mp4 + audio_original.
          avatar-ferrus-N_animated.blend + .abc
 ```
 
+## 8. REGISTRE DE FORGE — PHASE 6 (Codex Imperial v6)
+
+| Date | Action | Statut | Fichiers modifiés |
+|------|--------|--------|-------------------|
+| 23.04.2026 | D-I Corps animé .blend | ✅ | `blender_fusion.py` (--body-blend, load_preanimated, main V3), `EXO_01_TRANSMUTATION.py` (IN_BODY_ANIMATED/ discovery), `IN_BODY_ANIMATED/` (NEW dir) |
+| 23.04.2026 | D-II EMOCA visage humain | ✅ | `insightface_tracker.py` (NEW), `emoca_extractor.py` (NEW + VOID-FLUSH), `IN_VIDEO_SOURCE/` (NEW dir) |
+| 23.04.2026 | D-III Lip-sync obligatoire | ✅ | `pyannote_diarizer.py` (NEW + VOID-FLUSH), `EXO_01_TRANSMUTATION.py` (Rhubarb systématique + warn explicite si absent) |
+| 23.04.2026 | D-IV Multi-avatar orchestration | ✅ | `EXO_01_TRANSMUTATION.py` (rewrite v3 — boucle for N in avatars, scalable 1→N), `OUT_ANIMATED_ACTORS/` (NEW dir) |
+| 23.04.2026 | requirements.txt V3 | ✅ | `requirements.txt` (numpy, opencv, insightface, onnxruntime-gpu, pyannote.audio, soundfile, torch) |
+
+<!-- v5.0 — Phase 6 Codex Imperial v6 — 4/4 décrets D-I D-II D-III D-IV IMPLÉMENTÉS — 23.04.2026 -->
 <!-- v4.0 — Codex Imperial v6 — Pivot V1 — 23.04.2026 -->
 <!-- v3.0 — U01 SCELLÉ 100% — B1.1 + B1.2 + B1.3 complétées -->

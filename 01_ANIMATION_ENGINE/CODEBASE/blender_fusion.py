@@ -1,11 +1,10 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║     BLENDER FUSION V2 — Body + Face → .blend (Master) + .abc (Preview)      ║
+║     BLENDER FUSION V3 — Corps pré-animé + Visage + Lip-Sync                 ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  ZÉRO EMOCA — Emotional Intent Transfer via expression_schema.py            ║
-║  NLA Strips + Bézier F-Curves + Noise Modifier pour micro-jitter           ║
-║  Output Principal: .blend avec armature active (pour attachement props)      ║
-║  Output Secondaire: .abc (preview/backup)                                    ║
+║  Codex Imperial v6 — D-I: Corps animé = .blend outil externe (0 FBX)       ║
+║  NLA Strips + Bézier F-Curves + Noise Modifier pour micro-jitter            ║
+║  Output Principal: .blend (Master) — Output Secondaire: .abc (Preview)      ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
@@ -22,18 +21,34 @@ if "--" in argv:
 else:
     argv = []
 
-parser = argparse.ArgumentParser(description='Blender Fusion Script V2')
-parser.add_argument('--body-fbx', required=True, help='Body motion FBX file')
-parser.add_argument('--actor-model', required=True, help='Actor model file (.blend, .fbx, .glb, .gltf, .obj) — FIX #1b')
-parser.add_argument('--face-json', required=True, help='Translated facial data JSON (from EmotionalIntentTranslator)')
-parser.add_argument('--output', required=True, help='Output Alembic path')
-parser.add_argument('--sync-offset', type=int, default=0, help='Sync offset in frames')
+parser = argparse.ArgumentParser(description='Blender Fusion Script V3 — D-I Pivot')
+# D-I: corps pré-animé .blend (outil externe)
+parser.add_argument('--body-blend', default=None,
+                    help='[D-I] Avatar .blend pré-animé (corps + armature, livré par outil externe)')
+# Legacy compat V2
+parser.add_argument('--body-fbx', default=None, help='[LEGACY V2] Body motion FBX file')
+parser.add_argument('--actor-model', default=None, help='[LEGACY V2] Actor model file')
+parser.add_argument('--face-json', required=True,
+                    help='Translated facial data JSON (from EmotionalIntentTranslator)')
+# Outputs
+parser.add_argument('--output-blend', required=False, default=None, help='Output .blend path')
+parser.add_argument('--output-abc', required=False, default=None, help='Output Alembic path')
+parser.add_argument('--output', default=None, help='[LEGACY] Alias --output-abc')
+# Options
+parser.add_argument('--sync-offset', type=int, default=0)
 parser.add_argument('--intensity-mode', choices=['linear', 'quadratic', 'ease_in_out'],
-                    default='ease_in_out', help='Intensity interpolation mode')
-parser.add_argument('--output-blend', help='Output .blend path (auto-generated if not provided)')
-parser.add_argument('--lip-sync-json', help='Lip-sync data JSON (from RhubarbBridge)', default=None)
+                    default='ease_in_out')
+parser.add_argument('--fps', type=int, default=30)
+parser.add_argument('--lip-sync-json', default=None)
+parser.add_argument('--verbose', action='store_true')
 
 args = parser.parse_args(argv)
+
+# Résoudre body source (D-I prioritaire sur legacy)
+_body_source = args.body_blend or args.actor_model or args.body_fbx
+# Résoudre output-abc (avec alias legacy)
+if not args.output_abc and args.output:
+    args.output_abc = args.output
 
 
 def log(msg: str, level: str = "INFO"):
@@ -647,66 +662,117 @@ def fix_scattered_objects(imported_objs: list) -> bpy.types.Object:
 
 def main():
     print("=" * 60)
-    print("  BLENDER FUSION V2 — TRANSMUTATION ENGINE")
+    print("  BLENDER FUSION V3 — D-I PIVOT (corps .blend pré-animé)")
     print("=" * 60)
 
-    log(f"Body FBX: {args.body_fbx}")
-    log(f"Actor Model: {args.actor_model}")
+    global _body_source
+    body_source = _body_source
+    if not body_source:
+        log("Aucun fichier corps fourni (--body-blend ou --body-fbx ou --actor-model)", "ERROR")
+        sys.exit(1)
+
+    log(f"Corps source: {body_source}")
     log(f"Face JSON: {args.face_json}")
-    log(f"Output: {args.output}")
-    log(f"Sync Offset: {args.sync_offset}")
+    log(f"Output blend: {args.output_blend}")
+    log(f"Output abc: {args.output_abc}")
     log(f"Intensity Mode: {args.intensity_mode}")
+    log(f"FPS: {args.fps}")
 
     clear_scene()
 
-    body_armature = import_body_fbx(args.body_fbx)
+    # ── D-I: Charger le .blend pré-animé (corps + armature + shape keys) ────
+    # Si corps = .blend → import_actor_model (gère nativement .blend + actions)
+    # Si corps = .fbx (legacy V2) → import_body_fbx + import_actor_model séparés
+    body_ext = Path(body_source).suffix.lower()
 
-    actor_armature = import_actor_model(args.actor_model)
-    all_objs = [o for o in bpy.data.objects]
-    actor_armature = fix_scattered_objects(all_objs) or actor_armature
+    if body_ext == ".blend" or args.body_blend:
+        # D-I: Pivot V1 — .blend pré-animé livré par outil externe
+        log("[D-I] Chargement corps pré-animé .blend (outil externe)")
+        actor_armature = import_actor_model(body_source)
+        all_objs = list(bpy.data.objects)
+        actor_armature = fix_scattered_objects(all_objs) or actor_armature
+        # Pas de transfer_body_animation: le .blend est déjà animé
+        if actor_armature and actor_armature.animation_data and actor_armature.animation_data.action:
+            action = actor_armature.animation_data.action
+            fr = action.frame_range
+            bpy.context.scene.frame_start = int(fr[0])
+            bpy.context.scene.frame_end = int(fr[1])
+            log(f"Animation corps: frames {int(fr[0])}-{int(fr[1])}")
+        else:
+            # Fallback: définir une durée raisonnable
+            bpy.context.scene.frame_start = 1
+            bpy.context.scene.frame_end = 250
+            log("[D-I] Aucune action détectée sur l'armature — durée par défaut 250 frames", "WARN")
 
+    else:
+        # Legacy V2: import FBX corps + actor model séparés
+        log("[LEGACY V2] Import FBX body + actor model")
+        body_armature = import_body_fbx(body_source)
+        actor_model = args.actor_model
+        if not actor_model:
+            log("--actor-model requis en mode legacy FBX", "ERROR")
+            sys.exit(1)
+        actor_armature = import_actor_model(actor_model)
+        all_objs = list(bpy.data.objects)
+        actor_armature = fix_scattered_objects(all_objs) or actor_armature
+        if body_armature and actor_armature:
+            transfer_body_animation(body_armature, actor_armature)
+
+    # ── Facial NLA + Micro-Jitter ─────────────────────────────────────────────
     blender_data = load_blender_data(args.face_json)
-
-    if body_armature and actor_armature:
-        transfer_body_animation(body_armature, actor_armature)
 
     if actor_armature:
         apply_nla_facial_animation(actor_armature, blender_data, args.sync_offset)
         apply_micro_jitter(actor_armature, blender_data)
 
-        # Lip-sync (optionnel — NLA track prioritaire sur MOUTH_KEYS)
+        # D-III: Lip-sync Rhubarb (NLA track prioritaire sur MOUTH_KEYS)
         if args.lip_sync_json:
-            lip_sync_data = load_blender_data(args.lip_sync_json)
-            apply_lip_sync_nla(actor_armature, lip_sync_data, args.sync_offset)
+            lip_data = load_blender_data(args.lip_sync_json)
+            apply_lip_sync_nla(actor_armature, lip_data, args.sync_offset)
 
+    # ── Outputs ───────────────────────────────────────────────────────────────
+    # Résoudre output-blend
     blend_output = args.output_blend
     if not blend_output:
-        blend_output = str(Path(args.output).with_suffix('.blend'))
+        if args.output_abc:
+            blend_output = str(Path(args.output_abc).with_suffix('.blend'))
+        else:
+            blend_output = str(Path(body_source).stem) + "_animated.blend"
+
+    # Résoudre output-abc
+    abc_output = args.output_abc
+    if not abc_output:
+        abc_output = str(Path(blend_output).with_suffix('.abc'))
 
     export_blend(blend_output)
+    export_alembic(abc_output)
 
-    export_alembic(args.output)
+    # Nettoyer armature FBX legacy si présente
+    if 'body_armature' in dir() and body_armature:
+        try:
+            bpy.data.objects.remove(body_armature, do_unlink=True)
+            log("Armature FBX source supprimée")
+        except Exception:
+            pass
 
-    if body_armature:
-        bpy.data.objects.remove(body_armature, do_unlink=True)
-        log("Armature FBX source supprimée")
-
-    # FIX #1b — Metadata JSON
+    # Metadata JSON
     import json as _json
     metadata = {
+        "version": "3.0.0",
+        "pivot": "v1" if body_ext == ".blend" or args.body_blend else "v2_legacy",
         "actor_id": Path(blend_output).stem,
-        "source_model": Path(args.actor_model).name,
+        "source_blend": Path(body_source).name,
         "vertices": sum(len(o.data.vertices) for o in bpy.data.objects if o.type == "MESH"),
-        "animations_injected": len(blender_data.get("segments", [])),
-        "placeholder_removed": True,
+        "segments_injected": len(blender_data.get("segments", [])),
+        "lipsync": args.lip_sync_json is not None,
     }
     meta_path = Path(blend_output).with_suffix(".json")
-    with open(meta_path, "w") as _f:
+    with open(str(meta_path), "w") as _f:
         _json.dump(metadata, _f, indent=2)
-    log(f"[U01] ✅ Metadata: {meta_path} — {metadata['vertices']} vertices")
+    log(f"[V3] Metadata: {meta_path} — {metadata['vertices']} vertices")
 
     print("=" * 60)
-    print("  FUSION V2 COMPLÈTE")
+    print(f"  FUSION V3 COMPLÈTE — blend:{blend_output}")
     print("=" * 60)
 
 
