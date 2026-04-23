@@ -3,7 +3,7 @@
 ## Mission
 Fusion visuelle automatisée des rendus 3D avec la vidéo source pour atteindre le look cinéma 4K. Pipeline OpenCV CPU pur en 4 étapes.
 
-## Statut: 🟢 OPÉRATIONNEL (V2)
+## Statut: 🟢 SCELLÉE — VALIDÉE EN SESSION (2026-04-23)
 
 ## Stack Technique V2
 - **OpenCV** (headless) — Traitement d'image, I/O, blur, unsharp mask
@@ -134,7 +134,30 @@ python EXO_05_ALCHEMIST.py \
 | effects_forge.py | Effets Blender (bloom, grain) | Inactif |
 | denoiser.py | OptiX/OIDN | Inactif |
 
-## Checklist Déploiement V2
+## Décrets Impériaux Validés (Session 2026-04-23)
+
+### Mode A — Bypass (DECRET II)
+Flag `--bypass` : F05 skippée, frames copiées directement vers `OUT_FINAL_FRAMES/`.
+Génère `alchemist_report.json` avec `status: "SKIPPED"`.
+Activé si rendu Blender Cycles déjà satisfaisant — aucun traitement, transit direct vers F06.
+
+### Mode B — DaVinci Resolve (Manuel)
+Outil externe gratuit. L'opérateur importe la séquence EXR, applique le LUT, exporte.
+Non scriptable (Resolve Free). Hors du scope code EXODUS — documenté ici pour référence.
+
+### Mode C — Python LUT Engine (DECRET III)
+Module `lut_engine.py` : lecture .cube + interpolation trilinéaire 3D, 100% numpy, zéro dépendance externe.
+Activation : `--lut LUTS/cinematic_cold.cube [--lut-intensity 0.8]`
+Step ajouté après le pipeline OpenCV existant : match_color → grain → bloom → sharpness → **LUT**.
+
+### DECRET I — Inventaire LUTs
+`LUTS/MANIFEST.json` créé. 4 LUTs en stock, versionnées dans le repo :
+- `cinematic_cold.cube` — Look froid, ambiances nocturnes
+- `cinematic_warm.cube` — Look chaud, éclairages dorés
+- `natural.cube` — Grade neutre, correction légère
+- `neon_nights.cube` — Cyberpunk, saturé, contrastes hauts
+
+## Checklist Déploiement V2 (SCELLÉE)
 
 - [x] alchemist_schema.py — Bible Alchimique
 - [x] match_color.py — Transfert couleur
@@ -142,6 +165,9 @@ python EXO_05_ALCHEMIST.py \
 - [x] bloom_engine.py — Bloom additif
 - [x] sharpness_transfer.py — Alignement netteté
 - [x] EXO_05_ALCHEMIST.py v2.0.0 — Orchestrateur CLI
+- [x] lut_engine.py — LUT .cube 3D (numpy trilinéaire) — DECRET III
+- [x] LUTS/MANIFEST.json — Inventaire LUTs — DECRET I
+- [x] --bypass flag — Transit direct F04 → F06 — DECRET II
 - [x] requirements.txt — 4 dépendances CPU pur
 - [x] README_DEV.md — Documentation V2
 - [x] UNIT_05_SUBPLAN.md — Sous-plan V2

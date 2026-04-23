@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "updated": "2026-04-23",
+  "decret": "DECRET I — Inventaire et Versionnage des LUTs",
+  "note": "Toutes les LUTs sont versionnees dans le repo. Aucune dependance externe.",
+  "luts": [
+    {
+      "filename": "cinematic_cold.cube",
+      "name": "Cinematic Cold",
+      "source": "EXODUS V2 internal",
+      "version": "1.0",
+      "usage": "Look cinematique froid — ambiances nocturnes, scenes d'action, rues urbaines",
+      "style": "cold",
+      "intensity_recommandee": 0.8
+    },
+    {
+      "filename": "cinematic_warm.cube",
+      "name": "Cinematic Warm",
+      "source": "EXODUS V2 internal",
+      "version": "1.0",
+      "usage": "Look cinematique chaud — scenes d'interieur, eclairages dores, golden hour",
+      "style": "warm",
+      "intensity_recommandee": 0.8
+    },
+    {
+      "filename": "natural.cube",
+      "name": "Natural",
+      "source": "EXODUS V2 internal",
+      "version": "1.0",
+      "usage": "Grade neutre — preserve la colorimetrie naturelle avec legere correction de contraste",
+      "style": "neutral",
+      "intensity_recommandee": 1.0
+    },
+    {
+      "filename": "neon_nights.cube",
+      "name": "Neon Nights",
+      "source": "EXODUS V2 internal",
+      "version": "1.0",
+      "usage": "Style cyberpunk — couleurs satures, contrastes eleves, teintes neon bleu-violet",
+      "style": "neon",
+      "intensity_recommandee": 0.7
+    }
+  ]
+}

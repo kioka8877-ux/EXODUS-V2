@@ -1,14 +1,19 @@
 # TRACKING – U05 ALCHEMIST LAB (Le Philtre)
 
-## 1. OBJECTIF DE LA MUTATION (V2)
+## 1. OBJECTIF DE LA MUTATION (V2) — SCELLÉE 2026-04-23
 Fusion visuelle totale entre le rendu 3D (U04) et la vidéo source (U00).
 L'avatar Roblox doit être indistinguable de la vidéo. 4 transformations mathématiques :
 Match Color (histogramme LAB), Film Grain matching (extraction grain source),
-Bloom/Glow bleed, Sharpness transfer.
+Bloom/Glow bleed, Sharpness transfer. + LUT .cube optionnel (Mode C).
 
 **Shift V1 → V2** : Blender Compositor + LUTs → **OpenCV + Pillow** (CPU pur, zéro Blender).
 
-**Architecture** : Bible-first (alchemist_schema.py) + 4 modules OpenCV + orchestrateur CLI.
+**Architecture** : Bible-first (alchemist_schema.py) + 4 modules OpenCV + orchestrateur CLI + LUT engine numpy.
+
+**3 Modes validés (session 2026-04-23) :**
+- Mode A — Bypass (`--bypass`) : transit direct F04 → F06, aucun traitement
+- Mode B — DaVinci Resolve : grade manuel hors EXODUS (outil externe gratuit)
+- Mode C — Python LUT (`--lut`) : `lut_engine.py` + interpolation trilinéaire numpy
 
 ## 2. ÉTAT J0 (DIAGNOSTIC DES ÉCARTS)
 - **Écarts constatés** : `color_grader.py` utilise des LUTs au lieu du Match Color par histogramme. Pas de grain matching. `effects_forge.py` manque bloom/glow spécifique. Tout le pipeline est Blender-dépendant.
@@ -43,6 +48,7 @@ Bloom/Glow bleed, Sharpness transfer.
 | 2026-03-06 | alchemist_schema.py (Bible Alchimique, 479 lignes, self_test 8/8) + IN_SOURCE_REF/ | 🟢 | PR #38 | N/A (Python pur) |
 | 2026-03-06 | match_color.py (305 lignes, histogram LAB) + grain_matcher.py (317 lignes, bilateral decomposition) | 🟢 | PR #40 | N/A (CPU) |
 | 2026-03-06 | bloom_engine.py + sharpness_transfer.py + EXO_05_ALCHEMIST.py v2.0.0 + requirements.txt + README_DEV.md + UNIT_05_SUBPLAN.md | 🟢 | PR #41 | N/A (CPU) |
+| 2026-04-23 | lut_engine.py (LUT .cube 3D, trilineaire numpy) + LUTS/MANIFEST.json + --bypass flag + --lut/--lut-intensity dans EXO_05_ALCHEMIST.py — DECRETS I/II/III valides en session | 🟢 | SESSION 2026-04-23 | N/A (CPU) |
 
 ## 5. MÉTRIQUES ET VALIDATION
 - Consommation VRAM Max : N/A (CPU processing — OpenCV + Pillow)
@@ -69,6 +75,9 @@ Bloom/Glow bleed, Sharpness transfer.
 - [x] Bloom/Glow bleed (hautes lumières bavent sur le décor)
 - [x] Flou de transfert (avatar pas "trop net" vs grain source)
 - [x] Output : .png 16 bits
+- [x] lut_engine.py — LUT .cube 3D numpy (DECRET III)
+- [x] LUTS/MANIFEST.json — Inventaire LUTs (DECRET I)
+- [x] --bypass flag — Transit direct F04→F06 (DECRET II)
 - [ ] Marshal Out-Check passé
 - [ ] Validation Souveraine
 

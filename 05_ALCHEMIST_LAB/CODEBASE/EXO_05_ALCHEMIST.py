@@ -26,6 +26,7 @@ OUTPUTS:
 import argparse
 import json
 import os
+import shutil
 import sys
 import re
 import time
@@ -80,6 +81,12 @@ try:
     HAS_TQDM = True
 except ImportError:
     HAS_TQDM = False
+
+try:
+    from lut_engine import LUTEngine
+    HAS_LUT_ENGINE = True
+except ImportError:
+    HAS_LUT_ENGINE = False
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -332,6 +339,60 @@ def get_scene_timecodes(scene: dict, fps_source: float) -> Tuple[int, int]:
     return int(tc_start), int(tc_end)
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# BYPASS — DECRET II
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def run_bypass(render_dir: Path, output_dir: Path, plan: dict, logger: AlchemistLogger):
+    """
+    Mode bypass — copie directe des frames sans traitement (DECRET II).
+    Utile si le rendu Blender Cycles est deja satisfaisant.
+    Genere alchemist_report.json avec status: SKIPPED.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    sequences = scan_render_frames(render_dir, logger)
+
+    total = sum(len(v) for v in sequences.values())
+    logger.info(f"Mode BYPASS — copie de {total} frames sans traitement")
+
+    t_start = time.time()
+    copied = 0
+    errors = 0
+    for sid, frames in sorted(sequences.items()):
+        for frame_path in frames:
+            try:
+                shutil.copy2(str(frame_path), str(output_dir / frame_path.name))
+                copied += 1
+            except Exception as e:
+                logger.error(f"  Copie echouee {frame_path.name}: {e}")
+                errors += 1
+
+    total_time = round(time.time() - t_start, 2)
+
+    report = {
+        "version": ALCHEMIST_VERSION,
+        "timestamp": datetime.now().isoformat(),
+        "preset": "BYPASS",
+        "pipeline": [],
+        "scenes": [],
+        "summary": {
+            "scenes_total": len(sequences),
+            "scenes_processed": 0,
+            "total_frames_processed": copied,
+            "total_frames_failed": errors,
+            "total_time_seconds": total_time,
+            "status": "SKIPPED",
+        },
+    }
+
+    report_path = output_dir / "alchemist_report.json"
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
+    logger.success(f"Bypass termine — {copied} frames copiees en {total_time:.1f}s")
+    logger.success(f"Rapport: {report_path}")
+
+
 def save_frame(frame: np.ndarray, output_path: Path):
     """Sauvegarde une frame en PNG 16-bit."""
     if frame.dtype == np.float32 or frame.dtype == np.float64:
@@ -403,6 +464,11 @@ def process_pipeline(args, logger: AlchemistLogger):
 
     plan = validate_production_plan(plan_path, logger)
 
+    # ── DECRET II — Mode Bypass ───────────────────────────────────────────────
+    if getattr(args, "bypass", False):
+        run_bypass(render_dir, output_dir, plan, logger)
+        return
+
     if not render_dir.exists():
         logger.error(f"Dossier render introuvable: {render_dir}")
         sys.exit(1)
@@ -460,6 +526,22 @@ def process_pipeline(args, logger: AlchemistLogger):
 
     bloom_engine = BloomEngine(verbose=args.verbose) if not skip_bloom else None
     sharpness_engine = SharpnessTransfer(verbose=args.verbose) if not skip_sharpness else None
+
+    # ── DECRET III — LUT Engine (Mode C) ─────────────────────────────────────
+    lut_engine = None
+    lut_active = False
+    lut_intensity = getattr(args, "lut_intensity", 1.0)
+    lut_path_arg = getattr(args, "lut", None)
+    if lut_path_arg and HAS_LUT_ENGINE:
+        lut_path = Path(lut_path_arg)
+        lut_engine = LUTEngine(verbose=args.verbose)
+        lut_active = lut_engine.load(lut_path)
+        if lut_active:
+            logger.success(f"LUT chargee: {lut_path.name} (intensite={lut_intensity:.2f})")
+        else:
+            logger.warn(f"LUT non chargee: {lut_path} — step LUT desactive")
+    elif lut_path_arg and not HAS_LUT_ENGINE:
+        logger.warn("lut_engine non disponible — LUT step ignore")
 
     color_matcher = None
     grain_matcher = None
@@ -590,6 +672,10 @@ def process_pipeline(args, logger: AlchemistLogger):
                         intensity=config["sharpness"]["intensity"],
                     )
 
+                # ── LUT (Mode C — DECRET III) ─────────────────────────────
+                if lut_active and lut_engine is not None:
+                    current = lut_engine.apply(current, intensity=lut_intensity)
+
                 out_name = f"final_{sid:03d}_{frame_idx:06d}.{OUTPUT_FORMAT}"
                 save_frame(current, output_dir / out_name)
 
@@ -719,6 +805,35 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Mode verbose")
     parser.add_argument("--dry-run", action="store_true", help="Valider sans traitement")
+
+    # ── DECRET II — Bypass ───────────────────────────────────────────────────
+    parser.add_argument(
+        "--bypass",
+        action="store_true",
+        help=(
+            "Bypass total — copie les frames directement sans traitement. "
+            "Utile si le rendu Blender Cycles est deja satisfaisant. "
+            "Genere alchemist_report.json avec status: SKIPPED. (DECRET II)"
+        ),
+    )
+
+    # ── DECRET III — LUT Engine (Mode C) ────────────────────────────────────
+    parser.add_argument(
+        "--lut",
+        default=None,
+        metavar="PATH",
+        help=(
+            "Chemin vers un fichier .cube 3D. Applique apres le pipeline OpenCV. "
+            "Ex: LUTS/cinematic_cold.cube. (DECRET III — Mode C Python)"
+        ),
+    )
+    parser.add_argument(
+        "--lut-intensity",
+        type=float,
+        default=1.0,
+        metavar="FLOAT",
+        help="Intensite du blend LUT/original [0.0-1.0]. Defaut: 1.0",
+    )
 
     return parser
 
