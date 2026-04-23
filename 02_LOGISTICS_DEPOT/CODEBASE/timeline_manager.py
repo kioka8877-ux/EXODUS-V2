@@ -2,14 +2,21 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                  TIMELINE MANAGER — EXODUS LOGISTICS                         ║
-║             Gestion Visibilité et Animation des Props                        ║
+║            Thin wrapper → actor_assembly.py (Codex v6 D-II)                 ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-Module pour gérer la visibilité des props sur la timeline Blender.
-Gère les keyframes de hide_viewport, hide_render et influence des contraintes.
+Ce module est un thin wrapper pour la rétrocompatibilité.
+Toute la logique est dans actor_assembly.py depuis le Décret D-II (Codex v6).
+Les imports existants (from timeline_manager import X) continuent de fonctionner.
 """
 
 from typing import List, Dict, Optional, Any, Tuple
+
+# D-II — Import depuis le module unifié
+try:
+    from actor_assembly import TimelineManager, apply_events_from_plan  # noqa: F401
+except ImportError:
+    pass
 
 try:
     import bpy

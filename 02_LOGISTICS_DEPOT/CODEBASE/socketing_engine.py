@@ -2,11 +2,12 @@
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                   SOCKETING ENGINE — EXODUS LOGISTICS                        ║
-║               Attachement Props aux Bones via Contraintes                    ║
+║            Thin wrapper → actor_assembly.py (Codex v6 D-II)                 ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
-Script Blender headless pour attacher les props aux bones de l'armature.
-Utilise des contraintes Child Of pour un attachement dynamique.
+Ce module est un thin wrapper pour la rétrocompatibilité.
+Toute la logique est dans actor_assembly.py depuis le Décret D-II (Codex v6).
+Les imports existants (from socketing_engine import X) continuent de fonctionner.
 
 Usage (appelé par EXO_02_LOGISTICS.py):
     blender --background actor.blend --python socketing_engine.py -- \\
@@ -21,6 +22,16 @@ import json
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
+
+# D-II — Import depuis le module unifié
+try:
+    from actor_assembly import (
+        SOCKET_MAPPING, SOCKET_OFFSETS,
+        SocketingEngine, import_prop, process_production_plan,
+    )
+except ImportError:
+    # Fallback si exécuté hors contexte (ex: import direct sans actor_assembly)
+    pass
 
 try:
     import bpy
@@ -266,11 +277,60 @@ class SocketingEngine:
         """Liste tous les bones de l'armature."""
         if self.armature is None:
             self.find_armature()
-        
+
         if self.armature is None:
             return []
-        
+
         return [bone.name for bone in self.armature.data.bones]
+
+    def validate_sockets_for_plan(self, plan: Dict) -> Tuple[List[str], List[str]]:
+        """
+        D-I — Validation pré-socketing (Codex v6).
+        Vérifie que chaque socket requis par le plan peut être résolu vers un bone réel.
+        Retourne (valid_sockets, missing_sockets).
+        Lève ValueError si des sockets sont introuvables — fin des props flottants silencieux.
+        """
+        if self.armature is None:
+            self.find_armature()
+
+        if self.armature is None:
+            raise ValueError("[SOCKETING] VALIDATION ÉCHOUÉE : aucune armature dans la scène.")
+
+        required_sockets: List[str] = []
+        for scene in plan.get("scenes", []):
+            for action in scene.get("props_actions", []):
+                socket = action.get("socket", "hand_right")
+                if socket not in required_sockets:
+                    required_sockets.append(socket)
+
+        valid_sockets: List[str] = []
+        missing_sockets: List[str] = []
+
+        for socket in required_sockets:
+            bone = self.resolve_bone_name(socket)
+            if bone:
+                valid_sockets.append(socket)
+                self._debug(f"  ✓ socket '{socket}' → bone '{bone}'")
+            else:
+                missing_sockets.append(socket)
+                self._log(f"  ✗ socket '{socket}' → BONE INTROUVABLE")
+
+        if missing_sockets:
+            available_bones = self.list_armature_bones()
+            known_sockets = list(SOCKET_MAPPING.keys())
+            raise ValueError(
+                f"[SOCKETING] VALIDATION PRÉ-SOCKETING ÉCHOUÉE — {len(missing_sockets)} socket(s) non résolus :\n"
+                + "\n".join(f"  - '{s}'" for s in missing_sockets)
+                + f"\n\nBones disponibles dans l'armature '{self.armature.name}' ({len(available_bones)}) :\n"
+                + "  " + ", ".join(available_bones[:20])
+                + (" ..." if len(available_bones) > 20 else "")
+                + f"\n\nSockets connus : {', '.join(known_sockets)}"
+                + "\n\nAction requise : ajouter les sockets manquants dans SOCKET_MAPPING "
+                + "ou corriger les noms de socket dans PRODUCTION_PLAN.JSON."
+            )
+
+        self._log(f"Validation pré-socketing : {len(valid_sockets)}/{len(required_sockets)} sockets résolus — OK")
+        return valid_sockets, missing_sockets
     
     def get_attachment_report(self) -> List[Dict]:
         """Retourne le rapport des attachements effectués."""
@@ -324,10 +384,15 @@ def process_production_plan(
 ) -> Dict[str, Any]:
     """
     Traite le PRODUCTION_PLAN.JSON et attache tous les props.
+    D-I : validation pré-socketing obligatoire avant tout attachement.
     Retourne un rapport des opérations.
     """
     from timeline_manager import TimelineManager
-    
+
+    # D-I — Validation pré-socketing (Codex v6)
+    # Lève ValueError si un socket requis n'est pas résolvable → abort propre
+    engine.validate_sockets_for_plan(plan)
+
     timeline = TimelineManager(verbose=verbose)
     loaded_props: Dict[str, Any] = {}
     operations = []

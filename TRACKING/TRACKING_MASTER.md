@@ -101,8 +101,8 @@ Fregates :
 | U01 | D-II | EMOCA sur visage humain réel | MOYENNE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
 | U01 | D-III | Lip-sync obligatoire (Rhubarb + pyannote) | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
 | U01 | D-IV | Orchestration multi-avatar (N personnages) | HAUTE | MOYENNE | ✅ IMPLÉMENTÉ (23.04.2026) |
-| U02 | D-I | Validation pré-socketing (bones check) | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
-| U02 | D-II | Fusion socketing + timeline (actor_assembly.py) | FAIBLE | FAIBLE | ⬜ A IMPLEMENTER |
+| U02 | D-I | Validation pré-socketing (bones check) | HAUTE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
+| U02 | D-II | Fusion socketing + timeline (actor_assembly.py) | FAIBLE | FAIBLE | ✅ IMPLÉMENTÉ (23.04.2026) |
 | U02 | D-III | Bypass props automatique | FAIBLE | FAIBLE | ✅ VALIDÉ (session 21.04) |
 | U03 | D-I | Suppression code mort D2/D3 | HAUTE | FAIBLE | ⬜ A IMPLEMENTER |
 | U03 | D-II | Classe de base BlenderLayerBuilder | MOYENNE | MOYENNE | ⬜ A IMPLEMENTER |
@@ -119,7 +119,7 @@ Fregates :
 | U06 | D-II | RIFE configurable (--target-fps 60/120) | HAUTE | FAIBLE | ⚠️ PARTIEL (target_fps via PRODUCTION_PLAN.framerate — CLI --target-fps non exposé) |
 | U06 | D-III | Real-CUGAN remplace RealESRGAN | HAUTE | FAIBLE | ⬜ A IMPLEMENTER (upscaler.py utilise encore RealESRGAN) |
 
-> Compte (audit 23.04.2026) : 17 IMPLÉMENTÉS/VALIDÉS — 1 PARTIEL (U06 D-II) — 7 A IMPLEMENTER
+> Compte (audit 23.04.2026) : 19 IMPLÉMENTÉS/VALIDÉS — 1 PARTIEL (U06 D-II) — 5 A IMPLEMENTER
 
 ### DOCTRINE IMPÉRIALE (LOIs INVIOLABLES — Codex v6)
 
