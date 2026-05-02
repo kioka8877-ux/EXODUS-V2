@@ -1734,7 +1734,10 @@ def generate_mock_master_json(metadata: dict) -> dict:
                         "music_id": "none",
                         "sfx": ["oof"],
                         "ambient_id": "none"
-                    }
+                    },
+                    "actors_placement": [
+                        {"avatar_id": 0, "position": [0.0, 0.0, 0.0], "facing_target": -1}
+                    ]
                 },
                 {
                     "scene_id": 2,
@@ -1776,7 +1779,11 @@ def generate_mock_master_json(metadata: dict) -> dict:
                         "music_id": "action_electronic",
                         "sfx": ["sword_hit", "oof"],
                         "ambient_id": "none"
-                    }
+                    },
+                    "actors_placement": [
+                        {"avatar_id": 0, "position": [-0.8, 0.0, 0.0], "facing_target": 1},
+                        {"avatar_id": 1, "position": [0.8, 0.0, 0.0], "facing_target": 0}
+                    ]
                 }
             ],
             "production_notes": {
