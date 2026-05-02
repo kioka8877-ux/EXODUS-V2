@@ -135,3 +135,56 @@ Fregates :
 
 <!-- v6.0 — Phase 6 SCELLÉE — 25/25 décrets — 23.04.2026 -->
 <!-- v4.0 — Phase 5 Complete — Empire EXODUS 100% — 2026-04-03 -->
+
+---
+
+## PHASE 7 — CODEX BRAINSTORM v1 (Loi du Levier)
+
+> Source : EXODUS_V2_CODEX_BRAINSTORM_v1.docx | Session 01-02.05.2026.M41
+> Maitre de Forge : Vulkan | Scribe : CAPY-01
+> Loi du Levier : identifier les elements remplacables par services externes (effort min, resultat max)
+
+### Etat du Conseil (01.05.2026)
+Le Conseil a examine une seule fregate lors de la session initiale. Six restent a analyser.
+
+| Fregate | Verdict | Service retenu | Note |
+|---------|---------|----------------|------|
+| U03 SCENOGRAPHY DOCK | ACTIVE (ALLEGEE ~70%) | Tripo AI / Meshy AI (GLB) | Tri-Layer -> 3 etapes si GLB fourni |
+| U00 CORTEX HQ | A ANALYSER | — | DECRET III conditionnel (M6/M7 evaluation reportee) |
+| U01 ANIMATION ENGINE | A ANALYSER | — | Session suivante |
+| U02 LOGISTICS DEPOT | A ANALYSER | — | Session suivante |
+| U04 PHOTOGRAPHY WING | A ANALYSER | — | Session suivante |
+| U05 ALCHEMIST LAB | A ANALYSER | — | Session suivante |
+| U06 AIRCRAFT CARRIER | A ANALYSER | — | Session suivante |
+
+### Travaux en cours (02.05.2026)
+
+**U03 — Phase D7 (3 taches, EN ATTENTE DE FORGE)**
+- D7-A : Mode GLB dans layer_assembler.py (--glb-path + _import_glb() + branchement)
+- D7-B : Pass-through --glb-path dans EXO_03_SCENOGRAPHY.py
+- D7-C : Sarcophage banner sur 5 modules (dome, displacement, pbr_swap, depth_cleaner, glass)
+
+**U00 — Phase E7 (2 taches, EN ATTENTE DE FORGE)**
+- E7-A : Flag --glb-mode dans EXO_00_CORTEX.py (stase M6+M7 quand GLB actif)
+- E7-B : Commentaires inline stase conditionnelle
+
+### Tableau de bord Phase 7
+| Unite | Phase | Taches totales | Taches OK | Statut |
+|-------|-------|----------------|-----------|--------|
+| U03 | D7 | 3 | 0 | EN ATTENTE |
+| U00 | E7 | 2 | 0 | EN ATTENTE |
+
+### Coherence pipeline GLB
+```
+U00 --glb-mode active :
+    M6 DepthAnything -> STASE_GLB (depth maps non generees)
+    M7 SAM           -> STASE_GLB (masques SAM non generes)
+
+U03 --glb-path fourni :
+    Dome / Displacement / PBR / Glass -> STASE (non executes)
+    GLB importe + Shadow + HDRi       -> ACTIFS
+```
+Les deux flags sont independants mais complementaires. L'operateur les active ensemble
+quand il fournit un GLB depuis Tripo AI / Meshy AI.
+
+<!-- v7.0 — CODEX BRAINSTORM v1 — Phase 7 ouverte — 02.05.2026 -->

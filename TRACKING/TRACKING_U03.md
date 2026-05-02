@@ -124,3 +124,94 @@ VRAM cap : limitation des subdivisions pour compatibilite Colab T4 (<6GB).
 <!-- v4.0 — Décrets D-I/D-II/D-III IMPLÉMENTÉS — 23.04.2026 -->
 <!-- v3.0 — Codex Imperial v6 — 23.04.2026 -->
 <!-- v2.1 — U03 TRACKING D5 ADAPTIVE SCENE PROFILE -->
+
+---
+
+## 7. DÉCRETS — CODEX BRAINSTORM v1 (01.05.2026)
+
+> Source : EXODUS_V2_CODEX_BRAINSTORM_v1.docx | Loi du Levier — Session 01.05.2026
+
+### Contexte
+Le CODEX BRAINSTORM v1 applique la Loi du Levier : identifier les elements remplacables par des services externes gratuits (Tripo AI / Meshy AI) pour alléger le code inutile. Pour U03, le verdict est rendu.
+
+**Verdict : ACTIVE (MASSIVEMENT ALLEGEE)**
+Si le decor GLB est fourni par un service externe (Tripo AI / Meshy AI), ~70% du code de U03 devient du code mort. La fregate survit mais passe de complexe a triviale.
+
+### Pipeline GLB allege (3 etapes)
+```
+AVANT (Tri-Layer — 8 etapes, ~45 min) :
+  depth maps -> clean -> dome -> shadow -> world -> displacement -> PBR -> glass
+
+APRES (GLB fourni — 3 etapes, ~2 min) :
+  GLB -> import Blender -> shadow catcher -> HDRi -> save .blend
+```
+
+### Ce qui RESTE actif (contrat U04 inchange)
+| Composant | Statut |
+|-----------|--------|
+| Shadow Catcher | ACTIF — acteurs projettent toujours des ombres |
+| World Sync HDRi | ACTIF — coherence eclairage ambiant |
+| Importeur GLB -> Blender | ACTIF (nouveau) — bpy.ops.import_scene.gltf() |
+| Structure 5 collections | ACTIF — contrat EXODUS maintenu (ENV_DOME, ENV_TERRAIN, ENV_SHADOW, ENV_GLASS, ENV_PBR) |
+
+### Ce qui est MIS EN STASE si GLB fourni (Sarcophage)
+| Composant | Fichier | Raison |
+|-----------|---------|--------|
+| Couche A — Infinity Dome | dome_builder.py | GLB a deja son fond. Inutile. |
+| Couche B — Displacement Mesh | displacement_builder.py | GLB a deja sa geometrie. Inutile. |
+| Couche C — PBR Swap | pbr_swap_builder.py | GLB a deja ses materiaux. Inutile. |
+| Anti-ghosting depth maps | depth_map_cleaner.py | Aucune depth map en mode GLB. Dead code. |
+| Vitres | glass_builder.py | Verre deja dans le GLB si modelise. Inutile. |
+
+> Doctrine sarcophage : les fichiers RESTENT dans le repo. Un banner SARCOPHAGE est ajoute en tete. Ils ne sont plus appeles en mode GLB. Supprimes uniquement apres preuve que le besoin n'existe plus apres run E2E.
+
+### Plan d'implementation — Phase D7 (CODEX BRAINSTORM v1)
+
+#### D7-A — Mode GLB dans layer_assembler.py
+- [ ] Ajouter argument --glb-path au parser CLI
+- [ ] Creer fonction _import_glb(glb_path: str) -> int — importe GLB dans collection ENV_TERRAIN, retourne nb objets importer
+- [ ] Modifier assemble_scene() : branchement sur glb_path
+  - Si glb_path fourni : mode GLB : _import_glb() + build_shadow_catcher() + setup_world_sync() + stamp + save
+  - Si absent : mode legacy Tri-Layer (comportement actuel INCHANGE)
+- [ ] active_layers = "glb_import,shadow,world_sync" en mode GLB
+- [ ] Mettre a jour ASSEMBLER_VERSION -> "3.1.0"
+
+#### D7-B — Pass-through dans EXO_03_SCENOGRAPHY.py
+- [ ] Ajouter --glb-path au parser argparse (optionnel, defaut "")
+- [ ] Passer glb_path dans run_blender_scenography() -> cmd Blender
+- [ ] Mettre a jour le rapport : "pipeline": "GLB_V1" si mode GLB, sinon "TRI-LAYER_V2"
+- [ ] Mettre a jour SCENOGRAPHY_VERSION -> "3.1.0"
+
+#### D7-C — Sarcophagisation des 5 modules
+Ajouter un banner SARCOPHAGE en tete de chaque fichier :
+- [ ] dome_builder.py
+- [ ] displacement_builder.py
+- [ ] pbr_swap_builder.py
+- [ ] depth_map_cleaner.py
+- [ ] glass_builder.py
+
+Format banner :
+```
+# ===================================================================
+# SARCOPHAGE — DECRET II — CODEX BRAINSTORM v1 (01.05.2026)
+# Ce module est EN STASE quand le mode GLB est actif (--glb-path).
+# Non supprime : conserve pour le mode Tri-Layer legacy (sans GLB).
+# ===================================================================
+```
+
+### Registre de Forge — Phase D7
+| Date | Action | Statut | Fichiers modifies |
+|------|--------|--------|-------------------|
+| 02.05.2026 | D7 documente dans TRACKING_U03.md | OK | TRACKING_U03.md |
+| — | D7-A — Mode GLB layer_assembler.py v3.1.0 | EN ATTENTE | layer_assembler.py |
+| — | D7-B — Pass-through EXO_03_SCENOGRAPHY.py v3.1.0 | EN ATTENTE | EXO_03_SCENOGRAPHY.py |
+| — | D7-C — Sarcophage 5 modules | EN ATTENTE | dome_builder.py, displacement_builder.py, pbr_swap_builder.py, depth_map_cleaner.py, glass_builder.py |
+
+### Criteres de validation Phase D7
+- [ ] python EXO_03_SCENOGRAPHY.py --drive-root X --production-plan Y --glb-path /path/decor.glb --dry-run — valide sans erreur
+- [ ] python EXO_03_SCENOGRAPHY.py --drive-root X --production-plan Y --dry-run — mode legacy inchange
+- [ ] layer_assembler.py v3.1.0 : _import_glb() present et appele en mode GLB
+- [ ] 5 banners sarcophage presents dans les fichiers concernes
+- [ ] scenography_report.json : "pipeline": "GLB_V1" en mode GLB, "TRI-LAYER_V2" en mode legacy
+
+<!-- v5.0 — CODEX BRAINSTORM v1 — Phase D7 documentee — 02.05.2026 -->

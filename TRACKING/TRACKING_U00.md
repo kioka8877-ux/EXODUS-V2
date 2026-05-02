@@ -113,3 +113,81 @@ Cellule 3  → M6 Depth + M7 SAM + flags finaux (commun)
 | 2026-04-23 | D-IV Architecture duale | ✅ | `EXO_00_CORTEX_PRODUCTION.ipynb` (refonte 7 cellules), `GEMINI_CHAT_METAPROMPT.md` (NEW) |
 
 <!-- v4.0 — Phase 6 Codex Imperial v6 — 4/4 décrets implémentés — 23.04.2026 -->
+
+---
+
+## 9. DÉCRETS — CODEX BRAINSTORM v1 (01.05.2026)
+
+> Source : EXODUS_V2_CODEX_BRAINSTORM_v1.docx | Loi du Levier — Session 01.05.2026
+
+### Contexte
+DECRET III du CODEX BRAINSTORM v1 (conditionnel, lie a U03) :
+"Les modules DepthAnything V2 et SAM de U00 devront etre evalues lors de l'analyse de U00.
+Si aucune autre fregate ne les consomme, ils seront supprimes."
+
+Etat au 02.05.2026 : l'analyse de U00 n'est pas encore close dans ce CODEX (verdict "A ANALYSER").
+Le present decret est donc partiellement anticipe sous la forme d'un flag --glb-mode.
+
+### Logique du flag --glb-mode
+Quand U03 tourne en mode GLB (decor fourni par Tripo AI / Meshy AI) :
+- Couche B (Displacement Mesh) de U03 ne consomme plus les depth maps de M6 (DepthAnything)
+- Couche C (PBR Swap) de U03 ne consomme plus les masques semantiques de M7 (SAM)
+- Executer M6 et M7 serait du temps GPU gaspille (M6 ~45-90s, M7 ~60-120s sur T4)
+
+Le flag --glb-mode signale a U00 que le pipeline en aval est en mode GLB
+et met automatiquement M6 et M7 en stase (equivalentea --skip-gpu mais semantiquement explicite).
+
+### Difference avec --skip-gpu existant
+| Flag | Semantique | Effet |
+|------|-----------|-------|
+| --skip-gpu | Bypass GPU pour raisons techniques (VRAM, tests rapides) | Skip M6 + M7 |
+| --glb-mode | Le decor vient d'un service externe GLB — M6/M7 inutiles | Skip M6 + M7 + tag explicite dans le rapport |
+
+--glb-mode est une stase semantique : le rapport indique que M6/M7 sont en stase par choix architectural, pas par contrainte technique.
+
+### Ce qui est MIS EN STASE en mode --glb-mode
+| Moteur | Phase | Raison |
+|--------|-------|--------|
+| M6 DepthAnything V2 | Phase 3 GPU-A | Depth maps uniquement utilisees par Couche B U03 (en stase) |
+| M7 SAM vit_h | Phase 4 GPU-B | Masques semantiques uniquement utilises par Couche C U03 (en stase) |
+
+### Plan d'implementation — Phase 7 (CODEX BRAINSTORM v1)
+
+#### E7-A — Flag --glb-mode dans EXO_00_CORTEX.py
+- [ ] Ajouter --glb-mode au parser argparse (bool flag, defaut False)
+- [ ] Dans run_pipeline() : si --glb-mode actif, skip Phase 3 (M6) et Phase 4 (M7)
+  - Meme comportement que --skip-gpu mais avec statut "STASE_GLB" au lieu de "SKIPPED"
+  - motor_status.mark_failed("depth_anything", "STASE_GLB — mode GLB actif, depth maps non requises")
+  - motor_status.mark_failed("sam_segmentation", "STASE_GLB — mode GLB actif, masques SAM non requis")
+- [ ] Ajouter dans le rapport final : "glb_mode": true et "tri_layer_consumers_in_stasis": ["depth_anything", "sam"]
+- [ ] --glb-mode et --skip-gpu peuvent coexister (--glb-mode prend priorite sur M6+M7)
+- [ ] Mettre a jour la version CORTEX -> 4.1.0 (ou version courante +0.1)
+
+#### E7-B — Documentation inline
+- [ ] Commentaire dans EXO_00_CORTEX.py au-dessus de la Phase 3 :
+  "# STASE conditionnelle : si --glb-mode, M6 non execute (depth maps non consommees par U03 GLB)"
+- [ ] Commentaire dans EXO_00_CORTEX.py au-dessus de la Phase 4 :
+  "# STASE conditionnelle : si --glb-mode, M7 non execute (masques SAM non consommes par U03 GLB)"
+
+### Registre de Forge — Phase E7
+| Date | Action | Statut | Fichiers modifies |
+|------|--------|--------|-------------------|
+| 02.05.2026 | E7 documente dans TRACKING_U00.md | OK | TRACKING_U00.md |
+| — | E7-A — Flag --glb-mode EXO_00_CORTEX.py v4.1.0 | EN ATTENTE | EXO_00_CORTEX.py |
+| — | E7-B — Commentaires inline stase conditionnelle | EN ATTENTE | EXO_00_CORTEX.py |
+
+### Criteres de validation Phase E7
+- [ ] python EXO_00_CORTEX.py --help : --glb-mode present dans l'aide
+- [ ] python EXO_00_CORTEX.py --drive-root X --input-video Y --glb-mode --dry-run : valide sans erreur
+- [ ] Rapport JSON final : "glb_mode": true, moteurs M6+M7 marques STASE_GLB
+- [ ] Sans --glb-mode : comportement identique a avant (M6 et M7 s'executent normalement)
+- [ ] --glb-mode + --skip-gpu ensemble : M6/M7 en stase (pas de crash, pas de doublon)
+
+### Note sur DECRET III CODEX BRAINSTORM v1 (conditionnel)
+Le DECRET III original dit : "si aucune autre fregate ne consomme M6/M7, ils seront supprimes".
+Au 02.05.2026 : seule U03 consommait M6/M7 (Couche B + C). Aucune autre fregate ne les utilise.
+Verdict conditionnel : si le run E2E confirme que le mode GLB est le chemin principal,
+M6 et M7 pourront etre supprimes definitivement lors de la prochaine session CODEX.
+Pour l'instant : stase via --glb-mode, suppression reportee apres validation E2E.
+
+<!-- v5.0 — CODEX BRAINSTORM v1 — Phase E7 documentee — 02.05.2026 -->
