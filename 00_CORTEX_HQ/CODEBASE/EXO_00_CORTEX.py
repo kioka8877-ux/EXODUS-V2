@@ -464,11 +464,28 @@ RESPONSE_SCHEMA = {
                                     "ambient_id": {"type": "string", "enum": AUDIO_IDS}
                                 },
                                 "required": ["music_id", "sfx", "ambient_id"]
+                            },
+                            # DÉCRET V — Placement relatif des acteurs par scène (consommé par F03)
+                            "actors_placement": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "avatar_id": {"type": "integer"},
+                                        "position": {
+                                            "type": "array",
+                                            "items": {"type": "number"}
+                                        },
+                                        "facing_target": {"type": "integer"}
+                                    },
+                                    "required": ["avatar_id", "position", "facing_target"]
+                                }
                             }
                         },
                         "required": ["scene_id", "timecode_start", "timecode_end",
                                      "description", "characters", "props",
-                                     "environment", "camera", "lighting", "audio"]
+                                     "environment", "camera", "lighting", "audio",
+                                     "actors_placement"]
                     }
                 },
                 "production_notes": {
