@@ -28,7 +28,7 @@ from shadow_catcher_builder import build_shadow_catcher
 from world_sync import setup_world_sync, setup_render_settings
 from scene_schema import ENVIRONMENT_TO_SCENE_PROFILE, DEFAULT_SCENE_PROFILE
 
-ASSEMBLER_VERSION = "3.0.0"  # D-I Codex v6 — suppression code mort D2/D3
+ASSEMBLER_VERSION = "3.1.0"  # D7-A Codex Brainstorm v1 — mode GLB
 
 REQUIRED_COLLECTIONS = ["ENV_DOME", "ENV_TERRAIN", "ENV_SHADOW", "ENV_GLASS", "ENV_PBR"]
 
@@ -225,6 +225,56 @@ def _inject_actor(
     return total_appended
 
 
+def _import_glb(glb_path: str, collection_name: str = "ENV_TERRAIN") -> int:
+    """
+    Importe un fichier GLB dans la collection ENV_TERRAIN.
+
+    Utilisé en mode GLB (--glb-path fourni) pour remplacer le pipeline
+    Tri-Layer complet (Dome + Displacement + PBR + Glass).
+
+    Le fichier GLB est produit par un service externe (Tripo AI / Meshy AI).
+    Blender 4.0 supporte l'import natif GLTF/GLB via bpy.ops.import_scene.gltf().
+
+    Args:
+        glb_path: Chemin absolu vers le fichier .glb
+        collection_name: Collection cible (défaut : ENV_TERRAIN)
+
+    Returns:
+        Nombre d'objets importés (0 si échec).
+    """
+    from pathlib import Path as _Path
+
+    glb_file = _Path(glb_path)
+    if not glb_file.exists():
+        print(f"[ASSEMBLER:ERROR] GLB introuvable : {glb_file}")
+        return 0
+
+    objects_before = set(obj.name for obj in bpy.data.objects)
+
+    try:
+        bpy.ops.import_scene.gltf(filepath=str(glb_file))
+    except Exception as e:
+        print(f"[ASSEMBLER:ERROR] Import GLB échoué : {e}")
+        return 0
+
+    imported_names = set(obj.name for obj in bpy.data.objects) - objects_before
+    if not imported_names:
+        print(f"[ASSEMBLER:WARN] GLB importé mais aucun objet détecté : {glb_file.name}")
+        return 0
+
+    coll = _ensure_collection(collection_name)
+    for name in imported_names:
+        obj = bpy.data.objects.get(name)
+        if obj is None:
+            continue
+        for c in list(obj.users_collection):
+            c.objects.unlink(obj)
+        coll.objects.link(obj)
+
+    print(f"[ASSEMBLER] GLB importé : {glb_file.name} — {len(imported_names)} objet(s) dans {collection_name}")
+    return len(imported_names)
+
+
 def _collect_glass_planes_info() -> List[Dict]:
     glass_planes_info = []
     for obj in bpy.data.objects:
@@ -303,11 +353,19 @@ def assemble_scene(
     exposure_strength: float = 1.0,
     vram_profile: str = "colab_t4",
     actor_blend_dir: str = "",
+    glb_path: str = "",
 ) -> Dict:
     """
-    Assemble une scène Tri-Layer D1 (Dome + Shadow + World Sync + Terrain procédural).
+    Assemble une scène.
 
-    Layers D2 (Displacement Mesh) et D3 (PBR Swap) : voir ROADMAP_U03.md.
+    Mode GLB (--glb-path fourni) :
+        _import_glb() + Shadow Catcher + World Sync + Caméra + Acteur
+        active_layers = "glb_import,shadow,world_sync,camera"
+        ~70% du pipeline Tri-Layer mis en stase (Sarcophage D7-C).
+
+    Mode Tri-Layer legacy (sans --glb-path) :
+        Dome + Shadow + World Sync + Terrain procédural (comportement inchangé).
+        Layers D2 (Displacement Mesh) et D3 (PBR Swap) : voir ROADMAP_U03.md.
     """
     scene_id = scene_data.get("scene_id", "unknown")
     env = scene_data.get("environment", {})
@@ -318,9 +376,13 @@ def assemble_scene(
     dome_fallback = scene_profile["dome_fallback"]
     mood = env.get("lighting_mood") or scene_profile["world_mood"]
 
+    glb_mode = bool(glb_path)
+
     print(f"\n[ASSEMBLER] === Assemblage scène {scene_id} ===")
-    print(f"[ASSEMBLER] environment_id={environment_id!r} → scene_type={scene_type}, mood={mood}")
+    print(f"[ASSEMBLER] mode={'GLB' if glb_mode else 'TRI-LAYER'}, environment_id={environment_id!r}")
     print(f"[ASSEMBLER] exposure={exposure_strength}, vram={vram_profile}")
+    if glb_mode:
+        print(f"[ASSEMBLER] GLB path : {glb_path}")
 
     _clear_scene()
 
@@ -328,52 +390,109 @@ def assemble_scene(
         _ensure_collection(coll_name)
     print(f"[ASSEMBLER] {len(REQUIRED_COLLECTIONS)} collections créées")
 
-    dome_obj = build_infinity_dome(collection_name="ENV_DOME", radius=100.0)
-
-    video_frame = env.get("video_frame_path")
-    if video_frame:
-        apply_dome_material(dome_obj, video_frame_path=video_frame)
-    else:
-        apply_dome_material(dome_obj, fallback_color=dome_fallback)
-
-    sc_obj = build_shadow_catcher(collection_name="ENV_SHADOW", size=50.0)
-
+    # ─── HDRi commun aux deux modes ──────────────────────────────────────────
     resolved_hdri = hdri_path
     if not resolved_hdri:
         hdri_from_env = env.get("hdri_path")
         if hdri_from_env and Path(hdri_from_env).exists():
             resolved_hdri = hdri_from_env
 
-    setup_world_sync(
-        hdri_path=resolved_hdri,
-        mood=mood,
-        exposure_strength=exposure_strength,
-    )
+    if glb_mode:
+        # ═══════════════════════════════════════════════════════════════════
+        # MODE GLB — Pipeline allégé (D7-A — Codex Brainstorm v1)
+        # Dome / Displacement / PBR / Glass → STASE (Sarcophage D7-C)
+        # ═══════════════════════════════════════════════════════════════════
+        glb_count = _import_glb(glb_path, collection_name="ENV_TERRAIN")
+        if glb_count == 0:
+            print(f"[ASSEMBLER:ERROR] Import GLB a produit 0 objet — abandon scène {scene_id}")
+            return {
+                "scene_id": scene_id,
+                "blend_file": None,
+                "layers_active": "glb_import_failed",
+                "environment_id": environment_id,
+                "scene_type": scene_type,
+                "mood": mood,
+                "exposure_strength": exposure_strength,
+                "vram_profile": vram_profile,
+                "hdri_used": False,
+                "glb_mode": True,
+                "glb_objects_count": 0,
+                "actor_injected": False,
+                "actor_objects_count": 0,
+                "scene_report": {},
+            }
 
-    setup_render_settings(engine="CYCLES", samples=128)
+        build_shadow_catcher(collection_name="ENV_SHADOW", size=50.0)
 
-    _build_procedural_interior(collection_name="ENV_TERRAIN")
+        setup_world_sync(
+            hdri_path=resolved_hdri,
+            mood=mood,
+            exposure_strength=exposure_strength,
+        )
 
-    # CAMÉRA DEFAULT — placeholder overridable par U04
-    cam_data = bpy.data.cameras.new("camera_main")
-    cam_data.lens = 35.0
-    cam_obj = bpy.data.objects.new("camera_main", cam_data)
-    cam_obj.location = (0.0, -15.0, 8.0)
-    cam_obj.rotation_euler = (math.radians(75), 0.0, 0.0)
-    bpy.context.scene.collection.objects.link(cam_obj)
-    bpy.context.scene.camera = cam_obj
-    print(f"[ASSEMBLER] Caméra default posée — lens=35mm, pos=(0,-15,8), rot=75°")
+        setup_render_settings(engine="CYCLES", samples=128)
 
-    actor_count = _inject_actor(
-        actor_blend_dir=actor_blend_dir,
-        scene_data=scene_data,
-    )
-    actor_injected = actor_count > 0
+        # CAMÉRA DEFAULT — placeholder overridable par U04
+        cam_data = bpy.data.cameras.new("camera_main")
+        cam_data.lens = 35.0
+        cam_obj = bpy.data.objects.new("camera_main", cam_data)
+        cam_obj.location = (0.0, -15.0, 8.0)
+        cam_obj.rotation_euler = (math.radians(75), 0.0, 0.0)
+        bpy.context.scene.collection.objects.link(cam_obj)
+        bpy.context.scene.camera = cam_obj
+        print("[ASSEMBLER] Caméra default posée — lens=35mm, pos=(0,-15,8), rot=75°")
 
-    active_layers = "dome,shadow,world_sync,procedural_terrain,camera"
-    if actor_injected:
-        active_layers += ",actor"
-    _stamp_custom_properties(active_layers)
+        actor_count = _inject_actor(actor_blend_dir=actor_blend_dir, scene_data=scene_data)
+        actor_injected = actor_count > 0
+
+        active_layers = "glb_import,shadow,world_sync,camera"
+        if actor_injected:
+            active_layers += ",actor"
+        _stamp_custom_properties(active_layers)
+
+    else:
+        # ═══════════════════════════════════════════════════════════════════
+        # MODE TRI-LAYER LEGACY — Comportement v3.0.0 inchangé
+        # ═══════════════════════════════════════════════════════════════════
+        dome_obj = build_infinity_dome(collection_name="ENV_DOME", radius=100.0)
+
+        video_frame = env.get("video_frame_path")
+        if video_frame:
+            apply_dome_material(dome_obj, video_frame_path=video_frame)
+        else:
+            apply_dome_material(dome_obj, fallback_color=dome_fallback)
+
+        build_shadow_catcher(collection_name="ENV_SHADOW", size=50.0)
+
+        setup_world_sync(
+            hdri_path=resolved_hdri,
+            mood=mood,
+            exposure_strength=exposure_strength,
+        )
+
+        setup_render_settings(engine="CYCLES", samples=128)
+
+        _build_procedural_interior(collection_name="ENV_TERRAIN")
+
+        # CAMÉRA DEFAULT — placeholder overridable par U04
+        cam_data = bpy.data.cameras.new("camera_main")
+        cam_data.lens = 35.0
+        cam_obj = bpy.data.objects.new("camera_main", cam_data)
+        cam_obj.location = (0.0, -15.0, 8.0)
+        cam_obj.rotation_euler = (math.radians(75), 0.0, 0.0)
+        bpy.context.scene.collection.objects.link(cam_obj)
+        bpy.context.scene.camera = cam_obj
+        print("[ASSEMBLER] Caméra default posée — lens=35mm, pos=(0,-15,8), rot=75°")
+
+        actor_count = _inject_actor(actor_blend_dir=actor_blend_dir, scene_data=scene_data)
+        actor_injected = actor_count > 0
+
+        active_layers = "dome,shadow,world_sync,procedural_terrain,camera"
+        if actor_injected:
+            active_layers += ",actor"
+        _stamp_custom_properties(active_layers)
+
+        glb_count = 0
 
     try:
         bpy.ops.file.pack_all()
@@ -399,6 +518,8 @@ def assemble_scene(
         "exposure_strength": exposure_strength,
         "vram_profile": vram_profile,
         "hdri_used": resolved_hdri is not None,
+        "glb_mode": glb_mode,
+        "glb_objects_count": glb_count if glb_mode else 0,
         "actor_injected": actor_injected,
         "actor_objects_count": actor_count,
         "scene_report": scene_report,
@@ -434,6 +555,8 @@ def main() -> None:
                         help="Profil VRAM")
     parser.add_argument("--actor-blend-dir", default="",
                         help="Répertoire contenant les ACTOR_*.blend")
+    parser.add_argument("--glb-path", default="",
+                        help="Chemin vers le fichier .glb (Tripo AI / Meshy AI) — active le mode GLB")
     args = parser.parse_args(argv)
 
     plan_path = Path(args.production_plan)
@@ -462,6 +585,7 @@ def main() -> None:
             exposure_strength=args.exposure,
             vram_profile=args.vram_profile,
             actor_blend_dir=args.actor_blend_dir,
+            glb_path=args.glb_path,
         )
         results.append(result)
 

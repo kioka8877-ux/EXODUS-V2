@@ -167,14 +167,14 @@ APRES (GLB fourni — 3 etapes, ~2 min) :
 
 ### Plan d'implementation — Phase D7 (CODEX BRAINSTORM v1)
 
-#### D7-A — Mode GLB dans layer_assembler.py
-- [ ] Ajouter argument --glb-path au parser CLI
-- [ ] Creer fonction _import_glb(glb_path: str) -> int — importe GLB dans collection ENV_TERRAIN, retourne nb objets importer
-- [ ] Modifier assemble_scene() : branchement sur glb_path
+#### D7-A — Mode GLB dans layer_assembler.py ✅ IMPLÉMENTÉ (02.05.2026)
+- [x] Ajouter argument --glb-path au parser CLI
+- [x] Creer fonction _import_glb(glb_path: str) -> int — importe GLB dans collection ENV_TERRAIN, retourne nb objets importer
+- [x] Modifier assemble_scene() : branchement sur glb_path
   - Si glb_path fourni : mode GLB : _import_glb() + build_shadow_catcher() + setup_world_sync() + stamp + save
   - Si absent : mode legacy Tri-Layer (comportement actuel INCHANGE)
-- [ ] active_layers = "glb_import,shadow,world_sync" en mode GLB
-- [ ] Mettre a jour ASSEMBLER_VERSION -> "3.1.0"
+- [x] active_layers = "glb_import,shadow,world_sync,camera" en mode GLB
+- [x] Mettre a jour ASSEMBLER_VERSION -> "3.1.0"
 
 #### D7-B — Pass-through dans EXO_03_SCENOGRAPHY.py
 - [ ] Ajouter --glb-path au parser argparse (optionnel, defaut "")
@@ -203,7 +203,7 @@ Format banner :
 | Date | Action | Statut | Fichiers modifies |
 |------|--------|--------|-------------------|
 | 02.05.2026 | D7 documente dans TRACKING_U03.md | OK | TRACKING_U03.md |
-| — | D7-A — Mode GLB layer_assembler.py v3.1.0 | EN ATTENTE | layer_assembler.py |
+| 02.05.2026 | D7-A — Mode GLB layer_assembler.py v3.1.0 | ✅ IMPLÉMENTÉ | layer_assembler.py |
 | — | D7-B — Pass-through EXO_03_SCENOGRAPHY.py v3.1.0 | EN ATTENTE | EXO_03_SCENOGRAPHY.py |
 | — | D7-C — Sarcophage 5 modules | EN ATTENTE | dome_builder.py, displacement_builder.py, pbr_swap_builder.py, depth_map_cleaner.py, glass_builder.py |
 
