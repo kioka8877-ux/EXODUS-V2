@@ -583,10 +583,20 @@ Durée : {duration_seconds}s | FPS : {fps} | Résolution : {resolution}
 5. Intensité faciale entre 0.0 et 1.0.
 6. Si le visage d'un personnage n'est pas visible dans un segment, mets low_visibility à true mais remplis quand même les champs expression/eyes/mouth avec une estimation contextuelle.
 7. Le champ requires_u02 dans production_notes doit être true si au moins un prop est utilisé dans les scènes, false sinon.
+8. Pour chaque scène, génère un tableau actors_placement avec le placement relatif de chaque personnage actif :
+   - avatar_id : index 0-based de l'avatar dans la scène (0 = premier personnage, 1 = deuxième, etc.)
+   - position : [x, y, z] en coordonnées Blender relatives (origine = centre de la scène au sol)
+     • Exemple 2 avatars face à face : avatar 0 à [0.0, 0.0, 0.0], avatar 1 à [1.5, 0.0, 0.0]
+     • Exemple côte à côte : avatar 0 à [-0.8, 0.0, 0.0], avatar 1 à [0.8, 0.0, 0.0]
+     • Précision centimétrique non requise — estimation visuelle suffisante
+   - facing_target : avatar_id de l'avatar vers lequel il fait face. -1 si face caméra ou isolé.
+     • Exemple face-à-face : avatar 0 facing_target=1, avatar 1 facing_target=0
+     • Exemple monologue face cam : avatar 0 facing_target=-1
+   Si la scène n'a qu'un seul personnage : actors_placement avec 1 entrée, facing_target=-1.
 
 ## BLOC 1 — production_plan
 Plan de production complet avec metadata, scenes[], et production_notes.
-Chaque scène contient : characters, props, environment, camera, lighting, audio.
+Chaque scène contient : characters, props, environment, camera, lighting, audio, actors_placement.
 
 ## BLOC 2 — facial_animation
 Séquence d'animation faciale. sequence_id = nom du fichier source sans extension.
