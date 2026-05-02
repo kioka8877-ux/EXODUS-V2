@@ -176,11 +176,11 @@ APRES (GLB fourni — 3 etapes, ~2 min) :
 - [x] active_layers = "glb_import,shadow,world_sync,camera" en mode GLB
 - [x] Mettre a jour ASSEMBLER_VERSION -> "3.1.0"
 
-#### D7-B — Pass-through dans EXO_03_SCENOGRAPHY.py
-- [ ] Ajouter --glb-path au parser argparse (optionnel, defaut "")
-- [ ] Passer glb_path dans run_blender_scenography() -> cmd Blender
-- [ ] Mettre a jour le rapport : "pipeline": "GLB_V1" si mode GLB, sinon "TRI-LAYER_V2"
-- [ ] Mettre a jour SCENOGRAPHY_VERSION -> "3.1.0"
+#### D7-B — Pass-through dans EXO_03_SCENOGRAPHY.py ✅ IMPLÉMENTÉ (02.05.2026)
+- [x] Ajouter --glb-path au parser argparse (optionnel, defaut "")
+- [x] Passer glb_path dans run_blender_scenography() -> cmd Blender
+- [x] Mettre a jour le rapport : "pipeline": "GLB_V1" si mode GLB, sinon "TRI-LAYER_V2"
+- [x] Mettre a jour SCENOGRAPHY_VERSION -> "3.1.0"
 
 #### D7-C — Sarcophagisation des 5 modules
 Ajouter un banner SARCOPHAGE en tete de chaque fichier :
@@ -204,7 +204,7 @@ Format banner :
 |------|--------|--------|-------------------|
 | 02.05.2026 | D7 documente dans TRACKING_U03.md | OK | TRACKING_U03.md |
 | 02.05.2026 | D7-A — Mode GLB layer_assembler.py v3.1.0 | ✅ IMPLÉMENTÉ | layer_assembler.py |
-| — | D7-B — Pass-through EXO_03_SCENOGRAPHY.py v3.1.0 | EN ATTENTE | EXO_03_SCENOGRAPHY.py |
+| 02.05.2026 | D7-B — Pass-through EXO_03_SCENOGRAPHY.py v3.1.0 | ✅ IMPLÉMENTÉ | EXO_03_SCENOGRAPHY.py |
 | — | D7-C — Sarcophage 5 modules | EN ATTENTE | dome_builder.py, displacement_builder.py, pbr_swap_builder.py, depth_map_cleaner.py, glass_builder.py |
 
 ### Criteres de validation Phase D7

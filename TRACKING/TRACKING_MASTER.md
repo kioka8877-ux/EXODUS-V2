@@ -171,7 +171,7 @@ Le Conseil a examine une seule fregate lors de la session initiale. Six restent 
 ### Tableau de bord Phase 7
 | Unite | Phase | Taches totales | Taches OK | Statut |
 |-------|-------|----------------|-----------|--------|
-| U03 | D7 | 3 | 1 | EN COURS (D7-A ✅) |
+| U03 | D7 | 3 | 2 | EN COURS (D7-A ✅ D7-B ✅) |
 | U00 | E7 | 2 | 0 | EN ATTENTE |
 
 ### Coherence pipeline GLB

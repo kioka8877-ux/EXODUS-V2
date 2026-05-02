@@ -68,7 +68,7 @@ if _phantom_spec and _phantom_spec.loader:
 else:
     resolve_input = lambda p: Path(p)  # fallback si phantom_link.py absent
 
-SCENOGRAPHY_VERSION = "3.0.0"
+SCENOGRAPHY_VERSION = "3.1.0"  # D7-B Codex Brainstorm v1 — pass-through --glb-path
 
 AI_MODELS_SUBDIR = "EXODUS_AI_MODELS"
 BLENDER_SUBDIR = "blender-4.0.0-linux-x64"
@@ -225,6 +225,7 @@ def run_blender_scenography(
     vram_profile: str,
     logger: ScenographyLogger,
     actor_blend_dir: str = "",
+    glb_path: str = "",
 ) -> bool:
     """
     Exécute Blender en mode headless avec layer_assembler.py.
@@ -264,6 +265,8 @@ def run_blender_scenography(
         cmd.extend(["--hdri-path", hdri_path])
     if actor_blend_dir:
         cmd.extend(["--actor-blend-dir", actor_blend_dir])
+    if glb_path:
+        cmd.extend(["--glb-path", glb_path])
 
     logger.debug(f"Commande Blender : {' '.join(cmd[:8])}...")
 
@@ -299,6 +302,7 @@ def generate_report(
     vram_profile: str,
     hdri_path: str,
     logger: ScenographyLogger,
+    glb_path: str = "",
 ) -> dict:
     """Génère scenography_report.json V2."""
     scenes_built = []
@@ -344,7 +348,7 @@ def generate_report(
         "schema_version": "2.0.0",
         "timestamp": datetime.now().isoformat(),
         "status": "SUCCESS" if success else "FAILED",
-        "pipeline": "TRI-LAYER_V2",
+        "pipeline": "GLB_V1" if glb_path else "TRI-LAYER_V2",
         "summary": {
             "total_scenes": len(plan.get("scenes", [])),
             "scenes_built": len(scenes_built),
@@ -473,6 +477,8 @@ Exemples:
                         help="World Sync strength (défaut : 1.0)")
     parser.add_argument("--actor-blend-dir",
                         help="Répertoire des ACTOR_*.blend (défaut : auto-détection dans U04/IN_SCENE_REF)")
+    parser.add_argument("--glb-path", default="",
+                        help="Chemin vers le fichier .glb (Tripo AI / Meshy AI) — active le mode GLB")
 
     args = parser.parse_args()
     logger = ScenographyLogger(verbose=args.verbose)
@@ -555,6 +561,9 @@ Exemples:
         print(f"{'='*70}")
         sys.exit(0)
 
+    if args.glb_path:
+        logger.info(f"Mode GLB activé : {args.glb_path}")
+
     success = run_blender_scenography(
         blender_path=blender_path,
         production_plan=str(plan_path),
@@ -565,6 +574,7 @@ Exemples:
         vram_profile=args.vram_profile,
         logger=logger,
         actor_blend_dir=actor_blend_dir,
+        glb_path=args.glb_path,
     )
 
     report = generate_report(
@@ -576,6 +586,7 @@ Exemples:
         vram_profile=args.vram_profile,
         hdri_path=hdri_path,
         logger=logger,
+        glb_path=args.glb_path,
     )
 
     if not success:
