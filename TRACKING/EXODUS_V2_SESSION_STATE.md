@@ -286,10 +286,25 @@ Le projet EXODUS V2 a pivote vers une architecture V1 basee sur des videos humai
 ## SECTION 4 — POSITION COURANTE
 
 ```
-Derniere fregate traitee : F05 — ALCHEMIST LAB — VALIDEE/SCELLE
-Prochaine fregate        : F06 — AIRCRAFT CARRIER
-Questions ouvertes       : aucune sur F00, F01, F02, F03, F04, F05
-CODEX version courante   : EXODUS_V2_CODEX_IMPERIAL_v4.docx
+Session actuelle         : 02.05.2026.M41
+Phase courante           : PHASE 8 — DUAL PIPELINE DOCTRINE
+Doctrine validee         : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx (v1)
+
+MODE 1 (Video-to-Video)  : COMPLET — INTOUCHABLE — 7 fregates scellees (U00-U06)
+MODE 2 (From Scratch)    : EN FORGE — 0/7 modules crees
+
+Prochaine action         : Forger LAUNCHER + M2_F01 a M2_F06
+Questions ouvertes       : aucune — doctrine scellee par decret imperial
+
+Lois inviolables Mode 2  :
+  R-01 : Etancheite — copies independantes, zero contamination Mode 1
+  R-02 : Format avatar — GLB avec animations embarquees obligatoires
+  R-03 : Loi audio — duree_audio <= duree_animation (animation prime)
+  R-04 : Overlay binaire — fin M2_F06 : OUI (audio+texte) ou NON (video brute)
+  R-05 : Decor — GLB fourni par Operateur, gere par M2_F03
+  R-06 : Launcher — zero logique metier, routing pur
+
+CODEX version courante   : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx (v1 — 02.05.2026)
 ```
 
 ---
@@ -330,27 +345,28 @@ CODEX version courante   : EXODUS_V2_CODEX_IMPERIAL_v4.docx
 
 ```
 Nous travaillons sur le projet EXODUS V2 (repo : kioka8877-ux/EXODUS-V2).
-C'est un pipeline de production video en 7 frigates (F00 a F06) qui transforme
-des videos humaines reelles 9:16 en videos Roblox avec animation, lip-sync et rendu.
+Architecture : DUAL PIPELINE DOCTRINE (02.05.2026) — deux modes, un Launcher, un output.
 
-F00, F01, F02, F03, F04 et F05 ont ete completement brainstormees et validees.
-F00 a une architecture duale API/Injection JSON + genere un bloc actors_placement par scene.
-F01 recoit des fichiers .blend d'un outil externe (corps anime, retargeting deja fait)
-et ajoute EMOCA (visage) + Rhubarb (lip-sync) + orchestration multi-avatar via
-InsightFace et pyannote.audio.
-F02 a un systeme de bypass automatique : si la video n'a pas de props,
-F02 est skippee et les fichiers F01 transitent directement vers F03.
-F03 est une fregate d'integration : HunyuanWorld-Mirror reconstruit le decor depuis
-la video source (.glb complet), F03 importe ce .glb, ajoute le shadow catcher sur Y=0,
-et positionne les acteurs selon le bloc actors_placement du PRODUCTION_PLAN.JSON.
-F04 est completement validee. 4 decrets : Mode Manuel Guide (Phase 1),
-Notebook unifie, Reference Frame Background (ffmpeg → Blender Background Image),
-Arsenal Lumineux 3-Point + HDRi Poly Haven (100% bpy, aucun addon tiers).
-F05 est completement validee. 3 modes : Bypass (--bypass, copie directe),
-DaVinci Resolve (manuel), Python LUT (lut_engine.py, --lut, numpy trilineaire).
-DECRET I : LUTS/MANIFEST.json (4 LUTs versionnees). DECRET II : --bypass flag.
-DECRET III : lut_engine.py step optionnel apres pipeline OpenCV.
+=== MODE 1 — VIDEO-TO-VIDEO (COMPLET, INTOUCHABLE) ===
+7 fregates scellees (U00 a U06). Ne pas modifier.
+Pipeline : video virale → U00 analyse → U01 animation → U02 logistics →
+           U03 scenography → U04 photography → U05 alchemist → U06 carrier → FINAL.mp4
 
-Nous sommes sur le point d'approfondir F06 — AIRCRAFT CARRIER.
-Les decisions prises sont dans le CODEX IMPERIAL v4 (EXODUS_V2_CODEX_IMPERIAL_v4.docx).
+=== MODE 2 — FROM SCRATCH (EN FORGE) ===
+Input : avatar GLB anime (fourni par Operateur) + audio optionnel
+Pipeline a forger : LAUNCHER → M2_F01 → M2_F02 → M2_F03 → M2_F04 → M2_F05 → M2_F06 → FINAL.mp4
+
+LAUNCHER  : menu CLI binaire (1=Mode1, 2=Mode2), zero logique metier
+M2_F01    : valide le GLB (pygltflib) + verifie duree audio <= duree animation (LOI R-03)
+M2_F02    : assemble acteur + props (copie etanche M1_F02 — bpy)
+M2_F03    : importe GLB decor fourni + shadow catcher + HDRi (bpy — LOI R-05)
+M2_F04    : camera + lumieres (copie etanche M1_F04 — bpy)
+M2_F05    : post-prod + color grading (copie etanche M1_F05 — OpenCV/numpy)
+M2_F06    : assembly + choix binaire overlay OUI/NON → FINAL.mp4 (ffmpeg, RIFE, Real-CUGAN)
+
+LOI D'ETANCHEITE (R-01) : chaque fregate Mode 2 est une copie independante.
+Si Mode 2 brise, Mode 1 fonctionne. Zero contamination croisee.
+
+Etat Phase 8 : 0/7 modules crees. Forge ordonnee par decret imperial 02.05.2026.
+CODEX source : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx (v1)
 ```
