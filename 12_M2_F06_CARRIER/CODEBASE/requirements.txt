@@ -1,0 +1,14 @@
+# M2_F06 — AIRCRAFT CARRIER MODE 2 — Requirements
+# Phase 8 — Dual Pipeline Doctrine
+
+# FFmpeg : requis (système — apt install ffmpeg ou binaire standalone)
+# ffmpeg-python>=0.2.0  # wrapper optionnel
+
+# RIFE : binaire externe rife-ncnn-vulkan (téléchargement séparé)
+# Real-CUGAN : binaire externe realcugan-ncnn-vulkan (téléchargement séparé)
+
+# Overlay texte : intégré à ffmpeg (drawtext filter)
+# Audio mix     : intégré à ffmpeg
+
+# Aucune dépendance Python externe requise pour le fonctionnement de base
+# ffmpeg doit être dans le PATH ou détecté dans le repo
