@@ -1442,7 +1442,8 @@ def validate_structure(master_json: dict, logger: CortexLogger) -> tuple:
         prefix = f"scene[{sid}]"
         
         for field in ["scene_id", "timecode_start", "timecode_end", "description",
-                       "characters", "environment", "camera", "lighting", "audio"]:
+                       "characters", "environment", "camera", "lighting", "audio",
+                       "actors_placement"]:
             if field not in scene:
                 errors.append(f"{prefix}: champ '{field}' manquant")
         
@@ -1491,7 +1492,21 @@ def validate_structure(master_json: dict, logger: CortexLogger) -> tuple:
         for sfx in aud.get("sfx", []):
             if sfx and sfx not in AUDIO_IDS:
                 errors.append(f"{prefix}.audio.sfx: ID inconnu '{sfx}'")
-    
+
+        # DÉCRET V — Validation actors_placement
+        placements = scene.get("actors_placement", [])
+        if not isinstance(placements, list):
+            errors.append(f"{prefix}.actors_placement: doit être un tableau")
+        else:
+            for k, ap in enumerate(placements):
+                ap_prefix = f"{prefix}.actors_placement[{k}]"
+                for ap_field in ["avatar_id", "position", "facing_target"]:
+                    if ap_field not in ap:
+                        errors.append(f"{ap_prefix}: champ '{ap_field}' manquant")
+                pos = ap.get("position", [])
+                if not isinstance(pos, list) or len(pos) != 3:
+                    errors.append(f"{ap_prefix}.position: doit être [x, y, z] (3 nombres)")
+
     fa = master_json.get("facial_animation")
     if not fa:
         errors.append("facial_animation manquant")
