@@ -159,12 +159,88 @@
 - [ ] Documentation finale et formation
 - Statut : 🔴 0%
 
+### PHASE 7 — CODEX BRAINSTORM v1 (Loi du Levier) ✅ SCELLÉE
+
+- [x] D7 U03 : Mode GLB dans layer_assembler.py — ✅ SCELLÉ (02.05.2026)
+- [x] E7 U00 : Flag --glb-mode (stase M6+M7 quand GLB actif) — ✅ SCELLÉ (02.05.2026)
+- Statut : ✅ SCELLÉE (02.05.2026)
+
+---
+
+### PHASE 8 — DUAL PIPELINE DOCTRINE (Codex Brainstorm Mode2)
+
+> Source : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx | Session 02.05.2026.M41
+> Doctrine : Loi d'Etancheite — deux pipelines independants, un Launcher, un output.
+
+#### P8-L — LAUNCHER (Aiguillage Imperial)
+- [ ] Creer EXO_LAUNCHER.py — menu CLI binaire (1=Mode1, 2=Mode2), zero logique metier
+- [ ] Creer notebook LAUNCHER (CONTROL)
+- Statut : 🔴 A FORGER
+
+#### P8-F01 — M2_F01 ANIMATION (GLB Validator + Audio Check)
+- [ ] Creer repertoire M2_F01/ + CODEBASE/
+- [ ] glb_validator.py (pygltflib — valide GLB + animations embarquees)
+- [ ] audio_checker.py (librosa/pydub — duree audio <= duree animation : LOI R-03)
+- [ ] EXO_M2_F01_ANIMATION.py (orchestrateur)
+- [ ] EXO_M2_F01_CONTROL.ipynb + EXO_M2_F01_PRODUCTION.ipynb
+- [ ] requirements.txt
+- Statut : 🔴 A FORGER
+
+#### P8-F02 — M2_F02 LOGISTICS (Copie etanche M1_F02)
+- [ ] Creer repertoire M2_F02/ + CODEBASE/
+- [ ] Copier + adapter actor_assembly.py, props_loader.py, socketing_engine.py, timeline_manager.py, final_baker.py
+- [ ] EXO_M2_F02_LOGISTICS.py (orchestrateur adapte Mode 2)
+- [ ] EXO_M2_F02_CONTROL.ipynb + EXO_M2_F02_PRODUCTION.ipynb
+- [ ] requirements.txt
+- Statut : 🔴 A FORGER
+
+#### P8-F03 — M2_F03 SCENOGRAPHY (GLB Decor + Shadow Catcher + HDRi)
+- [ ] Creer repertoire M2_F03/ + CODEBASE/
+- [ ] glb_importer.py (bpy — import GLB decor fourni par Operateur)
+- [ ] shadow_catcher_builder.py (copie adaptee M1_F03)
+- [ ] hdri_setup.py (bpy World Shader + HDRi)
+- [ ] EXO_M2_F03_SCENOGRAPHY.py (orchestrateur)
+- [ ] EXO_M2_F03_CONTROL.ipynb + EXO_M2_F03_PRODUCTION.ipynb
+- [ ] requirements.txt
+- Statut : 🔴 A FORGER
+
+#### P8-F04 — M2_F04 PHOTO (Copie etanche M1_F04)
+- [ ] Creer repertoire M2_F04/ + CODEBASE/
+- [ ] Copier + adapter camera_director.py, lighting_rig.py, render_forge.py, auto_dof.py, keyframe_animator.py
+- [ ] EXO_M2_F04_PHOTOGRAPHY.py (orchestrateur adapte Mode 2)
+- [ ] EXO_M2_F04_CONTROL.ipynb + EXO_M2_F04_PRODUCTION.ipynb
+- [ ] requirements.txt
+- Statut : 🔴 A FORGER
+
+#### P8-F05 — M2_F05 ALCHEMIST (Copie etanche M1_F05)
+- [ ] Creer repertoire M2_F05/ + CODEBASE/
+- [ ] Copier + adapter lut_engine.py, bloom_engine.py, grain_matcher.py, match_color.py, sharpness_transfer.py
+- [ ] EXO_M2_F05_ALCHEMIST.py (orchestrateur adapte Mode 2)
+- [ ] EXO_M2_F05_CONTROL.ipynb + EXO_M2_F05_PRODUCTION.ipynb
+- [ ] requirements.txt
+- Statut : 🔴 A FORGER
+
+#### P8-F06 — M2_F06 AIRCRAFT CARRIER (Assembly + Overlay Binaire)
+- [ ] Creer repertoire M2_F06/ + CODEBASE/
+- [ ] Copier + adapter sequence_assembler.py, rife_interpolator.py, upscaler.py, final_encoder.py, audio_sync.py
+- [ ] overlay_composer.py (Pillow + ffmpeg drawtext — text overlay conditionnel)
+- [ ] EXO_M2_F06_CARRIER.py (orchestrateur + choix binaire OUI/NON overlay : LOI R-04)
+- [ ] EXO_M2_F06_CONTROL.ipynb + EXO_M2_F06_PRODUCTION.ipynb
+- [ ] requirements.txt
+- Statut : 🔴 A FORGER
+
+- Statut Phase 8 : 🔴 0% — FORGE ORDONNEE (02.05.2026)
+
+---
+
 ## ORDRE DE FRAPPE
-MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06
+MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06 → PHASE 8 : LAUNCHER → M2_F01 → M2_F03 → M2_F02 → M2_F04 → M2_F05 → M2_F06
 
 ## PROGRESSION GLOBALE
-Mutation V2 : [██████████] 🟢 98% — TOUTES les frégates scellées (MARSHAL + U00-U06)
-Phase courante : PHASE D — D.1 Phantom Link en cours
+Mutation V2 (Mode 1) : [██████████] 🟢 100% — TOUTES les frégates scellées (MARSHAL + U00-U06)
+Phase 7 (Brainstorm v1) : [██████████] ✅ 100% — U03 D7 + U00 E7 SCELLÉS (02.05.2026)
+Phase 8 (Dual Pipeline Mode 2) : [············] 🔴 0% — FORGE ORDONNEE
+Phase courante : PHASE 8 — DUAL PIPELINE DOCTRINE — MODE 2 FROM SCRATCH
 
 ## RÉFÉRENCES
 - [PRD](./EXODUS_V2_PRD.md) — Spécifications techniques complètes
@@ -174,4 +250,6 @@ Phase courante : PHASE D — D.1 Phantom Link en cours
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
+<!-- v8.0 — Phase 8 Dual Pipeline Mode 2 ouverte — 02.05.2026 -->
+<!-- v7.0 — Phase 7 Brainstorm Scellée — 02.05.2026 -->
 <!-- v3.0 — Phase D.1 Phantom Link Architecture (2026-03-07) -->
