@@ -191,3 +191,65 @@ M6 et M7 pourront etre supprimes definitivement lors de la prochaine session COD
 Pour l'instant : stase via --glb-mode, suppression reportee apres validation E2E.
 
 <!-- v5.2 — CODEX BRAINSTORM v1 — E7-A + E7-B implementees — Phase E7 SCELLÉE — 02.05.2026 -->
+
+---
+
+## 10. DÉCRET V — BLOC actors_placement (SESSION_STATE Codex v4 — 02.05.2026)
+
+> Source : EXODUS_V2_SESSION_STATE.md | Consomme exclusivement par F03 SCENOGRAPHY DOCK
+
+### Objectif
+Gemini analyse la video et estime les positions relatives des acteurs dans chaque scene.
+Le bloc `actors_placement` est ecrit dans PRODUCTION_PLAN.JSON et consomme par F03
+pour positionner les avatars Roblox dans le decor 3D.
+
+### Format cible (par scene)
+```json
+"actors_placement": [
+  { "avatar_id": 0, "position": [0.0, 0.0, 0.0], "facing_target": 1 },
+  { "avatar_id": 1, "position": [1.5, 0.0, 0.0], "facing_target": 0 }
+]
+```
+- `avatar_id` : index 0-based de l'avatar dans la scene
+- `position` : [x, y, z] en coordonnees Blender relatives (origine = centre scene au sol)
+- `facing_target` : avatar_id de la cible, ou -1 si face cam / avatar isole
+
+### Plan d'implementation — Phase E8
+
+#### E8-A — actors_placement dans RESPONSE_SCHEMA
+- [x] Ajouter `actors_placement` comme propriete de chaque scene dans RESPONSE_SCHEMA
+- [x] Schema : array de {avatar_id: integer, position: [number, number, number], facing_target: integer}
+- [x] Champ requis dans la liste `required` de chaque scene
+
+#### E8-B — Instructions dans MASTER_PROMPT
+- [x] Ajouter consigne 8 dans MASTER_PROMPT : instructions detaillees pour actors_placement
+- [x] Exemples concrets : face-a-face, cote-a-cote, monologue face cam
+- [x] facing_target=-1 documente comme convention pour face cam / avatar isole
+- [x] BLOC 1 description mise a jour pour mentionner actors_placement
+
+#### E8-C — Validation dans validate_structure()
+- [x] actors_placement ajoute dans la liste des champs requis par scene
+- [x] Validation : tableau obligatoire, entrees [avatar_id, position, facing_target]
+- [x] position validee comme [x, y, z] exactement 3 nombres
+
+### Registre de Forge — Phase E8
+| Date | Action | Statut | Fichiers modifies |
+|------|--------|--------|-------------------|
+| 02.05.2026 | E8-A — actors_placement dans RESPONSE_SCHEMA | ✅ IMPLÉMENTÉ | EXO_00_CORTEX.py |
+| 02.05.2026 | E8-B — Instructions Gemini dans MASTER_PROMPT | ✅ IMPLÉMENTÉ | EXO_00_CORTEX.py |
+| 02.05.2026 | E8-C — Validation dans validate_structure() | ✅ IMPLÉMENTÉ | EXO_00_CORTEX.py |
+| 02.05.2026 | E8-D — Documentation DECRET V TRACKING_U00.md | ✅ IMPLÉMENTÉ | TRACKING_U00.md |
+
+### Criteres de validation Phase E8
+- [x] RESPONSE_SCHEMA : actors_placement dans required de chaque scene
+- [x] MASTER_PROMPT : consigne 8 presente avec exemples
+- [x] validate_structure() : erreur si actors_placement absent ou mal forme
+- [ ] Test injection : JSON avec actors_placement valide → dispatch sans erreur
+- [ ] Test injection : JSON sans actors_placement → validate_structure() retourne erreur explicite
+- [ ] Run Gemini : actors_placement present dans le JSON genere automatiquement
+
+### Note
+Precision centimetrique non requise pour contenu Roblox stylise.
+L'estimation visuelle de Gemini est suffisante pour le positionnement dans F03.
+
+<!-- v6.0 — DECRET V actors_placement — Phase E8 SCELLÉE — 02.05.2026 -->
