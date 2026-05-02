@@ -173,15 +173,15 @@ et met automatiquement M6 et M7 en stase (equivalentea --skip-gpu mais semantiqu
 | Date | Action | Statut | Fichiers modifies |
 |------|--------|--------|-------------------|
 | 02.05.2026 | E7 documente dans TRACKING_U00.md | OK | TRACKING_U00.md |
-| — | E7-A — Flag --glb-mode EXO_00_CORTEX.py v4.1.0 | EN ATTENTE | EXO_00_CORTEX.py |
+| 02.05.2026 | E7-A — Flag --glb-mode EXO_00_CORTEX.py v4.1.0 | ✅ IMPLÉMENTÉ | EXO_00_CORTEX.py |
 | — | E7-B — Commentaires inline stase conditionnelle | EN ATTENTE | EXO_00_CORTEX.py |
 
 ### Criteres de validation Phase E7
-- [ ] python EXO_00_CORTEX.py --help : --glb-mode present dans l'aide
+- [x] python EXO_00_CORTEX.py --help : --glb-mode present dans l'aide
 - [ ] python EXO_00_CORTEX.py --drive-root X --input-video Y --glb-mode --dry-run : valide sans erreur
-- [ ] Rapport JSON final : "glb_mode": true, moteurs M6+M7 marques STASE_GLB
-- [ ] Sans --glb-mode : comportement identique a avant (M6 et M7 s'executent normalement)
-- [ ] --glb-mode + --skip-gpu ensemble : M6/M7 en stase (pas de crash, pas de doublon)
+- [x] Rapport JSON final : "glb_mode": true, moteurs M6+M7 marques STASE_GLB
+- [x] Sans --glb-mode : comportement identique a avant (M6 et M7 s'executent normalement)
+- [x] --glb-mode + --skip-gpu ensemble : M6/M7 en stase (pas de crash, pas de doublon)
 
 ### Note sur DECRET III CODEX BRAINSTORM v1 (conditionnel)
 Le DECRET III original dit : "si aucune autre fregate ne consomme M6/M7, ils seront supprimes".
@@ -190,4 +190,4 @@ Verdict conditionnel : si le run E2E confirme que le mode GLB est le chemin prin
 M6 et M7 pourront etre supprimes definitivement lors de la prochaine session CODEX.
 Pour l'instant : stase via --glb-mode, suppression reportee apres validation E2E.
 
-<!-- v5.0 — CODEX BRAINSTORM v1 — Phase E7 documentee — 02.05.2026 -->
+<!-- v5.1 — CODEX BRAINSTORM v1 — E7-A implementee — 02.05.2026 -->

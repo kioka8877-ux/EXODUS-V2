@@ -4,7 +4,7 @@
 
 | # | Unité | Nom | Priorité | Conformité V2 | Statut Mutation | Bloqueur |
 |---|-------|-----|----------|----------------|-----------------|----------|
-| 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟢 CODEX v6 — 4/4 décrets IMPLÉMENTÉS (23.04.2026) | — |
+| 0 | U00 | CORTEX HQ | ✅ Done | 100% | 🟢 CODEX v6 4/4 + E7-A --glb-mode v4.1.0 (02.05.2026) | — |
 | 1 | U01 | ANIMATION ENGINE | ✅ Done | 100% | 🟢 CODEX v6 — 4/4 décrets + SENTINEL 4 fixes + VOX tests (23.04.2026) | — |
 | 2 | U02 | LOGISTICS DEPOT | ✅ Done | 100% | 🟡 CODEX v6 — 2 décrets à implémenter | — |
 | 3 | U03 | SCENOGRAPHY DOCK | ✅ Done | 100% | 🟡 CODEX v6 — 3 décrets à implémenter | — |
@@ -164,15 +164,15 @@ Le Conseil a examine une seule fregate lors de la session initiale. Six restent 
 - D7-B : Pass-through --glb-path dans EXO_03_SCENOGRAPHY.py — ✅ IMPLÉMENTÉ (02.05.2026)
 - D7-C : Sarcophage banner sur 5 modules — ✅ IMPLÉMENTÉ (02.05.2026)
 
-**U00 — Phase E7 (2 taches, EN ATTENTE DE FORGE)**
-- E7-A : Flag --glb-mode dans EXO_00_CORTEX.py (stase M6+M7 quand GLB actif)
-- E7-B : Commentaires inline stase conditionnelle
+**U00 — Phase E7 (2 taches, EN COURS)**
+- E7-A : Flag --glb-mode dans EXO_00_CORTEX.py (stase M6+M7 quand GLB actif) — ✅ IMPLÉMENTÉ (02.05.2026)
+- E7-B : Commentaires inline stase conditionnelle — EN ATTENTE
 
 ### Tableau de bord Phase 7
 | Unite | Phase | Taches totales | Taches OK | Statut |
 |-------|-------|----------------|-----------|--------|
 | U03 | D7 | 3 | 3 | ✅ SCELLÉE (D7-A ✅ D7-B ✅ D7-C ✅) |
-| U00 | E7 | 2 | 0 | EN ATTENTE |
+| U00 | E7 | 2 | 1 | EN COURS (E7-A ✅ E7-B ⏳) |
 
 ### Coherence pipeline GLB
 ```

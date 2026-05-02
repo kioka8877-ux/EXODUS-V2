@@ -6,14 +6,15 @@ Orchestrateur 6-moteurs séquentiel → Master JSON V2
 Phases:
     Phase 1 CPU (0 VRAM)  : M2 Audio + M3 FOV
     Phase 2 API (0 VRAM)  : M1 Gemini (response_schema) → Dispatcher → M4 + M5
-    Phase 3 GPU-A (~3.5GB) : M6 DepthAnything V2  [skip avec --skip-gpu]
-    Phase 4 GPU-B (~4GB)   : M7 SAM vit_h          [skip avec --skip-gpu]
+    Phase 3 GPU-A (~3.5GB) : M6 DepthAnything V2  [skip avec --skip-gpu ou --glb-mode]
+    Phase 4 GPU-B (~4GB)   : M7 SAM vit_h          [skip avec --skip-gpu ou --glb-mode]
 
 Usage:
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --dry-run
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --rerun audio_extraction
     python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --skip-gpu
+    python EXO_00_CORTEX.py --drive-root /path/to/EXODUS --input-video video.mp4 --glb-mode
 """
 
 import argparse
@@ -637,7 +638,7 @@ def get_video_metadata(video_path: Path, logger: CortexLogger) -> dict:
         "fps": 30,
         "resolution": "1920x1080",
         "analysis_date": datetime.now().strftime("%Y-%m-%d"),
-        "cortex_version": "2.0"
+        "cortex_version": "4.1.0"
     }
     
     if not CV2_AVAILABLE:
@@ -729,6 +730,7 @@ class MotorStatus:
             m: {"status": "pending", "output": None, "error": None}
             for m in self.MOTORS
         }
+        self.glb_mode = False  # E7-A: stase semantique GLB
     
     def mark_success(self, motor: str, output_path: Optional[str] = None):
         self.results[motor]["status"] = "success"
@@ -749,15 +751,18 @@ class MotorStatus:
         """Génère le bloc flags pour PRODUCTION_PLAN.JSON."""
         failed = [m for m, r in self.results.items() if r["status"] == "failed"]
         partial = [m for m, r in self.results.items() if r["status"] == "partial"]
-        return {
-            "all_motors_ok": len(failed) == 0 and len(partial) == 0,
+        # E7-A: moteurs en stase GLB exclus de all_motors_ok (stase architecturale, pas un echec)
+        glb_stase_motors = {"depth_anything", "sam_segmentation"} if self.glb_mode else set()
+        failed_real = [m for m in failed if m not in glb_stase_motors]
+        flags = {
+            "all_motors_ok": len(failed_real) == 0 and len(partial) == 0,
             "partial_failure": [
                 {
                     "motor": m,
                     "error": self.results[m]["error"],
                     "impact": self.IMPACT_MAP.get(m, [])
                 }
-                for m in failed
+                for m in failed if m not in glb_stase_motors
             ],
             "partial_success": [
                 {
@@ -767,9 +772,13 @@ class MotorStatus:
                 }
                 for m in partial
             ],
-            "manual_review_required": len(failed) > 0,
-            "warnings": []
+            "manual_review_required": len(failed_real) > 0,
+            "warnings": [],
+            # E7-A: stase semantique GLB (CODEX BRAINSTORM v1)
+            "glb_mode": self.glb_mode,
+            "tri_layer_consumers_in_stasis": list(glb_stase_motors) if self.glb_mode else []
         }
+        return flags
 
 
 # ============================================================================
@@ -1578,7 +1587,7 @@ def dispatch_master_json(master_json: dict, output_dir: Path,
         "metadata": {
             "source": "U00_CORTEX_HQ",
             "segments_count": len(segments),
-            "cortex_version": "2.0"
+            "cortex_version": "4.1.0"
         }
     }
     fa_path = output_dir / "facial_animation.json"
@@ -1811,11 +1820,16 @@ def run_pipeline(args, logger: CortexLogger):
     if getattr(args, 'skip_gpu', False):
         logger.info("⚡ MODE --skip-gpu ACTIVÉ — Phases GPU (DepthAnything + SAM) ignorées")
 
+    # E7-A — Avertissement mode --glb-mode (stase semantique GLB)
+    if getattr(args, 'glb_mode', False):
+        logger.info("🧊 MODE --glb-mode ACTIVÉ — M6 DepthAnything + M7 SAM en STASE_GLB (decor fourni par service GLB externe)")
+
     logger.info(f"Vidéo source: {video_path}")
     logger.info(f"Output dir: {output_dir}")
 
     metadata = get_video_metadata(video_path, logger)
     motor_status = MotorStatus()
+    motor_status.glb_mode = getattr(args, 'glb_mode', False)  # E7-A: propage le flag
     
     # =================================================================
     # MODE DRY-RUN
@@ -1931,9 +1945,12 @@ def run_pipeline(args, logger: CortexLogger):
         logger.info("M1 Gemini: skip (--rerun != gemini_semantic)")
     
     # =================================================================
-    # PHASE 3 — GPU-A (DepthAnything)   [DÉCRET D-II: --skip-gpu]
+    # PHASE 3 — GPU-A (DepthAnything)   [DÉCRET D-II: --skip-gpu | E7-A: --glb-mode]
     # =================================================================
-    if getattr(args, 'skip_gpu', False):
+    if getattr(args, 'glb_mode', False):
+        logger.info("═══ PHASE 3 — GPU-A (DepthAnything) — STASE_GLB (--glb-mode) ═══")
+        motor_status.mark_failed("depth_anything", "STASE_GLB — mode GLB actif, depth maps non requises")
+    elif getattr(args, 'skip_gpu', False):
         logger.info("═══ PHASE 3 — GPU-A (DepthAnything) — IGNORÉE (--skip-gpu) ═══")
         motor_status.mark_failed("depth_anything", "skipped via --skip-gpu")
     else:
@@ -1963,9 +1980,12 @@ def run_pipeline(args, logger: CortexLogger):
         flush_gpu(logger)
 
     # =================================================================
-    # PHASE 4 — GPU-B (SAM)   [DÉCRET D-II: --skip-gpu]
+    # PHASE 4 — GPU-B (SAM)   [DÉCRET D-II: --skip-gpu | E7-A: --glb-mode]
     # =================================================================
-    if getattr(args, 'skip_gpu', False):
+    if getattr(args, 'glb_mode', False):
+        logger.info("═══ PHASE 4 — GPU-B (SAM) — STASE_GLB (--glb-mode) ═══")
+        motor_status.mark_failed("sam_segmentation", "STASE_GLB — mode GLB actif, masques SAM non requis")
+    elif getattr(args, 'skip_gpu', False):
         logger.info("═══ PHASE 4 — GPU-B (SAM) — IGNORÉE (--skip-gpu) ═══")
         motor_status.mark_failed("sam_segmentation", "skipped via --skip-gpu")
     else:
@@ -2109,6 +2129,13 @@ Exemples:
         "--skip-gpu", action="store_true",
         help="Ignore les phases GPU (DepthAnything V2 + SAM). Génère le PRODUCTION_PLAN.JSON "
              "sans données de profondeur/segmentation. Utile pour vidéos simples (~7.5GB VRAM économisés)."
+    )
+    # E7-A — Flag --glb-mode (CODEX BRAINSTORM v1)
+    parser.add_argument(
+        "--glb-mode", action="store_true",
+        help="Stase semantique GLB: M6 (DepthAnything) et M7 (SAM) mis en STASE_GLB. "
+             "A utiliser quand le decor 3D est fourni par un service externe (Tripo AI / Meshy AI). "
+             "Complementaire a --glb-path de U03. Economise ~7.5GB VRAM et ~2-4 min GPU."
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true",
