@@ -1,0 +1,8 @@
+# M2_F03 — SCENOGRAPHY DOCK MODE 2 — Requirements
+# Phase 8 — Dual Pipeline Doctrine
+
+# Blender Python (bpy) — fourni par l'installation Blender
+# bpy est disponible uniquement dans le contexte Blender headless
+
+# GLB inspection optionnelle (pré-validation avant Blender)
+pygltflib>=1.15.0
