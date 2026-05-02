@@ -8,6 +8,12 @@
 ╚══════════════════════════════════════════════════════════════════════════════╝
 """
 
+# ===================================================================
+# SARCOPHAGE — DECRET II — CODEX BRAINSTORM v1 (01.05.2026)
+# Ce module est EN STASE quand le mode GLB est actif (--glb-path).
+# Non supprime : conserve pour le mode Tri-Layer legacy (sans GLB).
+# ===================================================================
+
 import bpy
 import bmesh
 import math

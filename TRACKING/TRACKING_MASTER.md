@@ -159,10 +159,10 @@ Le Conseil a examine une seule fregate lors de la session initiale. Six restent 
 
 ### Travaux en cours (02.05.2026)
 
-**U03 — Phase D7 (3 taches, EN ATTENTE DE FORGE)**
-- D7-A : Mode GLB dans layer_assembler.py (--glb-path + _import_glb() + branchement)
-- D7-B : Pass-through --glb-path dans EXO_03_SCENOGRAPHY.py
-- D7-C : Sarcophage banner sur 5 modules (dome, displacement, pbr_swap, depth_cleaner, glass)
+**U03 — Phase D7 (3 taches, SCELLÉE)**
+- D7-A : Mode GLB dans layer_assembler.py — ✅ IMPLÉMENTÉ (02.05.2026)
+- D7-B : Pass-through --glb-path dans EXO_03_SCENOGRAPHY.py — ✅ IMPLÉMENTÉ (02.05.2026)
+- D7-C : Sarcophage banner sur 5 modules — ✅ IMPLÉMENTÉ (02.05.2026)
 
 **U00 — Phase E7 (2 taches, EN ATTENTE DE FORGE)**
 - E7-A : Flag --glb-mode dans EXO_00_CORTEX.py (stase M6+M7 quand GLB actif)
@@ -171,7 +171,7 @@ Le Conseil a examine une seule fregate lors de la session initiale. Six restent 
 ### Tableau de bord Phase 7
 | Unite | Phase | Taches totales | Taches OK | Statut |
 |-------|-------|----------------|-----------|--------|
-| U03 | D7 | 3 | 2 | EN COURS (D7-A ✅ D7-B ✅) |
+| U03 | D7 | 3 | 3 | ✅ SCELLÉE (D7-A ✅ D7-B ✅ D7-C ✅) |
 | U00 | E7 | 2 | 0 | EN ATTENTE |
 
 ### Coherence pipeline GLB
@@ -187,4 +187,5 @@ U03 --glb-path fourni :
 Les deux flags sont independants mais complementaires. L'operateur les active ensemble
 quand il fournit un GLB depuis Tripo AI / Meshy AI.
 
+<!-- v7.1 — U03 D7 SCELLÉE 3/3 — 02.05.2026 -->
 <!-- v7.0 — CODEX BRAINSTORM v1 — Phase 7 ouverte — 02.05.2026 -->

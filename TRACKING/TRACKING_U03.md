@@ -182,15 +182,15 @@ APRES (GLB fourni — 3 etapes, ~2 min) :
 - [x] Mettre a jour le rapport : "pipeline": "GLB_V1" si mode GLB, sinon "TRI-LAYER_V2"
 - [x] Mettre a jour SCENOGRAPHY_VERSION -> "3.1.0"
 
-#### D7-C — Sarcophagisation des 5 modules
-Ajouter un banner SARCOPHAGE en tete de chaque fichier :
-- [ ] dome_builder.py
-- [ ] displacement_builder.py
-- [ ] pbr_swap_builder.py
-- [ ] depth_map_cleaner.py
-- [ ] glass_builder.py
+#### D7-C — Sarcophagisation des 5 modules ✅ IMPLÉMENTÉ (02.05.2026)
+Banner SARCOPHAGE ajoute en tete de chaque fichier :
+- [x] dome_builder.py
+- [x] displacement_builder.py
+- [x] pbr_swap_builder.py
+- [x] depth_map_cleaner.py
+- [x] glass_builder.py
 
-Format banner :
+Format banner applique :
 ```
 # ===================================================================
 # SARCOPHAGE — DECRET II — CODEX BRAINSTORM v1 (01.05.2026)
@@ -205,13 +205,14 @@ Format banner :
 | 02.05.2026 | D7 documente dans TRACKING_U03.md | OK | TRACKING_U03.md |
 | 02.05.2026 | D7-A — Mode GLB layer_assembler.py v3.1.0 | ✅ IMPLÉMENTÉ | layer_assembler.py |
 | 02.05.2026 | D7-B — Pass-through EXO_03_SCENOGRAPHY.py v3.1.0 | ✅ IMPLÉMENTÉ | EXO_03_SCENOGRAPHY.py |
-| — | D7-C — Sarcophage 5 modules | EN ATTENTE | dome_builder.py, displacement_builder.py, pbr_swap_builder.py, depth_map_cleaner.py, glass_builder.py |
+| 02.05.2026 | D7-C — Sarcophage 5 modules | ✅ IMPLÉMENTÉ | dome_builder.py, displacement_builder.py, pbr_swap_builder.py, depth_map_cleaner.py, glass_builder.py |
 
 ### Criteres de validation Phase D7
 - [ ] python EXO_03_SCENOGRAPHY.py --drive-root X --production-plan Y --glb-path /path/decor.glb --dry-run — valide sans erreur
 - [ ] python EXO_03_SCENOGRAPHY.py --drive-root X --production-plan Y --dry-run — mode legacy inchange
-- [ ] layer_assembler.py v3.1.0 : _import_glb() present et appele en mode GLB
-- [ ] 5 banners sarcophage presents dans les fichiers concernes
+- [x] layer_assembler.py v3.1.0 : _import_glb() present et appele en mode GLB
+- [x] 5 banners sarcophage presents dans les fichiers concernes
 - [ ] scenography_report.json : "pipeline": "GLB_V1" en mode GLB, "TRI-LAYER_V2" en mode legacy
 
+<!-- v5.1 — D7-C IMPLEMENTE — Phase D7 3/3 — 02.05.2026 -->
 <!-- v5.0 — CODEX BRAINSTORM v1 — Phase D7 documentee — 02.05.2026 -->
