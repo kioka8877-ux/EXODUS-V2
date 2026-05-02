@@ -1,0 +1,12 @@
+# M2_F01 — ANIMATION VALIDATOR — Requirements
+# Phase 8 — Mode 2 EXODUS V2
+
+# GLB validation (LOI R-02)
+pygltflib>=1.15.0
+
+# Audio duration check (LOI R-03) — installer l'un ou l'autre
+librosa>=0.10.0
+# pydub>=0.25.1  # alternative légère si librosa trop lourd
+
+# Audio backend pour librosa
+soundfile>=0.12.0
