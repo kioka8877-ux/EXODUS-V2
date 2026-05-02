@@ -1946,6 +1946,8 @@ def run_pipeline(args, logger: CortexLogger):
     
     # =================================================================
     # PHASE 3 — GPU-A (DepthAnything)   [DÉCRET D-II: --skip-gpu | E7-A: --glb-mode]
+    # STASE conditionnelle : si --glb-mode, M6 non execute
+    # (depth maps non consommees par U03 en mode GLB — Couche B Displacement Mesh en stase)
     # =================================================================
     if getattr(args, 'glb_mode', False):
         logger.info("═══ PHASE 3 — GPU-A (DepthAnything) — STASE_GLB (--glb-mode) ═══")
@@ -1981,6 +1983,8 @@ def run_pipeline(args, logger: CortexLogger):
 
     # =================================================================
     # PHASE 4 — GPU-B (SAM)   [DÉCRET D-II: --skip-gpu | E7-A: --glb-mode]
+    # STASE conditionnelle : si --glb-mode, M7 non execute
+    # (masques SAM non consommes par U03 en mode GLB — Couche C PBR Swap en stase)
     # =================================================================
     if getattr(args, 'glb_mode', False):
         logger.info("═══ PHASE 4 — GPU-B (SAM) — STASE_GLB (--glb-mode) ═══")

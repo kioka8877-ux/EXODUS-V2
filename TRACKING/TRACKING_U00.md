@@ -174,7 +174,7 @@ et met automatiquement M6 et M7 en stase (equivalentea --skip-gpu mais semantiqu
 |------|--------|--------|-------------------|
 | 02.05.2026 | E7 documente dans TRACKING_U00.md | OK | TRACKING_U00.md |
 | 02.05.2026 | E7-A — Flag --glb-mode EXO_00_CORTEX.py v4.1.0 | ✅ IMPLÉMENTÉ | EXO_00_CORTEX.py |
-| — | E7-B — Commentaires inline stase conditionnelle | EN ATTENTE | EXO_00_CORTEX.py |
+| 02.05.2026 | E7-B — Commentaires inline stase conditionnelle | ✅ IMPLÉMENTÉ | EXO_00_CORTEX.py |
 
 ### Criteres de validation Phase E7
 - [x] python EXO_00_CORTEX.py --help : --glb-mode present dans l'aide
@@ -190,4 +190,4 @@ Verdict conditionnel : si le run E2E confirme que le mode GLB est le chemin prin
 M6 et M7 pourront etre supprimes definitivement lors de la prochaine session CODEX.
 Pour l'instant : stase via --glb-mode, suppression reportee apres validation E2E.
 
-<!-- v5.1 — CODEX BRAINSTORM v1 — E7-A implementee — 02.05.2026 -->
+<!-- v5.2 — CODEX BRAINSTORM v1 — E7-A + E7-B implementees — Phase E7 SCELLÉE — 02.05.2026 -->

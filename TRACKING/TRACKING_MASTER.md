@@ -164,15 +164,15 @@ Le Conseil a examine une seule fregate lors de la session initiale. Six restent 
 - D7-B : Pass-through --glb-path dans EXO_03_SCENOGRAPHY.py — ✅ IMPLÉMENTÉ (02.05.2026)
 - D7-C : Sarcophage banner sur 5 modules — ✅ IMPLÉMENTÉ (02.05.2026)
 
-**U00 — Phase E7 (2 taches, EN COURS)**
+**U00 — Phase E7 (2 taches, SCELLÉE)**
 - E7-A : Flag --glb-mode dans EXO_00_CORTEX.py (stase M6+M7 quand GLB actif) — ✅ IMPLÉMENTÉ (02.05.2026)
-- E7-B : Commentaires inline stase conditionnelle — EN ATTENTE
+- E7-B : Commentaires inline stase conditionnelle — ✅ IMPLÉMENTÉ (02.05.2026)
 
 ### Tableau de bord Phase 7
 | Unite | Phase | Taches totales | Taches OK | Statut |
 |-------|-------|----------------|-----------|--------|
 | U03 | D7 | 3 | 3 | ✅ SCELLÉE (D7-A ✅ D7-B ✅ D7-C ✅) |
-| U00 | E7 | 2 | 1 | EN COURS (E7-A ✅ E7-B ⏳) |
+| U00 | E7 | 2 | 2 | ✅ SCELLÉE (E7-A ✅ E7-B ✅) |
 
 ### Coherence pipeline GLB
 ```
