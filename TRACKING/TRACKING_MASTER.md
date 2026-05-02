@@ -13,12 +13,25 @@
 | 6 | U06 | AIRCRAFT CARRIER | ✅ Done | 100% | 🟢 CODEX v6 — 3/3 décrets IMPLÉMENTÉS (23.04.2026) | — |
 | M | MARSHAL | L'INTENDANT | ✅ Done | 100% | 🟢 SCELLÉ (PR #12) | — |
 
+### MODE 2 — FROM SCRATCH (PHASE 8 — EN FORGE)
+
+| # | Unité | Nom | Priorité | Statut | Bloqueur |
+|---|-------|-----|----------|--------|----------|
+| L | LAUNCHER | Aiguillage Imperial | P0 | 🔴 A FORGER | — |
+| M2-1 | M2_F01 | ANIMATION (GLB Validator) | P0 | 🔴 A FORGER | — |
+| M2-2 | M2_F02 | LOGISTICS (Copie etanche) | P1 | 🔴 A FORGER | — |
+| M2-3 | M2_F03 | SCENOGRAPHY (GLB + HDRi) | P0 | 🔴 A FORGER | — |
+| M2-4 | M2_F04 | PHOTO (Copie etanche) | P1 | 🔴 A FORGER | — |
+| M2-5 | M2_F05 | ALCHEMIST (Copie etanche) | P1 | 🔴 A FORGER | — |
+| M2-6 | M2_F06 | CARRIER (Assembly + Overlay) | P0 | 🔴 A FORGER | — |
+
 ## PROGRESSION GLOBALE
 Empire EXODUS Base V2 : [████████████] 100% — Phase 5 complete — 48/48 taches
 Codex Imperial v6 (Phase 6) : [████████████] 100% — 25/25 décrets IMPLÉMENTÉS — PHASE 6 SCELLÉE (23.04.2026)
-Fregates conformes : 7/7 — Contrats 4/4 chacune (KRONOS audit 2026-04-03)
-Tech-Pretres actifs : 6/6 (SENTINEL, VULKAN_FORGE, VOID-FLUSH, ATLAS, VOX, KRONOS)
-Phase courante : PHASE 6 — FORGE DES DÉCRETS IMPÉRIAUX (Codex v6 — 23.04.2026)
+Codex Brainstorm v1 (Phase 7) : [████████████] 100% — U03 D7 + U00 E7 SCELLÉS (02.05.2026)
+Dual Pipeline Mode 2 (Phase 8) : [············] 0% — 7 modules a forger (LAUNCHER + M2_F01-M2_F06)
+Fregates conformes : 7/7 Mode 1 — 0/7 Mode 2
+Phase courante : PHASE 8 — DUAL PIPELINE DOCTRINE (Codex Brainstorm Mode2 — 02.05.2026)
 
 ## PHASE 5 — INTEGRATION FREGATES (COMPLETE)
 
@@ -187,5 +200,55 @@ U03 --glb-path fourni :
 Les deux flags sont independants mais complementaires. L'operateur les active ensemble
 quand il fournit un GLB depuis Tripo AI / Meshy AI.
 
+---
+
+## PHASE 8 — DUAL PIPELINE DOCTRINE (Codex Brainstorm Mode2)
+
+> Source : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx | Session 02.05.2026.M41
+> Maitre de Forge : Vulkan | Scribe : CAPY-01
+> Doctrine : deux pipelines etanches. Un Launcher. Un output final.
+
+### DECRETS IMPERIAUX (LOIs INVIOLABLES)
+
+| ID | Regle | Details |
+|----|-------|---------|
+| R-01 | LOI D'ETANCHEITE | Chaque mode possede ses propres fregates. Copies independantes. Si Mode 2 brise, Mode 1 fonctionne. |
+| R-02 | FORMAT AVATAR | GLB obligatoire avec animations embarquees. |
+| R-03 | LOI AUDIO | Duree audio <= duree animation avatar. C'est l'animation qui determine la longueur video. |
+| R-04 | OVERLAY BINAIRE | Fin pipeline Mode 2 : choix OUI/NON. OUI = audio + text overlay. NON = video brute. |
+| R-05 | LOI DECOR | L'Operateur fournit un GLB de decor. M2_F03 gere l'import, les ombres et l'eclairage HDRi. |
+| R-06 | LOI LAUNCHER | Le Launcher ne contient aucune logique metier. Aiguillage pur. |
+
+### REGISTRE DES TACHES PHASE 8
+
+| Module | Tache | Statut |
+|--------|-------|--------|
+| LAUNCHER | Creer EXO_LAUNCHER.py + notebook aiguillage | 🔴 A FORGER |
+| M2_F01 | Creer repertoire + CODEBASE (GLB validator + audio check) | 🔴 A FORGER |
+| M2_F01 | EXO_M2_F01_ANIMATION.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+| M2_F02 | Creer repertoire + CODEBASE (copie etanche M1_F02) | 🔴 A FORGER |
+| M2_F02 | EXO_M2_F02_LOGISTICS.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+| M2_F03 | Creer repertoire + CODEBASE (GLB decor + shadow + HDRi) | 🔴 A FORGER |
+| M2_F03 | EXO_M2_F03_SCENOGRAPHY.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+| M2_F04 | Creer repertoire + CODEBASE (copie etanche M1_F04) | 🔴 A FORGER |
+| M2_F04 | EXO_M2_F04_PHOTOGRAPHY.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+| M2_F05 | Creer repertoire + CODEBASE (copie etanche M1_F05) | 🔴 A FORGER |
+| M2_F05 | EXO_M2_F05_ALCHEMIST.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+| M2_F06 | Creer repertoire + CODEBASE (assembly + overlay binaire) | 🔴 A FORGER |
+| M2_F06 | EXO_M2_F06_CARRIER.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+
+### Technologies par fregate Mode 2
+
+| Fregate | Technologies principales |
+|---------|--------------------------|
+| LAUNCHER | Python pur, CLI menu, routing |
+| M2_F01 | pygltflib, trimesh, librosa/pydub |
+| M2_F02 | bpy (Blender), trimesh, copie M1_F02 |
+| M2_F03 | bpy, HDRi setup, shadow catcher material, pygltflib |
+| M2_F04 | bpy, copie M1_F04 (camera_director, lighting_rig, render_forge) |
+| M2_F05 | OpenCV, numpy, LUT engine, copie M1_F05 |
+| M2_F06 | ffmpeg-python, RIFE, Real-CUGAN, Pillow overlay, audio_sync |
+
+<!-- v8.0 — PHASE 8 DUAL PIPELINE ouverte — 02.05.2026 -->
 <!-- v7.1 — U03 D7 SCELLÉE 3/3 — 02.05.2026 -->
 <!-- v7.0 — CODEX BRAINSTORM v1 — Phase 7 ouverte — 02.05.2026 -->
