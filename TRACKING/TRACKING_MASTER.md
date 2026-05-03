@@ -226,8 +226,8 @@ quand il fournit un GLB depuis Tripo AI / Meshy AI.
 | LAUNCHER | Creer EXO_LAUNCHER.py + notebook aiguillage | ✅ FORGÉ (02.05.2026) |
 | M2_F01 | Creer repertoire + CODEBASE (GLB validator + audio check) | ✅ FORGÉ (02.05.2026) |
 | M2_F01 | EXO_M2_F01_ANIMATION.py + CONTROL + PRODUCTION notebooks | ✅ FORGÉ (02.05.2026) |
-| M2_F02 | Creer repertoire + CODEBASE (copie etanche M1_F02) | 🔴 A FORGER |
-| M2_F02 | EXO_M2_F02_LOGISTICS.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+| M2_F02 | Creer repertoire + CODEBASE (copie etanche M1_F02) | ✅ FORGÉ (03.05.2026) |
+| M2_F02 | EXO_M2_F02_LOGISTICS.py + CONTROL + PRODUCTION notebooks | ✅ FORGÉ (03.05.2026) |
 | M2_F03 | Creer repertoire + CODEBASE (GLB decor + shadow + HDRi) | ✅ FORGÉ (02.05.2026) |
 | M2_F03 | EXO_M2_F03_SCENOGRAPHY.py + CONTROL + PRODUCTION notebooks | ✅ FORGÉ (02.05.2026) |
 | M2_F04 | Creer repertoire + CODEBASE (copie etanche M1_F04) | 🔴 A FORGER |
