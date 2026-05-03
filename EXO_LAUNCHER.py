@@ -91,14 +91,14 @@ PIPELINE_ENTRYPOINTS = {
         "label": "FROM SCRATCH",
         "description": "Pipeline Forgé Mode 2",
         "units": {
-            "F01": "M2_01_ANIMATION_ENGINE/CODEBASE/EXO_M2_F01_ANIMATION.py",
-            "F02": "M2_02_LOGISTICS_DEPOT/CODEBASE/EXO_M2_F02_LOGISTICS.py",
-            "F03": "M2_03_SCENOGRAPHY_DOCK/CODEBASE/EXO_M2_F03_SCENOGRAPHY.py",
-            "F04": "M2_04_PHOTOGRAPHY_WING/CODEBASE/EXO_M2_F04_PHOTOGRAPHY.py",
-            "F05": "M2_05_ALCHEMIST_LAB/CODEBASE/EXO_M2_F05_ALCHEMIST.py",
-            "F06": "M2_06_AIRCRAFT_CARRIER/CODEBASE/EXO_M2_F06_CARRIER.py",
+            "F01": "07_M2_F01_ANIMATION/CODEBASE/EXO_M2_F01_ANIMATION.py",
+            "F02": "08_M2_F02_LOGISTICS/CODEBASE/EXO_M2_F02_LOGISTICS.py",
+            "F03": "09_M2_F03_SCENOGRAPHY/CODEBASE/EXO_M2_F03_SCENOGRAPHY.py",
+            "F04": "10_M2_F04_PHOTOGRAPHY/CODEBASE/EXO_M2_F04_PHOTOGRAPHY.py",
+            "F05": "11_M2_F05_ALCHEMIST/CODEBASE/EXO_M2_F05_ALCHEMIST.py",
+            "F06": "12_M2_F06_CARRIER/CODEBASE/EXO_M2_F06_CARRIER.py",
         },
-        "readme": "M2_01_ANIMATION_ENGINE/README_DEV.md",
+        "readme": "07_M2_F01_ANIMATION/README_DEV.md",
     },
 }
 
@@ -247,3 +247,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
