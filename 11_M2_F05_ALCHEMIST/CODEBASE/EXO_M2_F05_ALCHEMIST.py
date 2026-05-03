@@ -1,0 +1,891 @@
+#!/usr/bin/env python3
+"""
+╔══════════════════════════════════════════════════════════════════════════════╗
+║         MODE 2 — FRÉGATE M2_F05 — ALCHEMIST (Fusion Visuelle Mode 2)        ║
+║         Match Color • Grain • Bloom • Sharpness (OpenCV CPU pur)            ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  Version: 1.0.0 — Phase 8 — Dual Pipeline Doctrine (03.05.2026)            ║
+║  Loi R-01 : Copie indépendante Mode 2 — ZERO contamination Mode 1          ║
+║  Loi R-04 : Overlay binaire — OUI/NON (géré par M2_F06)                   ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  INPUTS (IN_RAW_FRAMES/):                                                   ║
+║    Frames rendues EXR/PNG/TIFF (de M2_F04 — Photography Mode 2)            ║
+║  INPUTS (IN_SOURCE_REF/) [OPTIONNEL]:                                       ║
+║    Vidéo source de référence (.mp4/.avi/.mov)                               ║
+║  INPUTS (IN_PRODUCTION_PLAN/) [OPTIONNEL]:                                  ║
+║    PRODUCTION_PLAN.JSON                                                     ║
+║  OUTPUTS (OUT_FINAL_FRAMES/):                                               ║
+║    Frames fusionnées PNG 16-bit                                             ║
+║  OUTPUTS (OUT_REPORT/):                                                     ║
+║    m2_f05_report.json                                                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+Usage:
+    python EXO_M2_F05_ALCHEMIST.py --production-plan PRODUCTION_PLAN.JSON
+    python EXO_M2_F05_ALCHEMIST.py --production-plan plan.json --source-video ref.mp4
+    python EXO_M2_F05_ALCHEMIST.py --production-plan plan.json --preset cinema_fusion
+    python EXO_M2_F05_ALCHEMIST.py --production-plan plan.json --bypass
+    python EXO_M2_F05_ALCHEMIST.py --production-plan plan.json --dry-run --verbose
+"""
+
+import argparse
+import json
+import os
+import shutil
+import sys
+import re
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import cv2
+import numpy as np
+
+M2_F05_VERSION = "1.0.0"
+
+FREGATE_DIR  = Path(__file__).resolve().parent.parent
+CODEBASE_DIR = Path(__file__).resolve().parent
+
+IN_RAW_FRAMES_DIR   = FREGATE_DIR / "IN_RAW_FRAMES"
+IN_SOURCE_REF_DIR   = FREGATE_DIR / "IN_SOURCE_REF"
+IN_PLAN_DIR         = FREGATE_DIR / "IN_PRODUCTION_PLAN"
+OUT_FINAL_FRAMES_DIR = FREGATE_DIR / "OUT_FINAL_FRAMES"
+OUT_REPORT_DIR      = FREGATE_DIR / "OUT_REPORT"
+
+sys.path.insert(0, str(CODEBASE_DIR))
+
+from alchemist_schema import (
+    AlchemistSchema,
+    OUTPUT_COMPRESSION,
+    OUTPUT_DEPTH,
+    OUTPUT_FORMAT,
+    PIPELINE_ORDER,
+    SUPPORTED_INPUT_FORMATS,
+    SUPPORTED_VIDEO_FORMATS,
+)
+from bloom_engine import BloomEngine
+from sharpness_transfer import SharpnessTransfer
+
+try:
+    from match_color import ColorMatcher
+    HAS_MATCH_COLOR = True
+except ImportError:
+    HAS_MATCH_COLOR = False
+
+try:
+    from grain_matcher import GrainMatcher
+    HAS_GRAIN_MATCHER = True
+except ImportError:
+    HAS_GRAIN_MATCHER = False
+
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+
+try:
+    from lut_engine import LUTEngine
+    HAS_LUT_ENGINE = True
+except ImportError:
+    HAS_LUT_ENGINE = False
+
+
+BANNER = """
+╔══════════════════════════════════════════════════════════════════════════════╗
+║    MODE 2 — FRÉGATE M2_F05 — ALCHEMIST FUSION VISUELLE                     ║
+║    Match Color • Grain • Bloom • Sharpness (Mode 2 From Scratch)            ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  R-01 : Copie étanche Mode 2                                                ║
+║  R-04 : Overlay binaire géré par M2_F06                                    ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+"""
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LOGGER
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class AlchemistLogger:
+    """Logger structuré pour M2_F05 ALCHEMIST."""
+
+    def __init__(self, verbose: bool = False):
+        self.verbose = verbose
+        self.logs: list = []
+
+    def info(self, msg: str):
+        entry = f"[M2_F05] {msg}"
+        print(entry)
+        self.logs.append({"level": "INFO", "message": msg, "timestamp": datetime.now().isoformat()})
+
+    def debug(self, msg: str):
+        if self.verbose:
+            entry = f"[M2_F05:DEBUG] {msg}"
+            print(entry)
+            self.logs.append({"level": "DEBUG", "message": msg, "timestamp": datetime.now().isoformat()})
+
+    def error(self, msg: str):
+        entry = f"[M2_F05:ERROR] {msg}"
+        print(entry, file=sys.stderr)
+        self.logs.append({"level": "ERROR", "message": msg, "timestamp": datetime.now().isoformat()})
+
+    def success(self, msg: str):
+        entry = f"[M2_F05:OK] ✓ {msg}"
+        print(entry)
+        self.logs.append({"level": "SUCCESS", "message": msg, "timestamp": datetime.now().isoformat()})
+
+    def warn(self, msg: str):
+        entry = f"[M2_F05:WARN] ⚠ {msg}"
+        print(entry)
+        self.logs.append({"level": "WARN", "message": msg, "timestamp": datetime.now().isoformat()})
+
+    def get_logs(self) -> list:
+        return self.logs
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VALIDATION & HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def validate_production_plan(plan_path: Path, logger: AlchemistLogger) -> dict:
+    """Charge et valide le PRODUCTION_PLAN.JSON."""
+    if not plan_path.exists():
+        logger.error(f"PRODUCTION_PLAN.JSON introuvable: {plan_path}")
+        sys.exit(1)
+
+    try:
+        with open(plan_path, "r", encoding="utf-8") as f:
+            plan = json.load(f)
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON invalide dans {plan_path}: {e}")
+        sys.exit(1)
+
+    if "scenes" not in plan:
+        logger.warn("Aucune scène trouvée dans le plan, création structure vide")
+        plan["scenes"] = []
+
+    logger.success(f"Plan validé: {len(plan['scenes'])} scènes")
+    return plan
+
+
+def _extract_scene_id_from_name(name: str) -> int:
+    """Extrait un scene ID depuis un nom de fichier ou de dossier."""
+    name = name.lower()
+    if "_scene_" in name:
+        try:
+            parts = name.split("_scene_")
+            return int(parts[1].split("_")[0])
+        except (ValueError, IndexError):
+            pass
+    if "scene" in name:
+        try:
+            idx = name.index("scene")
+            num_str = ""
+            for c in name[idx + 5:]:
+                if c.isdigit():
+                    num_str += c
+                elif num_str:
+                    break
+            if num_str:
+                return int(num_str)
+        except (ValueError, IndexError):
+            pass
+    nums = re.findall(r"\d+", name)
+    if nums:
+        return int(nums[-1])
+    return 1
+
+
+def scan_render_frames(render_dir: Path, logger: AlchemistLogger, scene_id: int = None) -> Dict[int, List[Path]]:
+    """Scanne render_dir pour trouver les frames par scene.
+
+    Supporte deux structures :
+      - Plat    : render_dir/*.png|*.exr  (fichiers à la racine)
+      - Sous-dossiers : render_dir/scene_XX/*.png (structure isolation par scene)
+    """
+    sequences: Dict[int, List[Path]] = {}
+
+    if not render_dir.exists():
+        logger.warn(f"Dossier render introuvable: {render_dir}")
+        return sequences
+
+    direct_images = [
+        f for f in render_dir.iterdir()
+        if f.is_file() and f.suffix.lower() in SUPPORTED_INPUT_FORMATS
+    ]
+    subdirs = sorted([
+        d for d in render_dir.iterdir()
+        if d.is_dir() and not d.name.startswith(".")
+    ])
+
+    if direct_images:
+        logger.debug(f"Mode plat : {len(direct_images)} fichiers dans {render_dir.name}/")
+        candidates = [(f, render_dir) for f in direct_images]
+    elif subdirs:
+        logger.debug(f"Mode sous-dossiers : {len(subdirs)} dossiers dans {render_dir.name}/")
+        candidates = []
+        for subdir in subdirs:
+            sub_images = [
+                f for f in sorted(subdir.iterdir())
+                if f.is_file() and f.suffix.lower() in SUPPORTED_INPUT_FORMATS
+            ]
+            logger.debug(f"  {subdir.name}/ → {len(sub_images)} frames")
+            candidates.extend((f, subdir) for f in sub_images)
+    else:
+        logger.debug(f"Mode rglob (fallback) dans {render_dir.name}/")
+        all_found = sorted(render_dir.rglob("*"))
+        candidates = [
+            (f, f.parent) for f in all_found
+            if f.is_file() and f.suffix.lower() in SUPPORTED_INPUT_FORMATS
+        ]
+
+    for f, parent in candidates:
+        if parent != render_dir:
+            sid = _extract_scene_id_from_name(parent.name)
+        else:
+            sid = _extract_scene_id_from_name(f.stem)
+
+        if scene_id is not None and sid != scene_id:
+            continue
+
+        sequences.setdefault(sid, []).append(f)
+
+    for sid in sequences:
+        sequences[sid] = sorted(sequences[sid])
+
+    total_frames = sum(len(v) for v in sequences.values())
+    logger.info(f"Frames render trouvées: {total_frames} dans {len(sequences)} scène(s)")
+    for sid, files in sorted(sequences.items()):
+        logger.debug(f"  Scene {sid}: {len(files)} frames")
+
+    return sequences
+
+
+def open_source_video(video_path: Path, logger: AlchemistLogger) -> Optional[cv2.VideoCapture]:
+    """Ouvre la vidéo source avec cv2.VideoCapture."""
+    if video_path is None or not video_path.exists():
+        return None
+
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        logger.warn(f"Impossible d'ouvrir la vidéo source: {video_path}")
+        return None
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    logger.success(f"Vidéo source ouverte: {w}x{h} @ {fps:.1f}fps, {total} frames")
+    return cap
+
+
+def extract_source_frame(cap: cv2.VideoCapture, frame_idx: int, total_frames: int) -> Optional[np.ndarray]:
+    """Extrait une frame de la vidéo source, avec clamp aux bornes."""
+    clamped = max(0, min(frame_idx, total_frames - 1))
+    cap.set(cv2.CAP_PROP_POS_FRAMES, clamped)
+    ret, frame = cap.read()
+    if not ret:
+        return None
+    return frame
+
+
+def extract_sample_frames(
+    cap: cv2.VideoCapture,
+    start_frame: int,
+    end_frame: int,
+    total_video_frames: int,
+    count: int,
+) -> List[np.ndarray]:
+    """Extrait `count` frames uniformément réparties entre start et end."""
+    if end_frame <= start_frame:
+        end_frame = start_frame + 1
+    count = min(count, end_frame - start_frame)
+    if count <= 0:
+        return []
+
+    step = max(1, (end_frame - start_frame) // count)
+    frames = []
+    for i in range(count):
+        idx = start_frame + i * step
+        f = extract_source_frame(cap, idx, total_video_frames)
+        if f is not None:
+            frames.append(f)
+    return frames
+
+
+def resize_to_match(source: np.ndarray, target_shape: tuple) -> np.ndarray:
+    """Redimensionne source pour matcher target_shape (h, w)."""
+    th, tw = target_shape[:2]
+    sh, sw = source.shape[:2]
+    if sh == th and sw == tw:
+        return source
+    return cv2.resize(source, (tw, th), interpolation=cv2.INTER_LINEAR)
+
+
+def get_scene_timecodes(scene: dict, fps_source: float) -> Tuple[int, int]:
+    """Extrait start_frame et end_frame d'une scène du plan."""
+    tc_start = scene.get("timecode_start", scene.get("frame_start", 0))
+    tc_end = scene.get("timecode_end", scene.get("frame_end", 0))
+
+    if isinstance(tc_start, str) and ":" in tc_start:
+        parts = tc_start.split(":")
+        seconds = sum(float(p) * (60 ** (len(parts) - 1 - i)) for i, p in enumerate(parts))
+        tc_start = int(seconds * fps_source)
+    if isinstance(tc_end, str) and ":" in tc_end:
+        parts = tc_end.split(":")
+        seconds = sum(float(p) * (60 ** (len(parts) - 1 - i)) for i, p in enumerate(parts))
+        tc_end = int(seconds * fps_source)
+
+    return int(tc_start), int(tc_end)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BYPASS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def run_bypass(render_dir: Path, output_dir: Path, report_dir: Path, logger: AlchemistLogger):
+    """
+    Mode bypass — copie directe des frames sans traitement.
+    Génère m2_f05_report.json avec status: SKIPPED.
+    """
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report_dir.mkdir(parents=True, exist_ok=True)
+    sequences = scan_render_frames(render_dir, logger)
+
+    total = sum(len(v) for v in sequences.values())
+    logger.info(f"Mode BYPASS — copie de {total} frames sans traitement")
+
+    t_start = time.time()
+    copied = 0
+    errors = 0
+    for sid, frames in sorted(sequences.items()):
+        for frame_path in frames:
+            try:
+                shutil.copy2(str(frame_path), str(output_dir / frame_path.name))
+                copied += 1
+            except Exception as e:
+                logger.error(f"  Copie échouée {frame_path.name}: {e}")
+                errors += 1
+
+    total_time = round(time.time() - t_start, 2)
+
+    report = {
+        "version": M2_F05_VERSION,
+        "fregate": "M2_F05",
+        "timestamp": datetime.now().isoformat(),
+        "preset": "BYPASS",
+        "pipeline": [],
+        "scenes": [],
+        "summary": {
+            "scenes_total": len(sequences),
+            "scenes_processed": 0,
+            "total_frames_processed": copied,
+            "total_frames_failed": errors,
+            "total_time_seconds": total_time,
+            "status": "SKIPPED",
+        },
+    }
+
+    report_path = report_dir / "m2_f05_report.json"
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
+    logger.success(f"Bypass terminé — {copied} frames copiées en {total_time:.1f}s")
+    logger.success(f"Rapport: {report_path}")
+
+
+def save_frame(frame: np.ndarray, output_path: Path):
+    """Sauvegarde une frame en PNG 16-bit."""
+    if frame.dtype == np.float32 or frame.dtype == np.float64:
+        frame = np.clip(frame, 0.0, 1.0)
+        frame = (frame * 65535.0).astype(np.uint16)
+    elif frame.dtype == np.uint8:
+        frame = (frame.astype(np.uint16) * 257)
+
+    cv2.imwrite(
+        str(output_path),
+        frame,
+        [cv2.IMWRITE_PNG_COMPRESSION, OUTPUT_COMPRESSION],
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PIPELINE PRINCIPAL
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def resolve_config(args, schema: AlchemistSchema) -> dict:
+    """Résout la config pipeline depuis le preset + overrides CLI."""
+    preset_name = args.preset
+    valid, msg = schema.validate_pipeline_preset(preset_name)
+    if not valid:
+        print(f"[M2_F05:ERROR] {msg}", file=sys.stderr)
+        sys.exit(1)
+
+    config = schema.get_pipeline_config(preset_name)
+
+    if args.match_intensity is not None:
+        config["match_color"]["intensity"] = schema.validate_intensity(
+            "match_color", args.match_intensity
+        )
+    if args.grain_intensity is not None:
+        config["grain"]["intensity"] = schema.validate_intensity(
+            "grain", args.grain_intensity
+        )
+    if args.bloom_preset is not None:
+        config["bloom"] = schema.get_bloom_config(args.bloom_preset)
+    if args.sharpness_intensity is not None:
+        config["sharpness"]["intensity"] = schema.validate_intensity(
+            "sharpness", args.sharpness_intensity
+        )
+
+    return config
+
+
+def process_pipeline(args, logger: AlchemistLogger):
+    """Pipeline principal de fusion visuelle Mode 2."""
+
+    schema = AlchemistSchema()
+    config = resolve_config(args, schema)
+
+    render_dir    = Path(args.render_dir) if args.render_dir else IN_RAW_FRAMES_DIR
+    output_dir    = Path(args.output_dir) if args.output_dir else OUT_FINAL_FRAMES_DIR
+    source_ref_dir = Path(args.source_ref_dir) if args.source_ref_dir else IN_SOURCE_REF_DIR
+    report_dir    = OUT_REPORT_DIR
+    plan_path     = Path(args.production_plan)
+
+    logger.info(f"M2_F05 ALCHEMIST v{M2_F05_VERSION} — Mode 2 From Scratch")
+    logger.info(f"Preset: {args.preset}")
+    logger.debug(f"fregate_dir  = {FREGATE_DIR}")
+    logger.debug(f"render_dir   = {render_dir}")
+    logger.debug(f"output_dir   = {output_dir}")
+    logger.debug(f"source_ref   = {source_ref_dir}")
+    logger.debug(f"plan         = {plan_path}")
+
+    plan = validate_production_plan(plan_path, logger)
+
+    # ── Mode Bypass ───────────────────────────────────────────────────────────
+    if getattr(args, "bypass", False):
+        run_bypass(render_dir, output_dir, report_dir, logger)
+        return
+
+    if not render_dir.exists():
+        logger.error(f"Dossier render introuvable: {render_dir}")
+        sys.exit(1)
+
+    source_video_path = None
+    if args.source_video:
+        svp = Path(args.source_video)
+        if svp.exists():
+            source_video_path = svp
+        else:
+            # Chercher dans IN_SOURCE_REF
+            candidate = source_ref_dir / svp.name
+            if candidate.exists():
+                source_video_path = candidate
+                logger.info(f"Vidéo source trouvée dans IN_SOURCE_REF: {candidate.name}")
+            else:
+                logger.warn(f"Vidéo source introuvable: {svp}")
+    else:
+        # Auto-détection dans IN_SOURCE_REF
+        if source_ref_dir.exists():
+            for ext in SUPPORTED_VIDEO_FORMATS:
+                candidates = list(source_ref_dir.glob(f"*{ext}"))
+                if candidates:
+                    source_video_path = candidates[0]
+                    logger.info(f"Vidéo source auto-détectée: {source_video_path.name}")
+                    break
+
+    skip_match     = args.skip_match or not HAS_MATCH_COLOR
+    skip_grain     = args.skip_grain or not HAS_GRAIN_MATCHER
+    skip_bloom     = args.skip_bloom
+    skip_sharpness = args.skip_sharpness
+
+    if not HAS_MATCH_COLOR:
+        logger.warn("Module match_color non disponible → match_color désactivé")
+    if not HAS_GRAIN_MATCHER:
+        logger.warn("Module grain_matcher non disponible → grain désactivé")
+    if source_video_path is None:
+        skip_match     = True
+        skip_grain     = True
+        skip_sharpness = True
+        logger.warn("Pas de vidéo source → match_color, grain, sharpness désactivés")
+
+    active_stages = []
+    for stage in PIPELINE_ORDER:
+        if stage == "match_color" and skip_match:
+            continue
+        if stage == "grain" and skip_grain:
+            continue
+        if stage == "bloom" and skip_bloom:
+            continue
+        if stage == "sharpness" and skip_sharpness:
+            continue
+        active_stages.append(stage)
+
+    logger.info(f"Pipeline actif: {' → '.join(active_stages) if active_stages else '(passthrough)'}")
+
+    scene_filter = args.scene
+    sequences    = scan_render_frames(render_dir, logger, scene_id=scene_filter)
+
+    if not sequences:
+        logger.error("Aucune frame render trouvée")
+        sys.exit(1)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    report_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.dry_run:
+        logger.success("DRY-RUN — Validation complète, aucun traitement exécuté")
+        _print_dry_run_summary(config, active_stages, sequences, logger)
+        return
+
+    bloom_engine    = BloomEngine(verbose=args.verbose) if not skip_bloom else None
+    sharpness_engine = SharpnessTransfer(verbose=args.verbose) if not skip_sharpness else None
+
+    # ── LUT Engine ───────────────────────────────────────────────────────────
+    lut_engine   = None
+    lut_active   = False
+    lut_intensity = getattr(args, "lut_intensity", 1.0)
+    lut_path_arg  = getattr(args, "lut", None)
+    use_colour_science = getattr(args, "use_colour_science", False)
+    lut_path_obj: Optional[Path] = None
+    if lut_path_arg and HAS_LUT_ENGINE:
+        lut_path_obj = Path(lut_path_arg)
+        lut_engine   = LUTEngine(verbose=args.verbose)
+        if use_colour_science:
+            if lut_engine.is_colour_science_available():
+                lut_active = True
+                logger.success(
+                    f"Mode C colour-science: {lut_path_obj.name} "
+                    f"(intensite={lut_intensity:.2f})"
+                )
+            else:
+                logger.warn("colour-science/imageio non disponibles — fallback interpolation numpy")
+                use_colour_science = False
+                lut_active = lut_engine.load(lut_path_obj)
+        else:
+            lut_active = lut_engine.load(lut_path_obj)
+            if lut_active:
+                logger.success(f"LUT chargée: {lut_path_obj.name} (intensite={lut_intensity:.2f})")
+            else:
+                logger.warn(f"LUT non chargée: {lut_path_obj} — step LUT désactivé")
+    elif lut_path_arg and not HAS_LUT_ENGINE:
+        logger.warn("lut_engine non disponible — LUT step ignoré")
+
+    color_matcher = None
+    grain_matcher = None
+    if HAS_MATCH_COLOR and not skip_match:
+        color_matcher = ColorMatcher(verbose=args.verbose)
+    if HAS_GRAIN_MATCHER and not skip_grain:
+        grain_matcher = GrainMatcher(verbose=args.verbose)
+
+    cap = None
+    total_video_frames = 0
+    fps_source = 24.0
+    if source_video_path is not None:
+        cap = open_source_video(source_video_path, logger)
+        if cap is not None:
+            total_video_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps_source = cap.get(cv2.CAP_PROP_FPS) or 24.0
+
+    report = {
+        "version": M2_F05_VERSION,
+        "fregate": "M2_F05",
+        "timestamp": datetime.now().isoformat(),
+        "preset": args.preset,
+        "pipeline": active_stages,
+        "scenes": [],
+    }
+
+    total_processed = 0
+    total_errors    = 0
+    t_global_start  = time.time()
+
+    scenes_data = plan.get("scenes", [])
+    if not scenes_data:
+        scenes_data = [{"scene_id": sid} for sid in sorted(sequences.keys())]
+
+    for scene in scenes_data:
+        sid = scene.get("scene_id", 1)
+        if scene_filter is not None and sid != scene_filter:
+            continue
+        if sid not in sequences:
+            logger.warn(f"Scene {sid}: aucune frame render, skip")
+            continue
+
+        frames_list = sequences[sid]
+        logger.info(f"Scene {sid}: {len(frames_list)} frames à traiter")
+
+        start_frame, end_frame = get_scene_timecodes(scene, fps_source)
+        if end_frame <= start_frame:
+            end_frame = start_frame + len(frames_list)
+
+        reference_cdfs = None
+        grain_stats    = None
+        if cap is not None and color_matcher is not None and not skip_match:
+            ref_samples = extract_sample_frames(
+                cap, start_frame, end_frame, total_video_frames,
+                config["match_color"].get("reference_sample_count", 20),
+            )
+            if ref_samples:
+                reference_cdfs = color_matcher.compute_reference_histogram(ref_samples)
+                logger.debug(f"  Reference histograms calculés depuis {len(ref_samples)} frames source")
+
+        if cap is not None and grain_matcher is not None and not skip_grain:
+            grain_samples = extract_sample_frames(
+                cap, start_frame, end_frame, total_video_frames,
+                config["grain"].get("calibration_samples", 10),
+            )
+            if grain_samples:
+                grain_stats = grain_matcher.extract_grain_stats(grain_samples)
+                logger.debug(f"  Grain stats extraits depuis {len(grain_samples)} frames source")
+
+        scene_report = {
+            "scene_id": sid,
+            "frames_total": len(frames_list),
+            "frames_processed": 0,
+            "frames_failed": 0,
+            "time_seconds": 0.0,
+        }
+
+        frame_iter = frames_list
+        if HAS_TQDM:
+            frame_iter = tqdm(frames_list, desc=f"  Scene {sid}", unit="frame", leave=True)
+
+        t_scene_start = time.time()
+
+        for frame_idx, render_path in enumerate(frame_iter):
+            try:
+                render = cv2.imread(
+                    str(render_path),
+                    cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH,
+                )
+                if render is None:
+                    logger.warn(f"  Frame illisible: {render_path.name}")
+                    scene_report["frames_failed"] += 1
+                    total_errors += 1
+                    continue
+
+                source_f = None
+                if cap is not None:
+                    src_idx  = start_frame + frame_idx
+                    source_f = extract_source_frame(cap, src_idx, total_video_frames)
+                    if source_f is not None:
+                        source_f = resize_to_match(source_f, render.shape)
+
+                current = render
+
+                if "match_color" in active_stages and color_matcher is not None and reference_cdfs is not None:
+                    current = color_matcher.match_frame(
+                        current, reference_cdfs,
+                        intensity=config["match_color"]["intensity"],
+                    )
+
+                if "grain" in active_stages and grain_matcher is not None and grain_stats is not None:
+                    current = grain_matcher.apply_grain(
+                        current, grain_stats,
+                        intensity=config["grain"]["intensity"],
+                    )
+
+                if "bloom" in active_stages and bloom_engine is not None:
+                    bloom_cfg = config["bloom"]
+                    current = bloom_engine.apply_bloom(
+                        current,
+                        threshold=bloom_cfg["threshold"],
+                        intensity=bloom_cfg["intensity"],
+                        radius=bloom_cfg["radius"],
+                    )
+
+                if "sharpness" in active_stages and sharpness_engine is not None and source_f is not None:
+                    current = sharpness_engine.transfer(
+                        current, source_f,
+                        intensity=config["sharpness"]["intensity"],
+                    )
+
+                # ── LUT (Mode C) ──────────────────────────────────────────────
+                if lut_active and lut_engine is not None and lut_path_obj is not None:
+                    if use_colour_science:
+                        out_name = f"final_{sid:03d}_{frame_idx:06d}.{OUTPUT_FORMAT}"
+                        out_path = output_dir / out_name
+                        cs_ok = lut_engine.apply_colour_science(
+                            render_path, out_path, lut_path_obj, intensity=lut_intensity
+                        )
+                        if cs_ok:
+                            scene_report["frames_processed"] += 1
+                            total_processed += 1
+                            continue
+                        else:
+                            current = lut_engine.apply(current, intensity=lut_intensity)
+                    else:
+                        current = lut_engine.apply(current, intensity=lut_intensity)
+
+                out_name = f"final_{sid:03d}_{frame_idx:06d}.{OUTPUT_FORMAT}"
+                save_frame(current, output_dir / out_name)
+
+                scene_report["frames_processed"] += 1
+                total_processed += 1
+
+            except Exception as e:
+                logger.error(f"  Frame {render_path.name}: {e}")
+                scene_report["frames_failed"] += 1
+                total_errors += 1
+
+        scene_report["time_seconds"] = round(time.time() - t_scene_start, 2)
+        report["scenes"].append(scene_report)
+
+        fps_scene = scene_report["frames_processed"] / max(scene_report["time_seconds"], 0.001)
+        logger.success(
+            f"Scene {sid}: {scene_report['frames_processed']} traitées, "
+            f"{scene_report['frames_failed']} erreurs, "
+            f"{fps_scene:.1f} frames/s"
+        )
+
+    if cap is not None:
+        cap.release()
+
+    total_time = round(time.time() - t_global_start, 2)
+
+    report["summary"] = {
+        "scenes_total": len(report["scenes"]),
+        "scenes_processed": sum(1 for s in report["scenes"] if s["frames_processed"] > 0),
+        "total_frames_processed": total_processed,
+        "total_frames_failed": total_errors,
+        "total_time_seconds": total_time,
+        "status": "SUCCESS" if total_errors == 0 else "PARTIAL",
+    }
+
+    report_path = report_dir / "m2_f05_report.json"
+    with open(report_path, "w", encoding="utf-8") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
+    logger.success(f"Rapport: {report_path}")
+
+    print()
+    print("═══════════════════════════════════════════════════")
+    print(f"   M2_F05 ALCHEMIST v{M2_F05_VERSION} — RÉSUMÉ")
+    print("═══════════════════════════════════════════════════")
+    print(f"   Frames traitées : {total_processed}")
+    print(f"   Erreurs         : {total_errors}")
+    print(f"   Temps total     : {total_time:.1f}s")
+    if total_processed > 0:
+        print(f"   Moyenne         : {total_time / total_processed:.2f}s/frame")
+    print(f"   Output          : {output_dir}")
+    print("═══════════════════════════════════════════════════")
+
+
+def _print_dry_run_summary(config: dict, active_stages: list, sequences: dict, logger: AlchemistLogger):
+    """Affiche un résumé détaillé en mode dry-run."""
+    print()
+    print("═══════════════════════════════════════════════════")
+    print(f"   M2_F05 ALCHEMIST v{M2_F05_VERSION} — DRY RUN")
+    print("═══════════════════════════════════════════════════")
+    print(f"   Pipeline : {' → '.join(active_stages) if active_stages else '(vide)'}")
+    print(f"   Scènes   : {len(sequences)}")
+    total = sum(len(v) for v in sequences.values())
+    print(f"   Frames   : {total}")
+    print()
+    for stage in PIPELINE_ORDER:
+        enabled = stage in active_stages
+        marker  = "✓" if enabled else "✗"
+        if stage in config:
+            params = config[stage]
+            if isinstance(params, dict):
+                detail = ", ".join(f"{k}={v}" for k, v in params.items() if k != "description")
+            else:
+                detail = str(params)
+            print(f"   [{marker}] {stage:15s} → {detail}")
+        else:
+            print(f"   [{marker}] {stage}")
+    print("═══════════════════════════════════════════════════")
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CLI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="EXO_M2_F05_ALCHEMIST",
+        description=(
+            "MODE 2 — M2_F05 ALCHEMIST v1.0.0 — Pipeline de fusion visuelle OpenCV\n"
+            "Fusionne les rendus 3D (M2_F04) avec la vidéo source via match_color, grain, bloom, sharpness.\n"
+            "Loi R-01 : Copie étanche Mode 2."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--production-plan", required=True,
+        help="Chemin vers PRODUCTION_PLAN.JSON",
+    )
+    parser.add_argument(
+        "--source-video", default=None,
+        help="Vidéo source de référence (.mp4/.avi/.mov) — optionnel, auto-détection dans IN_SOURCE_REF/",
+    )
+    parser.add_argument(
+        "--preset", default="cinema_fusion",
+        help="Preset pipeline (cinema_fusion, subtle_blend, neon_blast, raw_match, full_nuke)",
+    )
+
+    parser.add_argument("--render-dir", default=None, help="Dossier frames render (défaut: IN_RAW_FRAMES/)")
+    parser.add_argument("--output-dir", default=None, help="Dossier output (défaut: OUT_FINAL_FRAMES/)")
+    parser.add_argument("--source-ref-dir", default=None, help="Dossier références source (défaut: IN_SOURCE_REF/)")
+
+    parser.add_argument("--scene", type=int, default=None, help="Traiter une seule scène (par ID)")
+
+    parser.add_argument("--match-intensity",    type=float, default=None, help="Override intensité match_color [0.0-1.0]")
+    parser.add_argument("--grain-intensity",    type=float, default=None, help="Override intensité grain [0.0-1.0]")
+    parser.add_argument("--bloom-preset",       default=None,             help="Override bloom preset (cinema, subtle, neon, none)")
+    parser.add_argument("--sharpness-intensity", type=float, default=None, help="Override intensité sharpness [0.0-1.0]")
+
+    parser.add_argument("--skip-match",     action="store_true", help="Désactiver match_color")
+    parser.add_argument("--skip-grain",     action="store_true", help="Désactiver grain")
+    parser.add_argument("--skip-bloom",     action="store_true", help="Désactiver bloom")
+    parser.add_argument("--skip-sharpness", action="store_true", help="Désactiver sharpness")
+
+    parser.add_argument("-v", "--verbose", action="store_true", help="Mode verbose")
+    parser.add_argument("--dry-run",       action="store_true", help="Valider sans traitement")
+
+    parser.add_argument(
+        "--bypass",
+        action="store_true",
+        help="Bypass total — copie frames directement sans traitement, génère m2_f05_report.json: SKIPPED",
+    )
+
+    parser.add_argument(
+        "--lut",
+        default=None,
+        metavar="PATH",
+        help="Chemin vers un fichier .cube 3D. Applique après le pipeline OpenCV.",
+    )
+    parser.add_argument(
+        "--lut-intensity",
+        type=float,
+        default=1.0,
+        metavar="FLOAT",
+        help="Intensité du blend LUT/original [0.0-1.0]. Défaut: 1.0",
+    )
+    parser.add_argument(
+        "--use-colour-science",
+        action="store_true",
+        dest="use_colour_science",
+        help="Active colour-science pour le grading Mode C (EXR natif). Requires: pip install colour-science imageio.",
+    )
+
+    return parser
+
+
+def main():
+    parser = build_parser()
+    args   = parser.parse_args()
+
+    logger = AlchemistLogger(verbose=args.verbose)
+
+    print(BANNER)
+
+    process_pipeline(args, logger)
+
+
+if __name__ == "__main__":
+    main()
