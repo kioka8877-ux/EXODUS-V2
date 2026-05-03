@@ -1,0 +1,15 @@
+# M2_F02 LOGISTICS — Mode 2 — Phase 8
+# Loi R-01 : copie étanche, zero dépendances Mode 1
+
+# Blender Python (bpy) est fourni par Blender lui-même
+# Ces dépendances sont pour les scripts wrapper et notebooks
+
+# Standard library — incluses pour référence
+# json, pathlib, argparse, subprocess, shutil — built-in
+
+# Optionnel: notebooks / debug
+numpy>=1.21.0
+
+# Format props
+# pygltflib — utile pour valider les GLB props si nécessaire
+# pygltflib>=1.15.0  # décommenter si validation props requise
