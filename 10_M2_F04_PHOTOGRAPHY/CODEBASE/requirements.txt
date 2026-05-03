@@ -1,0 +1,9 @@
+# MODE 2 — M2_F04 PHOTOGRAPHY WING
+# Dépendances Python (hors bpy qui vient avec Blender)
+
+# Aucune dépendance Python externe requise.
+# Blender 4.0 headless fournit bpy nativement.
+# Tout le traitement camera/lighting se fait via bpy dans camera_director.py.
+
+# Pour notebooks Colab uniquement :
+# ipywidgets>=7.0.0
