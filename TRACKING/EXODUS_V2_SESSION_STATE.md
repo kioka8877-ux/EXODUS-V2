@@ -291,9 +291,9 @@ Phase courante           : PHASE 8 — DUAL PIPELINE DOCTRINE
 Doctrine validee         : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx (v1)
 
 MODE 1 (Video-to-Video)  : COMPLET — INTOUCHABLE — 7 fregates scellees (U00-U06)
-MODE 2 (From Scratch)    : EN FORGE — 4/7 modules crees (LAUNCHER + M2_F01 + M2_F03 + M2_F06)
+MODE 2 (From Scratch)    : EN FORGE — 5/7 modules crees (LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06)
 
-Prochaine action         : Forger M2_F02 + M2_F04 + M2_F05 (copies etanches M1)
+Prochaine action         : Forger M2_F04 + M2_F05 (copies etanches M1)
 Questions ouvertes       : aucune — doctrine scellee par decret imperial
 
 Lois inviolables Mode 2  :
@@ -367,6 +367,6 @@ M2_F06    : assembly + choix binaire overlay OUI/NON → FINAL.mp4 (ffmpeg, RIFE
 LOI D'ETANCHEITE (R-01) : chaque fregate Mode 2 est une copie independante.
 Si Mode 2 brise, Mode 1 fonctionne. Zero contamination croisee.
 
-Etat Phase 8 : 4/7 modules crees (LAUNCHER + M2_F01 + M2_F03 + M2_F06). M2_F02 + M2_F04 + M2_F05 en cours de forge.
+Etat Phase 8 : 5/7 modules crees (LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06). M2_F04 + M2_F05 restants.
 CODEX source : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx (v1)
 ```

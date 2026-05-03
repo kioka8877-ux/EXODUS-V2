@@ -187,12 +187,12 @@
 - Statut : ✅ FORGÉ (02.05.2026)
 
 #### P8-F02 — M2_F02 LOGISTICS (Copie etanche M1_F02)
-- [ ] Creer repertoire M2_F02/ + CODEBASE/
-- [ ] Copier + adapter actor_assembly.py, props_loader.py, socketing_engine.py, timeline_manager.py, final_baker.py
-- [ ] EXO_M2_F02_LOGISTICS.py (orchestrateur adapte Mode 2)
-- [ ] EXO_M2_F02_CONTROL.ipynb + EXO_M2_F02_PRODUCTION.ipynb
-- [ ] requirements.txt
-- Statut : 🔴 A FORGER
+- [x] Creer repertoire M2_F02/ + CODEBASE/
+- [x] Copier + adapter actor_assembly.py, props_loader.py, socketing_engine.py, timeline_manager.py, final_baker.py
+- [x] EXO_M2_F02_LOGISTICS.py (orchestrateur adapte Mode 2)
+- [x] EXO_M2_F02_CONTROL.ipynb + EXO_M2_F02_PRODUCTION.ipynb
+- [x] requirements.txt
+- Statut : ✅ FORGÉ (03.05.2026)
 
 #### P8-F03 — M2_F03 SCENOGRAPHY (GLB Decor + Shadow Catcher + HDRi)
 - [x] Creer repertoire M2_F03/ + CODEBASE/
@@ -229,7 +229,7 @@
 - [x] requirements.txt
 - Statut : ✅ FORGÉ (02.05.2026)
 
-- Statut Phase 8 : 🟡 57% — LAUNCHER + M2_F01 + M2_F03 + M2_F06 FORGÉS — M2_F02 + M2_F04 + M2_F05 restants
+- Statut Phase 8 : 🟡 71% — LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06 FORGÉS — M2_F04 + M2_F05 restants
 
 ---
 
@@ -239,7 +239,7 @@ MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06 → PHASE 8 : LAUNCHER → M2_
 ## PROGRESSION GLOBALE
 Mutation V2 (Mode 1) : [██████████] 🟢 100% — TOUTES les frégates scellées (MARSHAL + U00-U06)
 Phase 7 (Brainstorm v1) : [██████████] ✅ 100% — U03 D7 + U00 E7 SCELLÉS (02.05.2026)
-Phase 8 (Dual Pipeline Mode 2) : [████········] 🟡 57% — LAUNCHER + M2_F01 + M2_F03 + M2_F06 FORGÉS
+Phase 8 (Dual Pipeline Mode 2) : [█████·······] 🟡 71% — LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06 FORGÉS
 Phase courante : PHASE 8 — DUAL PIPELINE DOCTRINE — MODE 2 FROM SCRATCH
 
 ## RÉFÉRENCES

@@ -19,7 +19,7 @@
 |---|-------|-----|----------|--------|----------|
 | L | LAUNCHER | Aiguillage Imperial | P0 | 🟢 FORGÉ (02.05.2026) | — |
 | M2-1 | M2_F01 | ANIMATION (GLB Validator) | P0 | 🟢 FORGÉ (02.05.2026) | — |
-| M2-2 | M2_F02 | LOGISTICS (Copie etanche) | P1 | 🔴 A FORGER | — |
+| M2-2 | M2_F02 | LOGISTICS (Copie etanche) | P1 | 🟢 FORGÉ (03.05.2026) | — |
 | M2-3 | M2_F03 | SCENOGRAPHY (GLB + HDRi) | P0 | 🟢 FORGÉ (02.05.2026) | — |
 | M2-4 | M2_F04 | PHOTO (Copie etanche) | P1 | 🔴 A FORGER | — |
 | M2-5 | M2_F05 | ALCHEMIST (Copie etanche) | P1 | 🔴 A FORGER | — |
@@ -29,8 +29,8 @@
 Empire EXODUS Base V2 : [████████████] 100% — Phase 5 complete — 48/48 taches
 Codex Imperial v6 (Phase 6) : [████████████] 100% — 25/25 décrets IMPLÉMENTÉS — PHASE 6 SCELLÉE (23.04.2026)
 Codex Brainstorm v1 (Phase 7) : [████████████] 100% — U03 D7 + U00 E7 SCELLÉS (02.05.2026)
-Dual Pipeline Mode 2 (Phase 8) : [████········] 57% — LAUNCHER + M2_F01 + M2_F03 + M2_F06 forgés — 3 modules restants (M2_F02, M2_F04, M2_F05)
-Fregates conformes : 7/7 Mode 1 — 3/6 Mode 2 (LAUNCHER + M2_F01 + M2_F03 + M2_F06 OK)
+Dual Pipeline Mode 2 (Phase 8) : [█████·······] 71% — LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06 forgés — 2 modules restants (M2_F04, M2_F05)
+Fregates conformes : 7/7 Mode 1 — 4/6 Mode 2 (LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06 OK)
 Phase courante : PHASE 8 — DUAL PIPELINE DOCTRINE (Codex Brainstorm Mode2 — 02.05.2026)
 
 ## PHASE 5 — INTEGRATION FREGATES (COMPLETE)
