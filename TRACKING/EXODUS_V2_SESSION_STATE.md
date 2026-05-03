@@ -1,6 +1,6 @@
 # EXODUS V2 — SESSION STATE
 > Document de reprise de session. Si le chat lache, donner ce fichier + CODEX_IMPERIAL_v4.docx.
-> Derniere mise a jour : 2026-04-23
+> Derniere mise a jour : 2026-05-03
 
 ---
 
@@ -286,14 +286,14 @@ Le projet EXODUS V2 a pivote vers une architecture V1 basee sur des videos humai
 ## SECTION 4 — POSITION COURANTE
 
 ```
-Session actuelle         : 02.05.2026.M41
+Session actuelle         : 03.05.2026.M41
 Phase courante           : PHASE 8 — DUAL PIPELINE DOCTRINE
 Doctrine validee         : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx (v1)
 
 MODE 1 (Video-to-Video)  : COMPLET — INTOUCHABLE — 7 fregates scellees (U00-U06)
-MODE 2 (From Scratch)    : EN FORGE — 0/7 modules crees
+MODE 2 (From Scratch)    : EN FORGE — 4/7 modules crees (LAUNCHER + M2_F01 + M2_F03 + M2_F06)
 
-Prochaine action         : Forger LAUNCHER + M2_F01 a M2_F06
+Prochaine action         : Forger M2_F02 + M2_F04 + M2_F05 (copies etanches M1)
 Questions ouvertes       : aucune — doctrine scellee par decret imperial
 
 Lois inviolables Mode 2  :
@@ -367,6 +367,6 @@ M2_F06    : assembly + choix binaire overlay OUI/NON → FINAL.mp4 (ffmpeg, RIFE
 LOI D'ETANCHEITE (R-01) : chaque fregate Mode 2 est une copie independante.
 Si Mode 2 brise, Mode 1 fonctionne. Zero contamination croisee.
 
-Etat Phase 8 : 0/7 modules crees. Forge ordonnee par decret imperial 02.05.2026.
+Etat Phase 8 : 4/7 modules crees (LAUNCHER + M2_F01 + M2_F03 + M2_F06). M2_F02 + M2_F04 + M2_F05 en cours de forge.
 CODEX source : EXODUS_V2_CODEX_BRAINSTORM_MODE2.docx (v1)
 ```

@@ -173,18 +173,18 @@
 > Doctrine : Loi d'Etancheite — deux pipelines independants, un Launcher, un output.
 
 #### P8-L — LAUNCHER (Aiguillage Imperial)
-- [ ] Creer EXO_LAUNCHER.py — menu CLI binaire (1=Mode1, 2=Mode2), zero logique metier
-- [ ] Creer notebook LAUNCHER (CONTROL)
-- Statut : 🔴 A FORGER
+- [x] Creer EXO_LAUNCHER.py — menu CLI binaire (1=Mode1, 2=Mode2), zero logique metier
+- [x] Creer notebook LAUNCHER (CONTROL)
+- Statut : ✅ FORGÉ (02.05.2026)
 
 #### P8-F01 — M2_F01 ANIMATION (GLB Validator + Audio Check)
-- [ ] Creer repertoire M2_F01/ + CODEBASE/
-- [ ] glb_validator.py (pygltflib — valide GLB + animations embarquees)
-- [ ] audio_checker.py (librosa/pydub — duree audio <= duree animation : LOI R-03)
-- [ ] EXO_M2_F01_ANIMATION.py (orchestrateur)
-- [ ] EXO_M2_F01_CONTROL.ipynb + EXO_M2_F01_PRODUCTION.ipynb
-- [ ] requirements.txt
-- Statut : 🔴 A FORGER
+- [x] Creer repertoire M2_F01/ + CODEBASE/
+- [x] glb_validator.py (pygltflib — valide GLB + animations embarquees)
+- [x] audio_checker.py (librosa/pydub — duree audio <= duree animation : LOI R-03)
+- [x] EXO_M2_F01_ANIMATION.py (orchestrateur)
+- [x] EXO_M2_F01_CONTROL.ipynb + EXO_M2_F01_PRODUCTION.ipynb
+- [x] requirements.txt
+- Statut : ✅ FORGÉ (02.05.2026)
 
 #### P8-F02 — M2_F02 LOGISTICS (Copie etanche M1_F02)
 - [ ] Creer repertoire M2_F02/ + CODEBASE/
@@ -195,14 +195,14 @@
 - Statut : 🔴 A FORGER
 
 #### P8-F03 — M2_F03 SCENOGRAPHY (GLB Decor + Shadow Catcher + HDRi)
-- [ ] Creer repertoire M2_F03/ + CODEBASE/
-- [ ] glb_importer.py (bpy — import GLB decor fourni par Operateur)
-- [ ] shadow_catcher_builder.py (copie adaptee M1_F03)
-- [ ] hdri_setup.py (bpy World Shader + HDRi)
-- [ ] EXO_M2_F03_SCENOGRAPHY.py (orchestrateur)
-- [ ] EXO_M2_F03_CONTROL.ipynb + EXO_M2_F03_PRODUCTION.ipynb
-- [ ] requirements.txt
-- Statut : 🔴 A FORGER
+- [x] Creer repertoire M2_F03/ + CODEBASE/
+- [x] glb_importer.py (bpy — import GLB decor fourni par Operateur)
+- [x] shadow_catcher_builder.py (copie adaptee M1_F03)
+- [x] hdri_setup.py (bpy World Shader + HDRi)
+- [x] EXO_M2_F03_SCENOGRAPHY.py (orchestrateur)
+- [x] EXO_M2_F03_CONTROL.ipynb + EXO_M2_F03_PRODUCTION.ipynb
+- [x] requirements.txt
+- Statut : ✅ FORGÉ (02.05.2026)
 
 #### P8-F04 — M2_F04 PHOTO (Copie etanche M1_F04)
 - [ ] Creer repertoire M2_F04/ + CODEBASE/
@@ -221,15 +221,15 @@
 - Statut : 🔴 A FORGER
 
 #### P8-F06 — M2_F06 AIRCRAFT CARRIER (Assembly + Overlay Binaire)
-- [ ] Creer repertoire M2_F06/ + CODEBASE/
-- [ ] Copier + adapter sequence_assembler.py, rife_interpolator.py, upscaler.py, final_encoder.py, audio_sync.py
-- [ ] overlay_composer.py (Pillow + ffmpeg drawtext — text overlay conditionnel)
-- [ ] EXO_M2_F06_CARRIER.py (orchestrateur + choix binaire OUI/NON overlay : LOI R-04)
-- [ ] EXO_M2_F06_CONTROL.ipynb + EXO_M2_F06_PRODUCTION.ipynb
-- [ ] requirements.txt
-- Statut : 🔴 A FORGER
+- [x] Creer repertoire M2_F06/ + CODEBASE/
+- [x] Copier + adapter sequence_assembler.py, rife_interpolator.py, upscaler.py, final_encoder.py, audio_sync.py
+- [x] overlay_composer.py (Pillow + ffmpeg drawtext — text overlay conditionnel)
+- [x] EXO_M2_F06_CARRIER.py (orchestrateur + choix binaire OUI/NON overlay : LOI R-04)
+- [x] EXO_M2_F06_CONTROL.ipynb + EXO_M2_F06_PRODUCTION.ipynb
+- [x] requirements.txt
+- Statut : ✅ FORGÉ (02.05.2026)
 
-- Statut Phase 8 : 🔴 0% — FORGE ORDONNEE (02.05.2026)
+- Statut Phase 8 : 🟡 57% — LAUNCHER + M2_F01 + M2_F03 + M2_F06 FORGÉS — M2_F02 + M2_F04 + M2_F05 restants
 
 ---
 
@@ -239,7 +239,7 @@ MARSHAL & U00 → U01 → U03 → U02/U04/U05/U06 → PHASE 8 : LAUNCHER → M2_
 ## PROGRESSION GLOBALE
 Mutation V2 (Mode 1) : [██████████] 🟢 100% — TOUTES les frégates scellées (MARSHAL + U00-U06)
 Phase 7 (Brainstorm v1) : [██████████] ✅ 100% — U03 D7 + U00 E7 SCELLÉS (02.05.2026)
-Phase 8 (Dual Pipeline Mode 2) : [············] 🔴 0% — FORGE ORDONNEE
+Phase 8 (Dual Pipeline Mode 2) : [████········] 🟡 57% — LAUNCHER + M2_F01 + M2_F03 + M2_F06 FORGÉS
 Phase courante : PHASE 8 — DUAL PIPELINE DOCTRINE — MODE 2 FROM SCRATCH
 
 ## RÉFÉRENCES
@@ -250,6 +250,7 @@ Phase courante : PHASE 8 — DUAL PIPELINE DOCTRINE — MODE 2 FROM SCRATCH
 
 > **Loi du Béton** : Chaque tâche cochée doit pointer vers un commit ou un fichier vérifiable.
 
+<!-- v8.4 — M2_F01 + M2_F03 + M2_F06 FORGÉS — docs sync 03.05.2026 -->
 <!-- v8.0 — Phase 8 Dual Pipeline Mode 2 ouverte — 02.05.2026 -->
 <!-- v7.0 — Phase 7 Brainstorm Scellée — 02.05.2026 -->
 <!-- v3.0 — Phase D.1 Phantom Link Architecture (2026-03-07) -->
