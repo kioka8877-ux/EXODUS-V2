@@ -21,7 +21,7 @@
 | M2-1 | M2_F01 | ANIMATION (GLB Validator) | P0 | 🟢 FORGÉ (02.05.2026) | — |
 | M2-2 | M2_F02 | LOGISTICS (Copie etanche) | P1 | 🟢 FORGÉ (03.05.2026) | — |
 | M2-3 | M2_F03 | SCENOGRAPHY (GLB + HDRi) | P0 | 🟢 FORGÉ (02.05.2026) | — |
-| M2-4 | M2_F04 | PHOTO (Copie etanche) | P1 | 🔴 A FORGER | — |
+| M2-4 | M2_F04 | PHOTO (Copie etanche) | P1 | 🟢 FORGÉ (03.05.2026) | — |
 | M2-5 | M2_F05 | ALCHEMIST (Copie etanche) | P1 | 🔴 A FORGER | — |
 | M2-6 | M2_F06 | CARRIER (Assembly + Overlay) | P0 | 🟢 FORGÉ (02.05.2026) | — |
 
@@ -29,8 +29,8 @@
 Empire EXODUS Base V2 : [████████████] 100% — Phase 5 complete — 48/48 taches
 Codex Imperial v6 (Phase 6) : [████████████] 100% — 25/25 décrets IMPLÉMENTÉS — PHASE 6 SCELLÉE (23.04.2026)
 Codex Brainstorm v1 (Phase 7) : [████████████] 100% — U03 D7 + U00 E7 SCELLÉS (02.05.2026)
-Dual Pipeline Mode 2 (Phase 8) : [█████·······] 71% — LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06 forgés — 2 modules restants (M2_F04, M2_F05)
-Fregates conformes : 7/7 Mode 1 — 4/6 Mode 2 (LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F06 OK)
+Dual Pipeline Mode 2 (Phase 8) : [███████·····] 86% — LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F04 + M2_F06 forgés — 1 module restant (M2_F05)
+Fregates conformes : 7/7 Mode 1 — 5/6 Mode 2 (LAUNCHER + M2_F01 + M2_F02 + M2_F03 + M2_F04 + M2_F06 OK)
 Phase courante : PHASE 8 — DUAL PIPELINE DOCTRINE (Codex Brainstorm Mode2 — 02.05.2026)
 
 ## PHASE 5 — INTEGRATION FREGATES (COMPLETE)
@@ -230,8 +230,8 @@ quand il fournit un GLB depuis Tripo AI / Meshy AI.
 | M2_F02 | EXO_M2_F02_LOGISTICS.py + CONTROL + PRODUCTION notebooks | ✅ FORGÉ (03.05.2026) |
 | M2_F03 | Creer repertoire + CODEBASE (GLB decor + shadow + HDRi) | ✅ FORGÉ (02.05.2026) |
 | M2_F03 | EXO_M2_F03_SCENOGRAPHY.py + CONTROL + PRODUCTION notebooks | ✅ FORGÉ (02.05.2026) |
-| M2_F04 | Creer repertoire + CODEBASE (copie etanche M1_F04) | 🔴 A FORGER |
-| M2_F04 | EXO_M2_F04_PHOTOGRAPHY.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
+| M2_F04 | Creer repertoire + CODEBASE (copie etanche M1_F04) | ✅ FORGÉ (03.05.2026) |
+| M2_F04 | EXO_M2_F04_PHOTOGRAPHY.py + CONTROL + PRODUCTION notebooks | ✅ FORGÉ (03.05.2026) |
 | M2_F05 | Creer repertoire + CODEBASE (copie etanche M1_F05) | 🔴 A FORGER |
 | M2_F05 | EXO_M2_F05_ALCHEMIST.py + CONTROL + PRODUCTION notebooks | 🔴 A FORGER |
 | M2_F06 | Creer repertoire + CODEBASE (assembly + overlay binaire) | ✅ FORGÉ (02.05.2026) |
@@ -249,7 +249,7 @@ quand il fournit un GLB depuis Tripo AI / Meshy AI.
 | M2_F05 | OpenCV, numpy, LUT engine, copie M1_F05 |
 | M2_F06 | ffmpeg-python, RIFE, Real-CUGAN, Pillow overlay, audio_sync |
 
-<!-- v8.4 — M2_F01 + M2_F03 + M2_F06 FORGÉS — docs sync 03.05.2026 -->
+<!-- v8.5 — M2_F04 FORGÉ — docs sync 03.05.2026 -->
 <!-- v8.1 — LAUNCHER FORGÉ — 02.05.2026 -->
 <!-- v8.0 — PHASE 8 DUAL PIPELINE ouverte — 02.05.2026 -->
 <!-- v7.1 — U03 D7 SCELLÉE 3/3 — 02.05.2026 -->
