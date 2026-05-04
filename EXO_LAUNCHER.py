@@ -103,6 +103,35 @@ PIPELINE_ENTRYPOINTS = {
 }
 
 
+
+def write_session_json(mode: int, drive_root: str, extra_args: str = "") -> None:
+    """Ecrit exodus_session.json sur Drive — fregates autonomes sans le launcher."""
+    import json as _json
+    from datetime import datetime as _dt
+
+    pipeline = PIPELINE_ENTRYPOINTS[mode]
+    session_data = {
+        "version":    LAUNCHER_VERSION,
+        "timestamp":  _dt.now().isoformat(),
+        "mode":       mode,
+        "mode_label": pipeline["label"],
+        "drive_root": drive_root,
+        "units":      pipeline["units"],
+        "extra_args": extra_args,
+        "status":     "ready",
+    }
+
+    session_path = Path(drive_root) / "exodus_session.json"
+    session_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(session_path, "w", encoding="utf-8") as f:
+        _json.dump(session_data, f, indent=2, ensure_ascii=False)
+
+    print(f"  \u2713 exodus_session.json ecrit \u2192 {session_path}")
+    print(f"  Mode     : {mode} \u2014 {pipeline['label']}")
+    print(f"  Timestamp: {session_data['timestamp']}")
+    print(f"  \u2192 Les fregates peuvent fonctionner de maniere autonome.")
+    print(f"  \u2192 Ce launcher peut etre ferme.")
+
 def print_banner() -> None:
     print(BANNER)
     print(f"  Launcher v{LAUNCHER_VERSION} — Doctrine Dual Pipeline")
@@ -234,6 +263,9 @@ def main() -> int:
     mode = args.mode
     if mode is None:
         mode = choose_mode_interactive()
+
+    if not args.dry_run:
+        write_session_json(mode=mode, drive_root=args.drive_root, extra_args=args.extra_args)
 
     return route_to_pipeline(
         mode=mode,
