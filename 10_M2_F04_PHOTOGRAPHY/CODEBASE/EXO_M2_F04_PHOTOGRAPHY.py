@@ -91,6 +91,24 @@ class M2F04Logger:
 
 # ─── Blender ─────────────────────────────────────────────────────────────────
 
+def _read_output_format(fregate_dir: Path, logger: M2F04Logger):
+    """Lit output_format depuis exodus_session.json (ecrit par le Launcher)."""
+    session_path = fregate_dir.parent / "exodus_session.json"
+    if session_path.exists():
+        try:
+            with open(session_path, encoding="utf-8") as f:
+                data = json.load(f)
+            fmt = data.get("output_format", {})
+            w = int(fmt.get("width", 1920))
+            h = int(fmt.get("height", 1080))
+            orient = fmt.get("orientation", "?")
+            logger.success(f"Format session : {w}x{h} ({orient})")
+            return w, h
+        except Exception as e:
+            logger.warn(f"Session JSON illisible ({e}) — format HOR par defaut")
+    return 1920, 1080
+
+
 def find_blender(drive_root: Path, logger: M2F04Logger, custom_path: str = None) -> str:
     if custom_path:
         bp = Path(custom_path)
@@ -163,6 +181,8 @@ def run_blender_photography(
     no_dof: bool = False,
     no_atmosphere: bool = False,
     shake_preset: str = "handheld",
+    res_x: int = 1920,
+    res_y: int = 1080,
 ) -> bool:
     """Lance Blender headless pour configurer caméra + éclairage."""
     director_script = CODEBASE_DIR / "camera_director.py"
@@ -196,6 +216,8 @@ def run_blender_photography(
         "--scene-config", scene_config_json,
         "--output-dir", str(output_dir),
         "--scene-id", str(scene_id),
+        "--res-x", str(res_x),
+        "--res-y", str(res_y),
     ]
 
     logger.info(f"Lancement Blender — scène {scene_id}...")
@@ -289,6 +311,9 @@ Exemples:
     logger.info(f"Atmosphere   : {'OFF' if args.no_atmosphere else 'ON'}")
     logger.info(f"Shake        : {args.shake_preset}")
 
+    res_x, res_y = _read_output_format(FREGATE_DIR, logger)
+    logger.info(f"Resolution   : {res_x}x{res_y}")
+
     if args.dry_run:
         logger.info("Mode dry-run : tout est valide, arrêt avant Blender")
         print("\n✓ M2_F04 prête. Tous les chemins sont valides.")
@@ -304,6 +329,8 @@ Exemples:
         no_dof=args.no_dof,
         no_atmosphere=args.no_atmosphere,
         shake_preset=args.shake_preset,
+        res_x=res_x,
+        res_y=res_y,
     )
 
     write_report(OUT_CAMERA_DIR, scene_blend, success, logger, args.preset)
