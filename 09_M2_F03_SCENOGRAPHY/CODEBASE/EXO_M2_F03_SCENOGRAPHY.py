@@ -129,6 +129,8 @@ hdri_path   = params.get("hdri-path", "")
 skip_hdri   = params.get("skip-hdri", "false").lower() == "true"
 shadow_size = float(params.get("shadow-size", "50.0"))
 output_path = params.get("output", "scene_m2.blend")
+res_x       = int(params.get("res-x", "1920"))
+res_y       = int(params.get("res-y", "1080"))
 
 print(f"[BLENDER] M2_F03 SCENOGRAPHY — Blender {bpy.app.version_string}")
 print(f"[BLENDER] GLB Décor  : {decor_glb}")
@@ -136,6 +138,7 @@ print(f"[BLENDER] GLB Avatar : {avatar_glb}")
 print(f"[BLENDER] HDRi       : {hdri_path or 'SKIP' if skip_hdri else 'auto'}")
 print(f"[BLENDER] Shadow     : {shadow_size}m")
 print(f"[BLENDER] Output     : {output_path}")
+print(f"[BLENDER] Resolution : {res_x}x{res_y}")
 
 # ── 1. Scène propre ───────────────────────────────────────────
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -143,6 +146,10 @@ scene = bpy.context.scene
 scene.name = "M2_SCENE"
 scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
+scene.render.resolution_x = res_x
+scene.render.resolution_y = res_y
+scene.render.resolution_percentage = 100
+print(f"[BLENDER] Resolution settee : {res_x}x{res_y}")
 
 def ensure_collection(name):
     if name not in bpy.data.collections:
@@ -316,6 +323,23 @@ class M2F03Scenography:
             "warnings": [],
         }
 
+    def _read_output_format(self):
+        """Lit output_format depuis exodus_session.json (ecrit par le Launcher)."""
+        session_path = FREGATE_DIR.parent / "exodus_session.json"
+        if session_path.exists():
+            try:
+                with open(session_path, encoding="utf-8") as f:
+                    data = json.load(f)
+                fmt = data.get("output_format", {})
+                w = int(fmt.get("width", 1920))
+                h = int(fmt.get("height", 1080))
+                orient = fmt.get("orientation", "?")
+                self.log.ok(f"Format session : {w}x{h} ({orient})")
+                return w, h
+            except Exception as e:
+                self.log.warn(f"Session JSON illisible ({e}) — format HOR par defaut")
+        return 1920, 1080
+
     def _find_blender(self) -> str:
         if self.args.blender:
             return self.args.blender
@@ -388,6 +412,8 @@ class M2F03Scenography:
             if self.args.skip_hdri:
                 cmd.append("--skip-hdri")
             cmd += ["--shadow-size", str(self.args.shadow_size)]
+            cmd += ["--res-x", str(self._res_x)]
+            cmd += ["--res-y", str(self._res_y)]
             cmd += ["--output", str(output_blend)]
 
             self.log.debug(f"Commande : {' '.join(cmd)}")
@@ -438,6 +464,9 @@ class M2F03Scenography:
         print(BANNER)
         self.log.info(f"M2_F03 SCENOGRAPHY v{M2_F03_VERSION}")
         self.log.info(f"Timestamp : {self.report['timestamp']}")
+
+        # ── Format de sortie depuis session JSON
+        self._res_x, self._res_y = self._read_output_format()
 
         # ── Résolution inputs
         self.log.section("RÉSOLUTION INPUTS")
