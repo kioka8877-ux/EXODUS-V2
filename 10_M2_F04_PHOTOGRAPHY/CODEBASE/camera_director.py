@@ -547,7 +547,7 @@ class CameraDirector:
         return self.operations
 
 
-def setup_scene_from_config(config: dict, output_dir: str, scene_id: str, verbose: bool = False):
+def setup_scene_from_config(config: dict, output_dir: str, scene_id: str, verbose: bool = False, res_x: int = 1920, res_y: int = 1080):
     """Configure la scène complète depuis la configuration."""
     
     director = CameraDirector(verbose=verbose)
@@ -564,11 +564,24 @@ def setup_scene_from_config(config: dict, output_dir: str, scene_id: str, verbos
         bpy.context.scene.frame_end = frame_end
     
     director.log(f"Frame range: {frame_start} - {frame_end}")
+
+    # -- Resolution + sensor_fit selon format de sortie
+    if BLENDER_AVAILABLE:
+        scene = bpy.context.scene
+        scene.render.resolution_x = res_x
+        scene.render.resolution_y = res_y
+        scene.render.resolution_percentage = 100
+        director.log(f"Resolution : {res_x}x{res_y}")
     
     camera_config = config.get("camera", {})
     style = camera_config.get("style", DEFAULT_CAMERA_STYLE)
     
     director.apply_style(style, camera_config, frame_start, frame_end)
+
+    # -- sensor_fit : adapte le cadrage camera vertical/horizontal
+    if BLENDER_AVAILABLE and director.camera:
+        director.camera.sensor_fit = 'VERTICAL' if res_y > res_x else 'HORIZONTAL'
+        director.log(f"sensor_fit : {director.camera.sensor_fit} ({res_x}x{res_y})")
     
     cuts = camera_config.get("cuts", [])
     if cuts:
@@ -654,8 +667,10 @@ def main():
     parser = argparse.ArgumentParser(description='Camera Director - Blender Script')
     parser.add_argument('--scene-config', required=True, help='JSON config de la scène')
     parser.add_argument('--output-dir', required=True, help='Dossier output')
-    parser.add_argument('--scene-id', required=True, help='ID de la scène')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Logs détaillés')
+    parser.add_argument('--scene-id', required=True, help='ID de la scene')
+    parser.add_argument('--res-x', type=int, default=1920, help='Resolution largeur (defaut: 1920)')
+    parser.add_argument('--res-y', type=int, default=1080, help='Resolution hauteur (defaut: 1080)')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Logs detailles')
     
     args = parser.parse_args(argv)
     
@@ -673,7 +688,9 @@ def main():
         config,
         args.output_dir,
         args.scene_id,
-        verbose=args.verbose
+        verbose=args.verbose,
+        res_x=args.res_x,
+        res_y=args.res_y,
     )
     
     print(f"\n[CAMERA_DIRECTOR] Opérations effectuées: {len(operations)}")
