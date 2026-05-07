@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3_F05 — Alchemist v1.0</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d0f; color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+body.render-mode { background: #000; }
+body.render-mode #topbar,
+body.render-mode #panel { display: none !important; }
+body.render-mode #main { height: 100vh; }
+body.render-mode #viewport { background: #000; }
+body.render-mode canvas { width: 1080px !important; height: 1920px !important; }
+
+/* TOPBAR */
+#topbar {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+  padding: 7px 12px; background: #141416; border-bottom: 1px solid #2a2a2e;
+}
+.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e; text-transform: uppercase; }
+.ver  { font-size: 10px; color: #444; }
+.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; }
+.chip {
+  padding: 3px 8px; border-radius: 4px; background: #1e1e22;
+  border: 1px solid #2a2a2e; font-size: 11px; color: #666;
+}
+.chip .k { color: #c8a96e; font-weight: 600; }
+.chip.ok { border-color: #2a5c2a; color: #4caf50; }
+.chip.err { border-color: #5c2a2a; color: #f44336; }
+
+/* MAIN */
+#main { display: flex; flex: 1; overflow: hidden; }
+
+/* VIEWPORT */
+#viewport {
+  flex: 1; overflow: hidden; background: #000;
+  display: flex; align-items: center; justify-content: center;
+}
+canvas {
+  display: block; max-height: 100%; width: auto;
+}
+
+/* PANEL */
+#panel {
+  width: 265px; background: #141416; border-left: 1px solid #2a2a2e;
+  display: flex; flex-direction: column; padding: 12px; gap: 10px;
+  overflow-y: auto; flex-shrink: 0;
+}
+.sec { display: flex; flex-direction: column; gap: 6px; }
+.sec-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
+  color: #444; padding-bottom: 4px; border-bottom: 1px solid #1e1e22;
+}
+
+/* SLIDERS */
+.row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.row label { color: #666; min-width: 60px; font-size: 10px; }
+input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
+.val { color: #aaa; font-size: 10px; min-width: 36px; text-align: right; font-family: monospace; }
+
+/* TOGGLES */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #888; padding: 2px 0; }
+.toggle-btn {
+  padding: 4px 10px; border-radius: 4px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 10px; font-weight: 700; color: #666;
+  cursor: pointer; letter-spacing: .06em; transition: all .18s;
+}
+.toggle-btn.on { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+
+/* FPS BUTTONS */
+.fps-row { display: flex; gap: 5px; }
+.fps-btn {
+  flex: 1; padding: 7px 4px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 10px; color: #888; cursor: pointer;
+  font-weight: 700; text-align: center; transition: all .18s;
+}
+.fps-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+.fps-btn:hover { border-color: #c8a96e88; color: #c8a96e; }
+
+/* PROGRESS */
+.progress-wrap { background: #1c1c20; border: 1px solid #2a2a2e; border-radius: 5px; height: 10px; overflow: hidden; }
+.progress-bar { height: 100%; background: #c8a96e; width: 0%; transition: width .4s; }
+.progress-txt { font-size: 10px; color: #666; font-family: monospace; text-align: center; padding: 2px 0; }
+
+/* BUTTONS */
+.btn-render {
+  padding: 10px; border-radius: 7px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  width: 100%; transition: all .2s; background: #c8a96e; color: #0d0d0f;
+}
+.btn-render:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #2a2a2e; }
+.btn-render:not(:disabled):hover { background: #e0c080; }
+.btn-cancel {
+  padding: 7px; border-radius: 6px; border: 1px solid #5c2a2a;
+  background: #1c1010; font-size: 11px; font-weight: 700; color: #f44336;
+  cursor: pointer; width: 100%; display: none; transition: all .2s;
+}
+.btn-cancel:hover { background: #2a1010; }
+.feedback { font-size: 11px; color: #666; text-align: center; min-height: 14px; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">M3 — F05</span>
+  <span class="ver">Alchemist v1.0</span>
+  <div class="divider"></div>
+  <div class="chip"><span class="k">Spawn </span><span id="chip-spawn">—</span></div>
+  <div class="chip"><span class="k">Cam </span><span id="chip-cam">—</span></div>
+  <div class="chip"><span class="k">Light </span><span id="chip-light">—</span></div>
+  <div class="chip"><span class="k">Avatar </span><span id="chip-avatar">—</span></div>
+  <div class="chip"><span class="k">Décor </span><span id="chip-decor">—</span></div>
+</div>
+
+<div id="main">
+  <div id="viewport">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div id="panel">
+
+    <!-- BLOOM -->
+    <div class="sec">
+      <div class="sec-title">Bloom</div>
+      <div class="row">
+        <label>Intensité</label>
+        <input type="range" id="sl-bloom-i" min="0" max="5" step="0.05" value="1.0" oninput="updateFX()">
+        <span class="val" id="v-bloom-i">1.0</span>
+      </div>
+      <div class="row">
+        <label>Rayon</label>
+        <input type="range" id="sl-bloom-r" min="0" max="1" step="0.01" value="0.4" oninput="updateFX()">
+        <span class="val" id="v-bloom-r">0.40</span>
+      </div>
+      <div class="row">
+        <label>Seuil</label>
+        <input type="range" id="sl-bloom-t" min="0" max="1" step="0.01" value="0.3" oninput="updateFX()">
+        <span class="val" id="v-bloom-t">0.30</span>
+      </div>
+    </div>
+
+    <!-- VIGNETTE -->
+    <div class="sec">
+      <div class="sec-title">Vignette</div>
+      <div class="row">
+        <label>Offset</label>
+        <input type="range" id="sl-vig-o" min="0" max="1" step="0.01" value="0.3" oninput="updateFX()">
+        <span class="val" id="v-vig-o">0.30</span>
+      </div>
+      <div class="row">
+        <label>Darkness</label>
+        <input type="range" id="sl-vig-d" min="0" max="1" step="0.01" value="0.5" oninput="updateFX()">
+        <span class="val" id="v-vig-d">0.50</span>
+      </div>
+    </div>
+
+    <!-- COULEUR -->
+    <div class="sec">
+      <div class="sec-title">Couleur</div>
+      <div class="row">
+        <label>Saturation</label>
+        <input type="range" id="sl-sat" min="-1" max="1" step="0.02" value="0" oninput="updateFX()">
+        <span class="val" id="v-sat">0.00</span>
+      </div>
+      <div class="row">
+        <label>Luminosité</label>
+        <input type="range" id="sl-bri" min="-1" max="1" step="0.02" value="0" oninput="updateFX()">
+        <span class="val" id="v-bri">0.00</span>
+      </div>
+      <div class="row">
+        <label>Contraste</label>
+        <input type="range" id="sl-con" min="-1" max="1" step="0.02" value="0" oninput="updateFX()">
+        <span class="val" id="v-con">0.00</span>
+      </div>
+    </div>
+
+    <!-- STYLE -->
+    <div class="sec">
+      <div class="sec-title">Style</div>
+      <div class="toggle-row">
+        <span>FXAA Anti-aliasing</span>
+        <button class="toggle-btn on" id="btn-fxaa" onclick="toggleFXAA()">ON</button>
+      </div>
+      <div class="toggle-row">
+        <span>Toon Shader</span>
+        <button class="toggle-btn" id="btn-toon" onclick="toggleToon()">OFF</button>
+      </div>
+    </div>
+
+    <!-- FPS RENDER -->
+    <div class="sec">
+      <div class="sec-title">FPS Render</div>
+      <div class="fps-row">
+        <button class="fps-btn active" id="fps-24" onclick="setFps(24)">24 fps</button>
+        <button class="fps-btn" id="fps-30" onclick="setFps(30)">30 fps</button>
+        <button class="fps-btn" id="fps-60" onclick="setFps(60)">60 fps</button>
+      </div>
+      <div class="progress-txt" id="frames-info">— frames</div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- RENDER -->
+    <div class="sec">
+      <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="progress-txt" id="progress-txt">Prêt</div>
+      <button class="btn-render" id="btn-render" onclick="launchRender()">LANCER RENDER</button>
+      <button class="btn-cancel" id="btn-cancel" onclick="cancelRender()">ANNULER</button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Signaux Playwright -->
+<div id="scene-ready" style="display:none"></div>
+<div id="frame-done" data-ready="0" style="display:none"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  EffectComposer, RenderPass, EffectPass,
+  BloomEffect, VignetteEffect, HueSaturationEffect,
+  BrightnessContrastEffect, FXAAEffect
+} from 'https://esm.sh/postprocessing@6.36.3?external=three';
+
+// ─── URL PARAMS ───────────────────────────────────────────────────
+const urlP     = new URLSearchParams(location.search);
+const isRender = urlP.get('render') === '1';
+let   currentFps   = parseInt(urlP.get('fps')   || '24');
+let   totalFrames  = parseInt(urlP.get('total') || '0');
+
+if (isRender) document.body.classList.add('render-mode');
+
+// ─── RENDERER ─────────────────────────────────────────────────────
+const canvas   = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias:            true,
+  preserveDrawingBuffer: true,
+});
+renderer.setPixelRatio(1);
+renderer.setSize(1080, 1920);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
+
+// ─── SCENE ────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111113);
+
+// ─── CAMERA ───────────────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(55, 1080 / 1920, 0.01, 10000);
+camera.position.set(0, 3, 6);
+
+let orbit = null;
+if (!isRender) {
+  orbit = new OrbitControls(camera, renderer.domElement);
+  orbit.update();
+}
+
+// ─── LIGHTS ───────────────────────────────────────────────────────
+const ambLight  = new THREE.AmbientLight(0xffffff, 1.5);
+const dirLight  = new THREE.DirectionalLight(0xfff4e0, 2.0);
+dirLight.position.set(5, 10, 5);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(2048, 2048);
+const hemiLight = new THREE.HemisphereLight(0x8888ff, 0x443322, 0.6);
+scene.add(ambLight, dirLight, hemiLight);
+
+// ─── POSTPROCESSING ───────────────────────────────────────────────
+const composer        = new EffectComposer(renderer);
+const renderPass      = new RenderPass(scene, camera);
+const bloomEffect     = new BloomEffect({ intensity: 1.0, radius: 0.4, luminanceThreshold: 0.3 });
+const vignetteEffect  = new VignetteEffect({ offset: 0.3, darkness: 0.5 });
+const hueSatEffect    = new HueSaturationEffect({ saturation: 0 });
+const bcEffect        = new BrightnessContrastEffect({ brightness: 0, contrast: 0 });
+const fxaaEffect      = new FXAAEffect();
+
+composer.addPass(renderPass);
+composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, hueSatEffect, bcEffect, fxaaEffect));
+
+// ─── ÉTAT SCÈNE ───────────────────────────────────────────────────
+let avatarRoot     = null;
+let mixer          = null;
+let avatarAction   = null;
+let clip           = null;
+let clock          = new THREE.Clock();
+let isTrajStatic   = false;
+const trajStart    = new THREE.Vector3();
+const trajEnd      = new THREE.Vector3();
+let originalMats   = [];   // {mesh, mat}
+let toonMats       = [];   // {mesh, mat}
+let toonOn         = false;
+let fxaaOn         = true;
+let assetsReady    = { spawn: false, camera: false, light: false, avatar: false, decor: false };
+
+// ─── CHIP HELPER ──────────────────────────────────────────────────
+function chipOK(id)  { const c = document.getElementById(id); c.textContent = 'OK';  c.parentElement.className = 'chip ok'; }
+function chipERR(id) { const c = document.getElementById(id); c.textContent = 'ERR'; c.parentElement.className = 'chip err'; }
+
+function checkAllReady() {
+  if (Object.values(assetsReady).every(Boolean)) {
+    document.getElementById('scene-ready').style.display = 'block';
+    updateFramesInfo();
+  }
+}
+
+// ─── LOAD CONFIGS ─────────────────────────────────────────────────
+async function loadSpawnConfig() {
+  try {
+    const r = await fetch('/config/spawn');
+    if (!r.ok) throw new Error(r.statusText);
+    const cfg = await r.json();
+
+    // Position avatar selon spawn
+    if (avatarRoot) applySpawnToAvatar(avatarRoot, cfg);
+
+    // Trajectoire root motion
+    const traj = cfg.trajectory;
+    if (traj && traj.mode !== 'static') {
+      trajStart.set(traj.start.x, traj.start.y, traj.start.z);
+      trajEnd.set(traj.end.x, traj.end.y, traj.end.z);
+      isTrajStatic = false;
+    } else {
+      isTrajStatic = true;
+    }
+    chipOK('chip-spawn');
+    assetsReady.spawn = true;
+  } catch (e) {
+    chipERR('chip-spawn');
+    assetsReady.spawn = true; // non bloquant
+  }
+  checkAllReady();
+}
+
+async function loadCameraConfig() {
+  try {
+    const r = await fetch('/config/camera');
+    if (!r.ok) throw new Error(r.statusText);
+    const cfg = await r.json();
+    camera.fov = cfg.fov || 55;
+    camera.near = cfg.near || 0.01;
+    camera.far  = cfg.far  || 10000;
+    if (cfg.position) camera.position.set(cfg.position.x, cfg.position.y, cfg.position.z);
+    camera.updateProjectionMatrix();
+    if (orbit) { orbit.target.set(0, 1, 0); orbit.update(); }
+    chipOK('chip-cam');
+  } catch (e) {
+    chipERR('chip-cam');
+  }
+  assetsReady.camera = true;
+  checkAllReady();
+}
+
+async function loadLightConfig() {
+  try {
+    const r = await fetch('/config/light');
+    if (!r.ok) throw new Error(r.statusText);
+    const cfg = await r.json();
+    if (cfg.ambient) {
+      ambLight.intensity = cfg.ambient.intensity;
+      ambLight.color.set(cfg.ambient.color);
+    }
+    if (cfg.directional) {
+      dirLight.intensity   = cfg.directional.intensity;
+      dirLight.color.set(cfg.directional.color);
+      dirLight.castShadow  = cfg.directional.shadows !== false;
+      if (cfg.directional.position) {
+        dirLight.position.set(cfg.directional.position.x, cfg.directional.position.y, cfg.directional.position.z);
+      }
+    }
+    if (cfg.hemisphere) {
+      hemiLight.intensity = cfg.hemisphere.intensity;
+      hemiLight.color.set(cfg.hemisphere.sky);
+      hemiLight.groundColor.set(cfg.hemisphere.ground);
+    }
+    chipOK('chip-light');
+  } catch (e) {
+    chipERR('chip-light');
+  }
+  assetsReady.light = true;
+  checkAllReady();
+}
+
+// ─── LOAD GLB ─────────────────────────────────────────────────────
+function applySpawnToAvatar(root, cfg) {
+  if (cfg.spawn) root.position.set(cfg.spawn.x, cfg.spawn.y, cfg.spawn.z);
+  if (cfg.scale) root.scale.setScalar(cfg.scale);
+  if (cfg.rot_y != null) root.rotation.y = (cfg.rot_y * Math.PI) / 180;
+}
+
+async function loadAvatar() {
+  try {
+    const res = await fetch('/files/avatar');
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = await res.arrayBuffer();
+    new GLTFLoader().parse(buf, '', (gltf) => {
+      gltf.scene.traverse(o => {
+        if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+      });
+      avatarRoot = gltf.scene;
+      scene.add(avatarRoot);
+
+      // AnimationMixer
+      if (gltf.animations && gltf.animations.length > 0) {
+        clip         = gltf.animations[0];
+        mixer        = new THREE.AnimationMixer(avatarRoot);
+        avatarAction = mixer.clipAction(clip);
+        avatarAction.play();
+        if (isRender) { avatarAction.paused = true; avatarAction.time = 0; }
+      }
+
+      // Préparer matériaux Toon
+      avatarRoot.traverse(o => {
+        if (o.isMesh) {
+          originalMats.push({ mesh: o, mat: o.material });
+          const toon = new THREE.MeshToonMaterial({
+            color: o.material.color ? o.material.color.clone() : new THREE.Color(0xffffff),
+            map:   o.material.map   || null,
+          });
+          toonMats.push({ mesh: o, mat: toon });
+        }
+      });
+
+      chipOK('chip-avatar');
+      assetsReady.avatar = true;
+      checkAllReady();
+    }, e => { throw e; });
+  } catch (e) {
+    chipERR('chip-avatar');
+    assetsReady.avatar = true;
+    checkAllReady();
+  }
+}
+
+async function loadDecor() {
+  try {
+    const res = await fetch('/files/decor');
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = await res.arrayBuffer();
+    new GLTFLoader().parse(buf, '', (gltf) => {
+      gltf.scene.traverse(o => {
+        if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+      });
+      scene.add(gltf.scene);
+      chipOK('chip-decor');
+      assetsReady.decor = true;
+      checkAllReady();
+    }, e => { throw e; });
+  } catch (e) {
+    chipERR('chip-decor');
+    assetsReady.decor = true;
+    checkAllReady();
+  }
+}
+
+// ─── POSTFX UPDATE ────────────────────────────────────────────────
+window.updateFX = () => {
+  const bi = parseFloat(document.getElementById('sl-bloom-i').value);
+  const br = parseFloat(document.getElementById('sl-bloom-r').value);
+  const bt = parseFloat(document.getElementById('sl-bloom-t').value);
+  const vo = parseFloat(document.getElementById('sl-vig-o').value);
+  const vd = parseFloat(document.getElementById('sl-vig-d').value);
+  const sa = parseFloat(document.getElementById('sl-sat').value);
+  const lm = parseFloat(document.getElementById('sl-bri').value);
+  const co = parseFloat(document.getElementById('sl-con').value);
+
+  document.getElementById('v-bloom-i').textContent = bi.toFixed(1);
+  document.getElementById('v-bloom-r').textContent = br.toFixed(2);
+  document.getElementById('v-bloom-t').textContent = bt.toFixed(2);
+  document.getElementById('v-vig-o').textContent   = vo.toFixed(2);
+  document.getElementById('v-vig-d').textContent   = vd.toFixed(2);
+  document.getElementById('v-sat').textContent     = sa.toFixed(2);
+  document.getElementById('v-bri').textContent     = lm.toFixed(2);
+  document.getElementById('v-con').textContent     = co.toFixed(2);
+
+  bloomEffect.intensity                   = bi;
+  bloomEffect.mipmapBlurPass.radius       = br;
+  bloomEffect.luminanceMaterial.threshold = bt;
+  vignetteEffect.offset                   = vo;
+  vignetteEffect.darkness                 = vd;
+  hueSatEffect.saturation                 = sa;
+  bcEffect.brightness                     = lm;
+  bcEffect.contrast                       = co;
+};
+
+// ─── TOGGLES ──────────────────────────────────────────────────────
+window.toggleFXAA = () => {
+  fxaaOn = !fxaaOn;
+  fxaaEffect.enabled = fxaaOn;
+  const btn = document.getElementById('btn-fxaa');
+  btn.textContent = fxaaOn ? 'ON' : 'OFF';
+  btn.classList.toggle('on', fxaaOn);
+};
+
+window.toggleToon = () => {
+  toonOn = !toonOn;
+  if (toonOn) {
+    toonMats.forEach(({ mesh, mat }) => { mesh.material = mat; });
+  } else {
+    originalMats.forEach(({ mesh, mat }) => { mesh.material = mat; });
+  }
+  const btn = document.getElementById('btn-toon');
+  btn.textContent = toonOn ? 'ON' : 'OFF';
+  btn.classList.toggle('on', toonOn);
+};
+
+// ─── FPS ──────────────────────────────────────────────────────────
+window.setFps = (fps) => {
+  currentFps = fps;
+  document.querySelectorAll('.fps-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`fps-${fps}`).classList.add('active');
+  updateFramesInfo();
+};
+
+function updateFramesInfo() {
+  if (clip) {
+    totalFrames = Math.ceil(clip.duration * currentFps);
+    document.getElementById('frames-info').textContent =
+      `${totalFrames} frames (${clip.duration.toFixed(2)}s × ${currentFps}fps)`;
+  }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────
+window.launchRender = async () => {
+  if (!clip) { setFeedback('Avatar non chargé — impossible de render', '#f44336'); return; }
+  totalFrames = Math.ceil(clip.duration * currentFps);
+
+  document.getElementById('btn-render').disabled = true;
+  document.getElementById('btn-cancel').style.display = 'block';
+  document.getElementById('progress-bar').style.width = '0%';
+  setFeedback(`Lancement render — ${totalFrames} frames @ ${currentFps}fps`, '#c8a96e');
+
+  try {
+    const r = await fetch('/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fps: currentFps, total_frames: totalFrames, port: 5005 }),
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    startPolling();
+  } catch (e) {
+    setFeedback(`Erreur : ${e.message}`, '#f44336');
+    document.getElementById('btn-render').disabled = false;
+    document.getElementById('btn-cancel').style.display = 'none';
+  }
+};
+
+window.cancelRender = async () => {
+  await fetch('/cancel', { method: 'POST' });
+  setFeedback('Annulation envoyée…', '#888');
+};
+
+let _poll = null;
+function startPolling() {
+  if (_poll) clearInterval(_poll);
+  _poll = setInterval(async () => {
+    try {
+      const r = await fetch('/status');
+      const d = await r.json();
+      const pct = d.pct || 0;
+      document.getElementById('progress-bar').style.width = pct + '%';
+      const eta = d.eta_s > 0 ? ` — ETA ${Math.ceil(d.eta_s / 60)} min` : '';
+      document.getElementById('progress-txt').textContent =
+        `Frame ${d.frame_current} / ${d.total_frames} (${pct}%)${eta}`;
+
+      if (d.status === 'DONE') {
+        clearInterval(_poll); _poll = null;
+        document.getElementById('progress-bar').style.width = '100%';
+        document.getElementById('progress-txt').textContent = `Terminé — ${d.total_frames} frames ✓`;
+        setFeedback(`Render terminé — ${d.total_frames} frames sauvées Drive`, '#4caf50');
+        document.getElementById('btn-render').disabled = false;
+        document.getElementById('btn-cancel').style.display = 'none';
+      } else if (d.status === 'CANCELLED') {
+        clearInterval(_poll); _poll = null;
+        setFeedback(`Render annulé à frame ${d.frame_current}`, '#888');
+        document.getElementById('btn-render').disabled = false;
+        document.getElementById('btn-cancel').style.display = 'none';
+      } else if (d.status === 'ERROR') {
+        clearInterval(_poll); _poll = null;
+        setFeedback(`Erreur render : ${d.error}`, '#f44336');
+        document.getElementById('btn-render').disabled = false;
+        document.getElementById('btn-cancel').style.display = 'none';
+      }
+    } catch (_) {}
+  }, 2000);
+}
+
+function setFeedback(msg, color) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg;
+  el.style.color = color;
+}
+
+// ─── window.setRenderFrame — APPELÉ PAR PLAYWRIGHT ───────────────
+window.setRenderFrame = function(frameN) {
+  // Root motion
+  if (!isTrajStatic && avatarRoot) {
+    const t = totalFrames > 0 ? frameN / totalFrames : 0;
+    avatarRoot.position.lerpVectors(trajStart, trajEnd, t);
+  }
+  // Animation
+  if (avatarAction && clip && mixer) {
+    avatarAction.paused = true;
+    avatarAction.time   = (frameN / currentFps) % clip.duration;
+    mixer.update(0);
+  }
+  composer.render();
+  document.getElementById('frame-done').dataset.ready = '1';
+};
+
+// ─── RENDER LOOP (preview uniquement) ────────────────────────────
+if (!isRender) {
+  (function animate() {
+    requestAnimationFrame(animate);
+    const delta = clock.getDelta();
+    if (mixer) mixer.update(delta);
+    if (orbit) orbit.update();
+    composer.render();
+  })();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────
+loadSpawnConfig();
+loadCameraConfig();
+loadLightConfig();
+loadAvatar();
+loadDecor();
+</script>
+</body>
+</html>
