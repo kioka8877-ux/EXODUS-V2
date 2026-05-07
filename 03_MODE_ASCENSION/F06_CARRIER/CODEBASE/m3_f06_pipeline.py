@@ -2,18 +2,40 @@
 M3_F06 — CARRIER : Pipeline RIFE + ffmpeg
 Fonctions : run_rife, run_ffmpeg_encode, run_audio_mux, run_overlay, cleanup
 """
-import os, subprocess, shutil, time
+import os, json, subprocess, shutil, time
 from pathlib import Path
+
+
+# ──────────────────────────────────────────────────────────────────
+# CHECKPOINT RIFE — reprise après interruption
+# ──────────────────────────────────────────────────────────────────
+def save_rife_checkpoint(checkpoint_path: Path, last_pair: int, out_idx: int):
+    checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(checkpoint_path, "w") as f:
+        json.dump({"last_pair": last_pair, "out_idx": out_idx}, f)
+
+
+def load_rife_checkpoint(checkpoint_path: Path):
+    """Retourne (last_pair, out_idx) ou (0, 0) si absent/corrompu."""
+    if not checkpoint_path or not checkpoint_path.exists():
+        return 0, 0
+    try:
+        with open(checkpoint_path) as f:
+            ck = json.load(f)
+        return int(ck.get("last_pair", 0)), int(ck.get("out_idx", 0))
+    except Exception:
+        return 0, 0
 
 
 # ──────────────────────────────────────────────────────────────────
 # ETAPE 1 — RIFE : interpolation 24fps → 60fps (ou 120fps)
 # ──────────────────────────────────────────────────────────────────
 def run_rife(in_dir: Path, out_dir: Path, fps_target: int, fps_source: int,
-             progress_cb=None, cancel_flag=None):
+             progress_cb=None, cancel_flag=None, checkpoint_path=None):
     """
     Interpole les frames de in_dir vers out_dir avec RIFE.
-    fps_target : 60 (x2.5) ou 120 (x5)
+    fps_target  : 60 (x2.5) ou 120 (x5)
+    checkpoint_path : Path vers le JSON de reprise (None = pas de checkpoint)
     """
     try:
         from model.RIFE_HDv3 import Model
@@ -31,7 +53,22 @@ def run_rife(in_dir: Path, out_dir: Path, fps_target: int, fps_source: int,
     if not frames:
         raise FileNotFoundError(f"Aucune frame dans {in_dir}")
 
-    # Charger le modèle
+    n = len(frames)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Reprise depuis checkpoint ─────────────────────────────────
+    start_pair, out_idx = load_rife_checkpoint(checkpoint_path)
+    if start_pair > 0:
+        if progress_cb:
+            progress_cb(start_pair / max(n - 1, 1) * 100,
+                        f"Reprise depuis paire {start_pair}/{n-1} (frame out {out_idx})")
+    else:
+        # Nouveau départ — vider le dossier de sortie
+        if out_dir.exists():
+            shutil.rmtree(str(out_dir), ignore_errors=True)
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Charger le modèle ─────────────────────────────────────────
     if progress_cb: progress_cb(0, "Chargement modèle RIFE...")
     model = Model()
     model_path = _get_rife_model_path()
@@ -40,19 +77,14 @@ def run_rife(in_dir: Path, out_dir: Path, fps_target: int, fps_source: int,
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.flownet.to(device)
 
-    # Ratio d'interpolation
-    # 24→60 : on insère 1.5 frames entre chaque paire (on fait x2 puis on garde 60/48)
-    # Méthode simple : multiplier par ratio en plusieurs passes
-    n = len(frames)
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_idx = 0
     start = time.time()
 
-    for i in range(n - 1):
-        if cancel_flag and cancel_flag.is_set(): return
+    for i in range(start_pair, n - 1):
+        if cancel_flag and cancel_flag.is_set():
+            return
 
-        img0 = _load_frame(frames[i],   device)
-        img1 = _load_frame(frames[i+1], device)
+        img0 = _load_frame(frames[i],     device)
+        img1 = _load_frame(frames[i + 1], device)
 
         # Écrire frame de départ
         _save_frame(img0, out_dir / f"frame_{out_idx:06d}.png")
@@ -67,16 +99,24 @@ def run_rife(in_dir: Path, out_dir: Path, fps_target: int, fps_source: int,
             _save_frame(mid, out_dir / f"frame_{out_idx:06d}.png")
             out_idx += 1
 
+        # Checkpoint après chaque paire
+        if checkpoint_path:
+            save_rife_checkpoint(checkpoint_path, i + 1, out_idx)
+
         # Progression
         pct = (i + 1) / (n - 1) * 100
         elapsed = time.time() - start
-        eta = int(elapsed / max(i + 1, 1) * (n - 1 - i)) if i > 0 else None
+        eta = int(elapsed / max(i - start_pair + 1, 1) * (n - 1 - i)) if i > start_pair else None
         msg = f"Frame {i+1}/{n-1}" + (f" — ETA {_fmt_eta(eta)}" if eta else "")
         if progress_cb: progress_cb(pct, msg)
 
     # Écrire la dernière frame
     img_last = _load_frame(frames[-1], device)
     _save_frame(img_last, out_dir / f"frame_{out_idx:06d}.png")
+
+    # Checkpoint final — effacer pour indiquer terminé
+    if checkpoint_path and checkpoint_path.exists():
+        checkpoint_path.unlink(missing_ok=True)
 
 
 def _n_intermediates(src_fps, tgt_fps, frame_idx, total):
@@ -87,15 +127,10 @@ def _n_intermediates(src_fps, tgt_fps, frame_idx, total):
     24→120 : ratio = 5, donc 4 intermédiaires systématiques
     """
     ratio = tgt_fps / src_fps
-    # Utiliser la méthode par accumulation pour distribuer uniformément
-    target_total = int(total * ratio)
-    # Approximation : arrondi alterné
-    base = int(ratio) - 1
+    base  = int(ratio) - 1
     extra = ratio - int(ratio)
-    # Simple : si ratio est entier, base fixe; sinon distribuer les extras
     if extra == 0:
         return base
-    # Distribution Bresenham-like
     threshold = frame_idx * extra
     prev      = (frame_idx - 1) * extra if frame_idx > 0 else 0
     return base + (1 if int(threshold) > int(prev) else 0)
@@ -107,12 +142,11 @@ def _load_frame(path, device):
     from PIL import Image
     img = Image.open(str(path)).convert("RGB")
     arr = np.array(img).astype(np.float32) / 255.0
-    t = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).to(device)
+    t   = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).to(device)
     return t
 
 
 def _save_frame(tensor, path):
-    import torch
     import numpy as np
     from PIL import Image
     arr = tensor.squeeze(0).permute(1, 2, 0).cpu().numpy()
@@ -121,28 +155,23 @@ def _save_frame(tensor, path):
 
 
 def _get_rife_model_path():
-    """Cherche le modèle RIFE sur Drive ou le télécharge."""
     candidates = [
         Path("/content/drive/MyDrive/EXODUS_V3/MODELS/RIFE/train_log"),
         Path("/content/ECCV2022-RIFE/train_log"),
     ]
     for p in candidates:
         if p.exists(): return p.parent
-    # Télécharger
     _install_rife()
     return Path("/content/ECCV2022-RIFE")
 
 
 def _install_rife():
-    """Clone ECCV2022-RIFE si absent."""
-    import subprocess
+    import sys
     rife_dir = Path("/content/ECCV2022-RIFE")
     if not rife_dir.exists():
         subprocess.run(
             ["git", "clone", "https://github.com/hzwer/ECCV2022-RIFE.git",
              str(rife_dir)], check=True)
-    # Ajouter au path
-    import sys
     if str(rife_dir) not in sys.path:
         sys.path.insert(0, str(rife_dir))
 
@@ -244,9 +273,8 @@ def _run_cmd(cmd, label, progress_cb, cancel_flag):
     for line in proc.stdout:
         if cancel_flag and cancel_flag.is_set():
             proc.kill(); return
-        # ffmpeg affiche time= dans stderr — on simule une progression linéaire
         elapsed = time.time() - start
-        pct = min(90, elapsed * 3)  # progression approximative
+        pct = min(90, elapsed * 3)
         if progress_cb: progress_cb(pct, f"{label}...")
     proc.wait()
     if proc.returncode != 0 and not (cancel_flag and cancel_flag.is_set()):
