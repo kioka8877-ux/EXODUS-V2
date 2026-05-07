@@ -13,7 +13,8 @@ IN_FRAMES    = DRIVE_ROOT / "F05_ALCHEMIST" / "OUT_FRAMES"
 AUDIO_PATH   = DRIVE_ROOT / "SHARED" / "audio.mp3"
 F01_REPORT   = DRIVE_ROOT / "F01_VALIDATION" / "OUT_REPORT" / "m3_f01_report.json"
 OUT_DIR      = DRIVE_ROOT / "F06_CARRIER" / "OUT"
-RIFE_OUT     = DRIVE_ROOT / "F06_CARRIER" / "RIFE_FRAMES"
+RIFE_OUT          = DRIVE_ROOT / "F06_CARRIER" / "RIFE_FRAMES"
+RIFE_CHECKPOINT   = DRIVE_ROOT / "F06_CARRIER" / "OUT" / "rife_checkpoint.json"
 HTML_PATH    = Path(__file__).parent / "m3_f06_monitor.html"
 SOURCE_FPS   = 24  # frames capturées par F05
 
@@ -133,7 +134,8 @@ def _run_pipeline(config):
         else:
             run_rife(IN_FRAMES, RIFE_OUT, fps_target, SOURCE_FPS,
                      progress_cb=lambda p, msg: _update(1, p, msg, int(p/100*len(frames))),
-                     cancel_flag=cancel_flag)
+                     cancel_flag=cancel_flag,
+                     checkpoint_path=RIFE_CHECKPOINT)
         _update(1, 100, "RIFE terminé")
 
         # ── ETAPE 2 : ffmpeg encode ───────────────────────────────
