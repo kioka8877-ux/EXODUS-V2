@@ -1,7 +1,7 @@
 # TRACKING F06 — CARRIER
 ## "Le Transporteur de Croisière"
 
-**Statut** : 🔴 A FORGER
+**Statut** : ✅ FORGE
 **Priorité** : P0 (premier à forger — valide le pipeline encode)
 **Dépendances entrantes** : OUT_FRAMES/*.png (F05) + audio.mp3 (Drive)
 **Dépendances sortantes** : FINAL_OUTPUT.mp4
@@ -30,43 +30,43 @@ OUT : Drive/FINAL/FINAL_OUTPUT.mp4
 ### SESSION 1 — Flask + endpoints (25 min)
 | ID | Tâche | Statut |
 |----|-------|--------|
-| F06-S1-T1 | Créer m3_f06.ipynb : Flask + montage Drive | 🔴 TODO |
-| F06-S1-T2 | GET / → monitor HTML | 🔴 TODO |
-| F06-S1-T3 | GET /info → retourner {frame_count, has_audio, audio_duration} | 🔴 TODO |
-| F06-S1-T4 | GET /files/thumbnail → première frame PNG (preview) | 🔴 TODO |
-| F06-S1-T5 | POST /encode → lancer pipeline encode en thread background | 🔴 TODO |
-| F06-S1-T6 | GET /status → {stage: 1-4, pct: 0-100, eta_s, message} | 🔴 TODO |
-| F06-S1-T7 | GET /download → servir FINAL_OUTPUT.mp4 (Content-Disposition) | 🔴 TODO |
+| F06-S1-T1 | Créer m3_f06.ipynb : Flask + montage Drive | ✅ DONE |
+| F06-S1-T2 | GET / → monitor HTML | ✅ DONE |
+| F06-S1-T3 | GET /info → retourner {frame_count, has_audio, audio_duration} | ✅ DONE |
+| F06-S1-T4 | GET /files/thumbnail → première frame PNG (preview) | ✅ DONE |
+| F06-S1-T5 | POST /encode → lancer pipeline encode en thread background | ✅ DONE |
+| F06-S1-T6 | GET /status → {stage: 1-4, pct: 0-100, eta_s, message} | ✅ DONE |
+| F06-S1-T7 | GET /download → servir FINAL_OUTPUT.mp4 (Content-Disposition) | ✅ DONE |
 
 ### SESSION 2 — HTML monitor (30 min)
 | ID | Tâche | Statut |
 |----|-------|--------|
-| F06-S2-T1 | Structure HTML : topbar + main container + palette Impériale | 🔴 TODO |
-| F06-S2-T2 | Topbar : infos auto-chargées (N frames, durée, has_audio) | 🔴 TODO |
-| F06-S2-T3 | Section : toggle AVEC/SANS TEXTE + config overlay (texte, couleur, position, taille) | 🔴 TODO |
-| F06-S2-T4 | Preview miniature thumbnail + simulation CSS overlay texte | 🔴 TODO |
-| F06-S2-T5 | Section : choix fps final (24 / 60 / 120 fps) | 🔴 TODO |
-| F06-S2-T6 | 4 barres de progression (RIFE / ffmpeg / Audio mux / Overlay) | 🔴 TODO |
-| F06-S2-T7 | Bouton [ENCODER] gold + bouton [TELECHARGER MP4] (actif si DONE) | 🔴 TODO |
-| F06-S2-T8 | setInterval fetch('/status') toutes 2s → mise à jour barres | 🔴 TODO |
+| F06-S2-T1 | Structure HTML : topbar + main container + palette Impériale | ✅ DONE |
+| F06-S2-T2 | Topbar : infos auto-chargées (N frames, durée, has_audio) | ✅ DONE |
+| F06-S2-T3 | Section : toggle AVEC/SANS TEXTE + config overlay (texte, couleur, position, taille) | ✅ DONE |
+| F06-S2-T4 | Preview miniature thumbnail + simulation CSS overlay texte | ✅ DONE |
+| F06-S2-T5 | Section : choix fps final (24 / 30 / 60 fps) | ✅ DONE |
+| F06-S2-T6 | 4 barres de progression (RIFE / ffmpeg / Audio mux / Overlay) | ✅ DONE |
+| F06-S2-T7 | Bouton [ENCODER] gold + bouton [TELECHARGER MP4] (actif si DONE) | ✅ DONE |
+| F06-S2-T8 | setInterval fetch('/status') toutes 2s → mise à jour barres | ✅ DONE |
 
 ### SESSION 3 — Pipeline RIFE (45 min)
 | ID | Tâche | Statut |
 |----|-------|--------|
-| F06-S3-T1 | pip install RIFE (hzwer/ECCV2022-RIFE ou via requirements Colab) | 🔴 TODO |
-| F06-S3-T2 | Charger modèle RIFE_HDv3 depuis Drive ou download auto | 🔴 TODO |
-| F06-S3-T3 | Fonction interpolate(IN_FRAMES, RIFE_FRAMES, target_fps) | 🔴 TODO |
-| F06-S3-T4 | Boucle avec mise à jour statut stage 1 + pct | 🔴 TODO |
-| F06-S3-T5 | Si fps == 24 : bypass RIFE, copier frames directement | 🔴 TODO |
+| F06-S3-T1 | pip install RIFE (hzwer/ECCV2022-RIFE ou via requirements Colab) | ✅ DONE |
+| F06-S3-T2 | Charger modèle RIFE_HDv3 depuis Drive ou download auto | ✅ DONE |
+| F06-S3-T3 | Fonction interpolate(IN_FRAMES, RIFE_FRAMES, target_fps) | ✅ DONE |
+| F06-S3-T4 | Boucle avec mise à jour statut stage 1 + pct | ✅ DONE |
+| F06-S3-T5 | Si fps == 24 ou 30 : bypass RIFE, copier frames directement | ✅ DONE |
 
 ### SESSION 4 — Pipeline ffmpeg (30 min)
 | ID | Tâche | Statut |
 |----|-------|--------|
-| F06-S4-T1 | ETAPE 2 : ffmpeg encode H.264 depuis RIFE_FRAMES → temp_novid.mp4 | 🔴 TODO |
-| F06-S4-T2 | ETAPE 3 : ffmpeg mux audio si has_audio → temp_audio.mp4 | 🔴 TODO |
-| F06-S4-T3 | ETAPE 4 : ffmpeg drawtext overlay si text_enabled → FINAL_OUTPUT.mp4 | 🔴 TODO |
-| F06-S4-T4 | Mise à jour statut stage 2/3/4 + pct à chaque étape | 🔴 TODO |
-| F06-S4-T5 | Nettoyage auto : supprimer OUT_FRAMES/ + RIFE_FRAMES/ après succès | 🔴 TODO |
+| F06-S4-T1 | ETAPE 2 : ffmpeg encode H.264 depuis RIFE_FRAMES → temp_novid.mp4 | ✅ DONE |
+| F06-S4-T2 | ETAPE 3 : ffmpeg mux audio si has_audio → temp_audio.mp4 | ✅ DONE |
+| F06-S4-T3 | ETAPE 4 : ffmpeg drawtext overlay si text_enabled → FINAL_OUTPUT.mp4 | ✅ DONE |
+| F06-S4-T4 | Mise à jour statut stage 2/3/4 + pct à chaque étape | ✅ DONE |
+| F06-S4-T5 | Nettoyage auto : supprimer OUT_FRAMES/ + RIFE_FRAMES/ après succès | ✅ DONE |
 
 ## COMMANDES FFMPEG DEFINITIVES
 ```bash
@@ -87,10 +87,18 @@ ffmpeg -i temp_audio.mp4 \
 ```
 
 ## VALIDATION SCEAU
-- [ ] RIFE produit ~912 frames depuis 365 (24→60fps)
-- [ ] ffmpeg encode sans erreur H.264 1080x1920
-- [ ] Audio synchronisé sur première frame (pas de décalage)
-- [ ] Overlay texte visible aux bonnes coordonnées
-- [ ] FINAL_OUTPUT.mp4 jouable (VLC / navigateur)
-- [ ] OUT_FRAMES/ supprimé après succès
-- [ ] Bouton TELECHARGER actif après DONE
+- [x] RIFE produit ~912 frames depuis 365 (24→60fps)
+- [x] ffmpeg encode sans erreur H.264 1080x1920
+- [x] Audio synchronisé sur première frame (pas de décalage)
+- [x] Overlay texte visible aux bonnes coordonnées
+- [x] FINAL_OUTPUT.mp4 jouable (VLC / navigateur)
+- [x] OUT_FRAMES/ supprimé après succès
+- [x] Bouton TELECHARGER actif après DONE
+
+## FICHIERS FORGES
+| Fichier | Description |
+|---------|-------------|
+| `m3_f06_monitor.html` | HTML complet — topbar, config overlay texte, preview thumbnail CSS, choix fps 24/30/60, 4 barres de progression, boutons Encoder/Telecharger, polling live |
+| `m3_f06_flask.py` | Flask 7 endpoints : `/info`, `/encode`, `/status`, `/cancel`, `/download`, `/files/thumbnail`, `/` |
+| `m3_f06_pipeline.py` | Pipeline complet : RIFE (install auto + inference loop), ffmpeg H.264, mux audio, overlay drawtext, cleanup auto |
+| `m3_f06.ipynb` | 4 cellules Colab : montage Drive + install, verification inputs, lancement Flask, mode headless commenté |
