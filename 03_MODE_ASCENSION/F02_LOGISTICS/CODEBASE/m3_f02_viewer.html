@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3_F02 — Logistics v1.0</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d0f; color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+#topbar {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+  padding: 7px 12px; background: #141416; border-bottom: 1px solid #2a2a2e;
+}
+.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e; text-transform: uppercase; }
+.ver  { font-size: 10px; color: #333; }
+.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border-radius: 4px; background: #1e1e22;
+  border: 1px solid #2a2a2e; font-size: 11px; color: #666;
+}
+.chip .k { color: #c8a96e; font-weight: 600; }
+.chip.ok { border-color: #2a5c2a; color: #4caf50; }
+.tb-btn {
+  padding: 5px 12px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
+  font-weight: 600; transition: all .18s;
+}
+.tb-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+.tb-btn:disabled { opacity: .35; cursor: not-allowed; }
+#main { display: flex; flex: 1; overflow: hidden; }
+canvas#viewport { flex: 1; display: block; background: #111113; }
+#panel {
+  width: 265px; background: #141416; border-left: 1px solid #2a2a2e;
+  display: flex; flex-direction: column; padding: 12px; gap: 12px;
+  overflow-y: auto; flex-shrink: 0;
+}
+.sec { display: flex; flex-direction: column; gap: 6px; }
+.sec-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
+  color: #444; padding-bottom: 4px; border-bottom: 1px solid #1e1e22;
+}
+/* SKIP button — très visible */
+.btn-skip {
+  padding: 10px; border-radius: 7px; border: 1px solid #c8a96e;
+  background: #1a1608; color: #c8a96e; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; transition: all .18s; width: 100%;
+}
+.btn-skip:hover { background: #c8a96e; color: #0d0d0f; }
+/* Bone tree */
+.bone-tree { display: flex; flex-direction: column; gap: 2px; max-height: 200px; overflow-y: auto; }
+.bone-item {
+  padding: 4px 8px; border-radius: 4px; border: 1px solid transparent;
+  font-size: 11px; cursor: pointer; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; transition: all .15s; color: #888;
+}
+.bone-item:hover { color: #c8a96e; background: #1a1608; }
+.bone-item.selected { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+/* Props list */
+.prop-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 8px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px;
+}
+.prop-row .prop-name { color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 120px; }
+.prop-row .prop-bone { font-size: 10px; color: #555; }
+.prop-row .prop-del  { cursor: pointer; color: #555; font-size: 12px; padding: 2px 5px; }
+.prop-row .prop-del:hover { color: #f44336; }
+/* Bone target select */
+select.bone-select {
+  width: 100%; padding: 6px 8px; border-radius: 5px;
+  border: 1px solid #2a2a2e; background: #1c1c20;
+  color: #aaa; font-size: 11px; cursor: pointer; outline: none;
+}
+select.bone-select:focus { border-color: #c8a96e; }
+/* Status row */
+.status-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px; border-radius: 5px; background: #1c1c20;
+  border: 1px solid #2a2a2e; font-size: 11px;
+}
+.badge { padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.badge.wait { background: #222; color: #555; }
+.badge.ok   { background: #1a3a1a; color: #4caf50; border: 1px solid #2a5c2a; }
+.badge.load { background: #1a2a3a; color: #64b5f6; border: 1px solid #2a4a6a; }
+/* Confirm button */
+.btn-confirm {
+  padding: 10px; border-radius: 7px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; transition: all .2s; width: 100%;
+  background: #c8a96e; color: #0d0d0f;
+}
+.btn-confirm:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #2a2a2e; }
+.btn-confirm:not(:disabled):hover { background: #e0c080; }
+.feedback { font-size: 11px; color: #4caf50; text-align: center; min-height: 14px; }
+/* Selected bone info */
+.bone-info { font-size: 10px; color: #555; padding: 4px 0; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">M3 — F02</span>
+  <span class="ver">Logistics v1.0</span>
+  <div class="divider"></div>
+  <div class="chip"><span class="k">Avatar</span><span id="chip-avatar">—</span></div>
+  <div class="chip"><span class="k">Props</span><span id="chip-props">0</span></div>
+  <div class="divider"></div>
+  <button class="tb-btn" id="btn-load-avatar" onclick="loadAvatar()">CHARGER AVATAR DRIVE</button>
+  <button class="tb-btn" id="btn-load-prop" onclick="loadPropFromDrive()" disabled>CHARGER PROP +</button>
+</div>
+
+<div id="main">
+  <canvas id="viewport"></canvas>
+
+  <div id="panel">
+    <!-- SKIP -->
+    <div class="sec">
+      <button class="btn-skip" onclick="doSkip()">SKIP — SANS PROPS</button>
+    </div>
+
+    <!-- Statut Avatar -->
+    <div class="sec">
+      <div class="sec-title">Avatar</div>
+      <div class="status-row">
+        <span>avatar.glb</span>
+        <span class="badge wait" id="badge-avatar">ATTENTE</span>
+      </div>
+      <div class="bone-info" id="bone-info">—</div>
+    </div>
+
+    <!-- Bones -->
+    <div class="sec" id="sec-bones" style="display:none">
+      <div class="sec-title">Bones — cible pour prop</div>
+      <select class="bone-select" id="bone-select">
+        <option value="">Sélectionner un bone...</option>
+      </select>
+      <div class="bone-tree" id="bone-tree"></div>
+    </div>
+
+    <!-- Props chargés -->
+    <div class="sec" id="sec-props" style="display:none">
+      <div class="sec-title">Props attachés</div>
+      <div id="props-list"></div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <!-- Confirmer -->
+    <div class="sec">
+      <button class="btn-confirm" id="btn-confirm" disabled onclick="exportAndSave()">
+        CONFIRMER + EXPORT GLB
+      </button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { GLTFLoader }        from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFExporter }      from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
+import { OrbitControls }     from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/TransformControls.js';
+
+// ─── SCENE SETUP ──────────────────────────────────────────────────
+const canvas   = document.getElementById('viewport');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x111113);
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
+camera.position.set(0, 1.5, 3);
+
+const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(2, 4, 3);
+dirLight.castShadow = true;
+scene.add(ambient, dirLight);
+
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.target.set(0, 1, 0);
+orbit.update();
+
+const transformCtrl = new TransformControls(camera, renderer.domElement);
+transformCtrl.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
+scene.add(transformCtrl);
+
+// ─── STATE ────────────────────────────────────────────────────────
+const S = {
+  avatarGltf:   null,
+  mixer:        null,
+  skeleton:     null,
+  bones:        [],
+  selectedBone: null,
+  props:        [],   // [{name, mesh, bone, object3d}]
+  attachedPropMesh: null,
+};
+
+// ─── RESIZE ───────────────────────────────────────────────────────
+function resize() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(canvas);
+resize();
+
+// ─── RENDER LOOP ──────────────────────────────────────────────────
+const clock = new THREE.Clock();
+(function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  if (S.mixer) S.mixer.update(dt);
+  orbit.update();
+  renderer.render(scene, camera);
+})();
+
+// ─── LOAD AVATAR ──────────────────────────────────────────────────
+window.loadAvatar = async () => {
+  setBadge('badge-avatar', 'load', 'CHARGEMENT');
+  document.getElementById('chip-avatar').textContent = '…';
+  try {
+    const res = await fetch('/files/avatar');
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = await res.arrayBuffer();
+    const loader = new GLTFLoader();
+    loader.parse(buf, '', (gltf) => {
+      if (S.avatarGltf) scene.remove(S.avatarGltf.scene);
+      S.avatarGltf = gltf;
+      scene.add(gltf.scene);
+
+      // Center + fit
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      const center = box.getCenter(new THREE.Vector3());
+      gltf.scene.position.sub(center);
+      const size = box.getSize(new THREE.Vector3()).length();
+      camera.position.set(0, size * 0.5, size * 1.5);
+      orbit.target.set(0, 0, 0);
+      orbit.update();
+
+      // Skeleton
+      const skeletonMesh = gltf.scene.getObjectByProperty('isSkinnedMesh', true);
+      if (skeletonMesh) {
+        const helper = new THREE.SkeletonHelper(gltf.scene);
+        scene.add(helper);
+        S.skeleton = skeletonMesh.skeleton;
+        S.bones = S.skeleton.bones;
+        buildBoneUI();
+      }
+
+      // Animation
+      if (gltf.animations.length > 0) {
+        S.mixer = new THREE.AnimationMixer(gltf.scene);
+        const action = S.mixer.clipAction(gltf.animations[0]);
+        action.play();
+      }
+
+      setBadge('badge-avatar', 'ok', `OK — ${S.bones.length} bones`);
+      document.getElementById('chip-avatar').textContent = `${S.bones.length}b`;
+      document.getElementById('chip-avatar').parentElement.className = 'chip ok';
+      document.getElementById('bone-info').textContent = `${gltf.animations.length} animation(s) — ${S.bones.length} bones`;
+      document.getElementById('btn-load-prop').disabled = false;
+      document.getElementById('btn-confirm').disabled = false;
+      document.getElementById('sec-bones').style.display = '';
+    }, (err) => { throw err; });
+  } catch(e) {
+    setBadge('badge-avatar', 'err', 'ERREUR');
+    document.getElementById('feedback').textContent = `Erreur avatar : ${e.message}`;
+    document.getElementById('feedback').style.color = '#f44336';
+  }
+};
+
+// ─── BONE UI ──────────────────────────────────────────────────────
+function buildBoneUI() {
+  const sel  = document.getElementById('bone-select');
+  const tree = document.getElementById('bone-tree');
+  sel.innerHTML = '<option value="">Sélectionner un bone...</option>';
+  tree.innerHTML = '';
+  S.bones.forEach((bone, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = bone.name;
+    sel.appendChild(opt);
+    const el = document.createElement('div');
+    el.className = 'bone-item';
+    el.textContent = bone.name;
+    el.dataset.idx = i;
+    el.onclick = () => selectBone(i);
+    el.id = `bone-${i}`;
+    tree.appendChild(el);
+  });
+}
+
+function selectBone(i) {
+  S.selectedBone = S.bones[i];
+  document.querySelectorAll('.bone-item').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById(`bone-${i}`);
+  if (el) el.classList.add('selected');
+  document.getElementById('bone-select').value = i;
+  document.getElementById('bone-info').textContent = `Bone sélectionné : ${S.selectedBone.name}`;
+}
+
+// ─── LOAD PROP FROM DRIVE ─────────────────────────────────────────
+window.loadPropFromDrive = async () => {
+  const boneIdx = parseInt(document.getElementById('bone-select').value);
+  if (isNaN(boneIdx) || !S.bones[boneIdx]) {
+    document.getElementById('feedback').textContent = 'Sélectionner un bone cible d\'abord';
+    document.getElementById('feedback').style.color = '#f44336';
+    return;
+  }
+  // Fetch prop list
+  const r = await fetch('/files/props');
+  const props = await r.json();
+  if (props.length === 0) {
+    document.getElementById('feedback').textContent = 'Aucun prop GLB dans SHARED/props/';
+    document.getElementById('feedback').style.color = '#888';
+    return;
+  }
+  // Use first available prop not yet loaded
+  const loaded = new Set(S.props.map(p => p.name));
+  const avail  = props.find(p => !loaded.has(p.name));
+  if (!avail) {
+    document.getElementById('feedback').textContent = 'Tous les props sont déjà chargés';
+    document.getElementById('feedback').style.color = '#888';
+    return;
+  }
+  await attachProp(avail.name, boneIdx);
+};
+
+async function attachProp(propName, boneIdx) {
+  const bone = S.bones[boneIdx];
+  document.getElementById('feedback').textContent = `Chargement ${propName}…`;
+  document.getElementById('feedback').style.color = '#c8a96e';
+  try {
+    const res = await fetch(`/files/prop/${encodeURIComponent(propName)}`);
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = await res.arrayBuffer();
+    const loader = new GLTFLoader();
+    loader.parse(buf, '', (gltf) => {
+      const propObj = gltf.scene;
+      bone.add(propObj);
+      propObj.position.set(0, 0, 0);
+      // TransformControls sur ce prop
+      transformCtrl.attach(propObj);
+      S.props.push({ name: propName, bone: bone.name, object3d: propObj });
+      updatePropsUI();
+      document.getElementById('chip-props').textContent = S.props.length;
+      document.getElementById('sec-props').style.display = '';
+      document.getElementById('feedback').textContent = `${propName} attaché à ${bone.name}`;
+      document.getElementById('feedback').style.color = '#4caf50';
+    }, (err) => { throw err; });
+  } catch(e) {
+    document.getElementById('feedback').textContent = `Erreur prop : ${e.message}`;
+    document.getElementById('feedback').style.color = '#f44336';
+  }
+}
+
+function updatePropsUI() {
+  const list = document.getElementById('props-list');
+  list.innerHTML = '';
+  S.props.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'prop-row';
+    row.innerHTML = `
+      <span class="prop-name" title="${p.name}">${p.name}</span>
+      <span class="prop-bone">${p.bone}</span>
+      <span class="prop-del" title="Retirer" onclick="removeProp(${i})">✕</span>
+    `;
+    list.appendChild(row);
+  });
+}
+
+window.removeProp = (i) => {
+  const p = S.props[i];
+  if (p.object3d.parent) p.object3d.parent.remove(p.object3d);
+  if (transformCtrl.object === p.object3d) transformCtrl.detach();
+  S.props.splice(i, 1);
+  updatePropsUI();
+  document.getElementById('chip-props').textContent = S.props.length;
+  if (S.props.length === 0) document.getElementById('sec-props').style.display = 'none';
+};
+
+// ─── SKIP ─────────────────────────────────────────────────────────
+window.doSkip = async () => {
+  const fb = document.getElementById('feedback');
+  fb.textContent = 'Sauvegarde rapport SKIPPED…';
+  fb.style.color = '#c8a96e';
+  try {
+    const r = await fetch('/save-report', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ status: 'SKIPPED', has_props: false })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      fb.textContent = 'SKIPPED sauvé sur Drive ✓';
+      fb.style.color = '#4caf50';
+    } else throw new Error(d.error);
+  } catch(e) {
+    fb.textContent = `Erreur : ${e.message}`;
+    fb.style.color = '#f44336';
+  }
+};
+
+// ─── EXPORT GLB ───────────────────────────────────────────────────
+window.exportAndSave = async () => {
+  if (!S.avatarGltf) return;
+  const btn = document.getElementById('btn-confirm');
+  const fb  = document.getElementById('feedback');
+  btn.disabled = true;
+  fb.textContent = 'Export GLB en cours…';
+  fb.style.color = '#c8a96e';
+  try {
+    const exporter = new GLTFExporter();
+    exporter.parse(S.avatarGltf.scene, async (glb) => {
+      const blob = new Blob([glb], { type: 'model/gltf-binary' });
+      const buf  = await blob.arrayBuffer();
+      const r = await fetch('/save-actor', {
+        method: 'POST',
+        headers: {'Content-Type': 'model/gltf-binary'},
+        body: buf
+      });
+      const d = await r.json();
+      if (d.ok) {
+        fb.textContent = `GLB sauvé sur Drive ✓ (${(d.size/1024).toFixed(0)} KB)`;
+        fb.style.color = '#4caf50';
+      } else throw new Error(d.error);
+      btn.disabled = false;
+    }, (err) => { throw err; }, { binary: true });
+  } catch(e) {
+    fb.textContent = `Erreur export : ${e.message}`;
+    fb.style.color = '#f44336';
+    btn.disabled = false;
+  }
+};
+
+function setBadge(id, cls, txt) {
+  const el = document.getElementById(id);
+  el.className = `badge ${cls}`;
+  el.textContent = txt;
+}
+
+// Auto-load info on start
+fetch('/info').then(r => r.json()).then(d => {
+  if (d.props && d.props.length > 0) {
+    document.getElementById('chip-props').textContent = `${d.props.length} dispo`;
+  }
+});
+</script>
+</body>
+</html>
