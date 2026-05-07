@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3_F03 — Scenography v1.0</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d0f; color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+#topbar {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+  padding: 7px 12px; background: #141416; border-bottom: 1px solid #2a2a2e;
+}
+.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e; text-transform: uppercase; }
+.ver  { font-size: 10px; color: #333; }
+.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; }
+.chip {
+  padding: 3px 8px; border-radius: 4px; background: #1e1e22;
+  border: 1px solid #2a2a2e; font-size: 11px; color: #666;
+}
+.chip .k { color: #c8a96e; font-weight: 600; }
+.chip.ok { border-color: #2a5c2a; color: #4caf50; }
+.tb-btn {
+  padding: 5px 12px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
+  font-weight: 600; transition: all .18s;
+}
+.tb-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+.hint { font-size: 10px; color: #333; }
+#main { display: flex; flex: 1; overflow: hidden; }
+canvas#viewport { flex: 1; display: block; }
+/* PANEL */
+#panel {
+  width: 270px; background: #141416; border-left: 1px solid #2a2a2e;
+  display: flex; flex-direction: column; padding: 12px; gap: 12px;
+  overflow-y: auto; flex-shrink: 0;
+}
+.sec { display: flex; flex-direction: column; gap: 6px; }
+.sec-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
+  color: #444; padding-bottom: 4px; border-bottom: 1px solid #1e1e22;
+}
+.row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.row label { color: #666; min-width: 56px; }
+input[type=range] { flex: 1; accent-color: #c8a96e; }
+input[type=number] {
+  width: 60px; padding: 4px 6px; border-radius: 4px;
+  border: 1px solid #2a2a2e; background: #1c1c20;
+  color: #aaa; font-size: 11px; outline: none;
+}
+input[type=number]:focus { border-color: #c8a96e; }
+/* Beacons */
+.beacon-list { display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto; }
+.beacon-item {
+  padding: 4px 8px; border-radius: 4px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; cursor: pointer;
+  display: flex; justify-content: space-between; transition: all .15s;
+}
+.beacon-item:hover { border-color: #c8a96e; }
+.beacon-item.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+.beacon-item .coords { font-size: 9px; color: #555; }
+.beacon-item.active .coords { color: #8a7040; }
+.beacon-del { color: #555; cursor: pointer; font-size: 11px; }
+.beacon-del:hover { color: #f44336; }
+/* Trajectory toggle */
+.toggle-row { display: flex; gap: 6px; }
+.tog-btn {
+  flex: 1; padding: 7px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #777; cursor: pointer;
+  font-weight: 600; transition: all .18s; text-align: center;
+}
+.tog-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+/* Traj info */
+.coord-box {
+  padding: 6px 8px; border-radius: 4px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 10px; color: #666; font-family: monospace;
+}
+.coord-box .lbl { color: #c8a96e; font-weight: 600; margin-right: 4px; }
+.coord-box.end-box { border-color: #5c2a2a; }
+.coord-box.end-placed { border-color: #5c6a2a; color: #aaa; }
+/* Buttons */
+.btn-action {
+  padding: 8px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
+  font-weight: 600; transition: all .18s; width: 100%; text-align: center;
+}
+.btn-action:hover { border-color: #c8a96e; color: #c8a96e; }
+.btn-action.active { border-color: #f44336; background: #1e0e0e; color: #f44336; }
+.btn-confirm {
+  padding: 10px; border-radius: 7px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; transition: all .2s; width: 100%;
+  background: #c8a96e; color: #0d0d0f;
+}
+.btn-confirm:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #2a2a2e; }
+.btn-confirm:not(:disabled):hover { background: #e0c080; }
+.feedback { font-size: 11px; color: #4caf50; text-align: center; min-height: 14px; }
+.badge { padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.badge.wait { background: #222; color: #555; }
+.badge.ok   { background: #1a3a1a; color: #4caf50; border: 1px solid #2a5c2a; }
+.badge.load { background: #1a2a3a; color: #64b5f6; border: 1px solid #2a4a6a; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">M3 — F03</span>
+  <span class="ver">Scenography v1.0</span>
+  <div class="divider"></div>
+  <div class="chip"><span class="k">Décor</span><span id="chip-decor">—</span></div>
+  <div class="chip"><span class="k">Avatar</span><span id="chip-avatar">—</span></div>
+  <div class="divider"></div>
+  <button class="tb-btn" onclick="loadDecor()">DRIVE : Décor</button>
+  <button class="tb-btn" onclick="loadAvatar()">DRIVE : Avatar</button>
+  <div class="divider"></div>
+  <span class="hint">WASD / clic = balise</span>
+</div>
+
+<div id="main">
+  <canvas id="viewport"></canvas>
+
+  <div id="panel">
+
+    <!-- Spawn -->
+    <div class="sec">
+      <div class="sec-title">Spawn Avatar</div>
+      <div class="row"><label>Scale</label>
+        <input type="range" id="sl-scale" min="0.1" max="5" step="0.001" value="1" oninput="updateAvatarTransform()">
+        <input type="number" id="num-scale" value="1" step="0.001" min="0.001" oninput="syncScale(this.value)">
+      </div>
+      <div class="row"><label>Rot Y°</label>
+        <input type="range" id="sl-roty" min="-180" max="180" step="1" value="0" oninput="updateAvatarTransform()">
+        <input type="number" id="num-roty" value="0" step="1" oninput="syncRotY(this.value)">
+      </div>
+    </div>
+
+    <!-- Balises -->
+    <div class="sec">
+      <div class="sec-title">Balises — clic sol pour placer</div>
+      <div class="beacon-list" id="beacon-list"></div>
+      <div class="feedback" id="beacon-hint" style="color:#555">Aucune balise — clic sur le sol</div>
+    </div>
+
+    <!-- Trajectoire -->
+    <div class="sec">
+      <div class="sec-title">Trajectoire</div>
+      <div class="toggle-row">
+        <button class="tog-btn active" id="btn-static"  onclick="setTrajMode('static')">STATIQUE</button>
+        <button class="tog-btn"        id="btn-linear"  onclick="setTrajMode('linear')">LINÉAIRE A→B</button>
+      </div>
+      <div id="traj-linear-ui" style="display:none; flex-direction:column; gap:6px;">
+        <div class="coord-box" id="box-start"><span class="lbl">START</span><span id="start-coords">—</span></div>
+        <button class="btn-action" id="btn-set-end" onclick="toggleSetEnd()">DÉFINIR POINT D'ARRIVÉE</button>
+        <div class="coord-box end-box" id="box-end"><span class="lbl">END</span><span id="end-coords">non défini</span></div>
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div class="sec">
+      <button class="btn-confirm" id="btn-confirm" disabled onclick="saveConfig()">
+        CONFIRMER + SAUVER
+      </button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { GLTFLoader }    from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+// ─── SCENE ────────────────────────────────────────────────────────
+const canvas   = document.getElementById('viewport');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x111113);
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+dir.position.set(5, 10, 5); dir.castShadow = true;
+scene.add(dir);
+
+const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
+camera.position.set(0, 5, 15);
+
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.update();
+
+// ─── RESIZE ───────────────────────────────────────────────────────
+new ResizeObserver(() => {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}).observe(canvas);
+
+// ─── WASD ─────────────────────────────────────────────────────────
+const keys = {};
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup',   e => keys[e.key.toLowerCase()] = false);
+function wasdMove() {
+  const spd = 0.12, fwd = new THREE.Vector3();
+  camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+  const right = new THREE.Vector3().crossVectors(fwd, THREE.Object3D.DEFAULT_UP).normalize();
+  if (keys['w']) camera.position.addScaledVector(fwd, spd);
+  if (keys['s']) camera.position.addScaledVector(fwd, -spd);
+  if (keys['a']) camera.position.addScaledVector(right, -spd);
+  if (keys['d']) camera.position.addScaledVector(right, spd);
+  if (keys['q']) camera.position.y += spd;
+  if (keys['e']) camera.position.y -= spd;
+}
+
+// ─── RENDER LOOP ──────────────────────────────────────────────────
+(function animate() {
+  requestAnimationFrame(animate);
+  wasdMove();
+  orbit.update();
+  renderer.render(scene, camera);
+})();
+
+// ─── STATE ────────────────────────────────────────────────────────
+const S = {
+  decorMeshes:  [],
+  avatarObj:    null,
+  beacons:      [],
+  activeBeacon: null,
+  scale:        1,
+  rotY:         0,
+  trajMode:     'static',
+  endPos:       null,
+  settingEnd:   false,
+  endSphere:    null,
+  trajLine:     null,
+};
+
+// ─── RAYCASTER ────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const mouse     = new THREE.Vector2();
+
+canvas.addEventListener('click', (e) => {
+  if (e.button !== 0) return;
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(S.decorMeshes, true);
+  if (!hits.length) return;
+  const pt = hits[0].point;
+  if (S.settingEnd) {
+    setEndPoint(pt);
+  } else {
+    addBeacon(pt);
+  }
+});
+
+// ─── LOAD DECOR ───────────────────────────────────────────────────
+window.loadDecor = async () => {
+  document.getElementById('chip-decor').textContent = '…';
+  try {
+    const res = await fetch('/files/decor');
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = await res.arrayBuffer();
+    new GLTFLoader().parse(buf, '', (gltf) => {
+      // remove previous
+      S.decorMeshes.forEach(m => scene.remove(m.parent || m));
+      gltf.scene.traverse(o => { if (o.isMesh) { o.receiveShadow = true; S.decorMeshes.push(o); }});
+      scene.add(gltf.scene);
+      // fit camera
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      const sz  = box.getSize(new THREE.Vector3()).length();
+      const ctr = box.getCenter(new THREE.Vector3());
+      camera.position.set(ctr.x, ctr.y + sz * 0.4, ctr.z + sz * 0.8);
+      orbit.target.copy(ctr); orbit.update();
+      document.getElementById('chip-decor').textContent = 'OK';
+      document.getElementById('chip-decor').parentElement.className = 'chip ok';
+      document.getElementById('btn-confirm').disabled = false;
+    }, err => { throw err; });
+  } catch(e) {
+    document.getElementById('chip-decor').textContent = 'ERR';
+    setFeedback(`Erreur décor : ${e.message}`, '#f44336');
+  }
+};
+
+// ─── LOAD AVATAR ──────────────────────────────────────────────────
+window.loadAvatar = async () => {
+  document.getElementById('chip-avatar').textContent = '…';
+  try {
+    const res = await fetch('/files/avatar');
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = await res.arrayBuffer();
+    new GLTFLoader().parse(buf, '', (gltf) => {
+      if (S.avatarObj) scene.remove(S.avatarObj);
+      S.avatarObj = gltf.scene;
+      scene.add(S.avatarObj);
+      updateAvatarTransform();
+      document.getElementById('chip-avatar').textContent = 'OK';
+      document.getElementById('chip-avatar').parentElement.className = 'chip ok';
+    }, err => { throw err; });
+  } catch(e) {
+    document.getElementById('chip-avatar').textContent = 'ERR';
+    setFeedback(`Erreur avatar : ${e.message}`, '#f44336');
+  }
+};
+
+// ─── BEACONS ──────────────────────────────────────────────────────
+function addBeacon(pos) {
+  const idx  = S.beacons.length + 1;
+  const name = `Balise_${String(idx).padStart(2,'0')}`;
+  const geo  = new THREE.SphereGeometry(0.15, 12, 12);
+  const mat  = new THREE.MeshStandardMaterial({ color: 0xc8a96e, emissive: 0xc8a96e, emissiveIntensity: 0.3 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  scene.add(mesh);
+  S.beacons.push({ name, pos: pos.clone(), mesh });
+  activateBeacon(S.beacons.length - 1);
+  renderBeaconList();
+}
+
+function activateBeacon(i) {
+  S.beacons.forEach((b, j) => {
+    b.mesh.material.color.setHex(j === i ? 0xffd700 : 0xc8a96e);
+    b.mesh.material.emissive.setHex(j === i ? 0xffd700 : 0xc8a96e);
+  });
+  S.activeBeacon = S.beacons[i];
+  if (S.avatarObj) updateAvatarTransform();
+  // Update START coords in linear mode
+  updateStartCoords();
+  document.getElementById('beacon-hint').style.display = 'none';
+  renderBeaconList();
+}
+
+function renderBeaconList() {
+  const list = document.getElementById('beacon-list');
+  list.innerHTML = '';
+  S.beacons.forEach((b, i) => {
+    const el = document.createElement('div');
+    el.className = 'beacon-item' + (S.activeBeacon === b ? ' active' : '');
+    const p = b.pos;
+    el.innerHTML = `<span>${b.name}</span>
+      <span class="coords">${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}</span>
+      <span class="beacon-del" onclick="event.stopPropagation(); removeBeacon(${i})">✕</span>`;
+    el.onclick = () => activateBeacon(i);
+    list.appendChild(el);
+  });
+}
+
+window.removeBeacon = (i) => {
+  scene.remove(S.beacons[i].mesh);
+  S.beacons.splice(i, 1);
+  if (S.beacons.length > 0) activateBeacon(Math.min(i, S.beacons.length - 1));
+  else { S.activeBeacon = null; document.getElementById('beacon-hint').style.display = ''; }
+  renderBeaconList();
+};
+
+// ─── AVATAR TRANSFORM ─────────────────────────────────────────────
+window.updateAvatarTransform = () => {
+  S.scale = parseFloat(document.getElementById('sl-scale').value);
+  S.rotY  = parseFloat(document.getElementById('sl-roty').value);
+  document.getElementById('num-scale').value = S.scale.toFixed(3);
+  document.getElementById('num-roty').value  = S.rotY;
+  if (!S.avatarObj) return;
+  if (S.activeBeacon) S.avatarObj.position.copy(S.activeBeacon.pos);
+  S.avatarObj.scale.setScalar(S.scale);
+  S.avatarObj.rotation.y = S.rotY * Math.PI / 180;
+};
+window.syncScale = (v) => { document.getElementById('sl-scale').value = v; updateAvatarTransform(); };
+window.syncRotY  = (v) => { document.getElementById('sl-roty').value  = v; updateAvatarTransform(); };
+
+// ─── TRAJECTOIRE ──────────────────────────────────────────────────
+window.setTrajMode = (mode) => {
+  S.trajMode = mode;
+  document.getElementById('btn-static').classList.toggle('active', mode === 'static');
+  document.getElementById('btn-linear').classList.toggle('active', mode === 'linear');
+  document.getElementById('traj-linear-ui').style.display = mode === 'linear' ? 'flex' : 'none';
+  if (mode === 'linear') updateStartCoords();
+};
+
+function updateStartCoords() {
+  if (!S.activeBeacon) return;
+  const p = S.activeBeacon.pos;
+  document.getElementById('start-coords').textContent = `${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}`;
+}
+
+window.toggleSetEnd = () => {
+  S.settingEnd = !S.settingEnd;
+  const btn = document.getElementById('btn-set-end');
+  btn.classList.toggle('active', S.settingEnd);
+  btn.textContent = S.settingEnd ? 'CLIC SUR SOL → END…' : 'DÉFINIR POINT D\'ARRIVÉE';
+};
+
+function setEndPoint(pos) {
+  S.endPos = pos.clone();
+  S.settingEnd = false;
+  const btn = document.getElementById('btn-set-end');
+  btn.classList.remove('active');
+  btn.textContent = 'REDÉFINIR POINT D\'ARRIVÉE';
+  document.getElementById('end-coords').textContent = `${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}`;
+  document.getElementById('box-end').className = 'coord-box end-box end-placed';
+
+  // Red sphere
+  if (S.endSphere) scene.remove(S.endSphere);
+  const geo = new THREE.SphereGeometry(0.15, 12, 12);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xf44336, emissive: 0xf44336, emissiveIntensity: 0.4 });
+  S.endSphere = new THREE.Mesh(geo, mat);
+  S.endSphere.position.copy(pos);
+  scene.add(S.endSphere);
+
+  drawTrajLine();
+}
+
+function drawTrajLine() {
+  if (S.trajLine) scene.remove(S.trajLine);
+  if (!S.activeBeacon || !S.endPos) return;
+  const pts = [S.activeBeacon.pos.clone().setY(S.activeBeacon.pos.y + 0.05),
+               S.endPos.clone().setY(S.endPos.y + 0.05)];
+  const geo  = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat  = new THREE.LineBasicMaterial({ color: 0xff6666 });
+  S.trajLine = new THREE.Line(geo, mat);
+  scene.add(S.trajLine);
+}
+
+// ─── SAVE CONFIG ──────────────────────────────────────────────────
+window.saveConfig = async () => {
+  const btn = document.getElementById('btn-confirm');
+  const fb  = document.getElementById('feedback');
+  btn.disabled = true;
+  fb.textContent = 'Sauvegarde…';
+  fb.style.color = '#c8a96e';
+
+  const spawn = S.activeBeacon
+    ? { x: +S.activeBeacon.pos.x.toFixed(4), y: +S.activeBeacon.pos.y.toFixed(4), z: +S.activeBeacon.pos.z.toFixed(4) }
+    : { x: 0, y: 0, z: 0 };
+
+  const config = {
+    active_beacon: S.activeBeacon ? S.activeBeacon.name : null,
+    beacons: S.beacons.map(b => ({
+      name: b.name,
+      x: +b.pos.x.toFixed(4), y: +b.pos.y.toFixed(4), z: +b.pos.z.toFixed(4)
+    })),
+    spawn,
+    scale: +S.scale.toFixed(4),
+    rot_y: S.rotY,
+    trajectory: S.trajMode === 'linear' && S.endPos
+      ? {
+          mode: 'linear',
+          start: { ...spawn },
+          end:   { x: +S.endPos.x.toFixed(4), y: +S.endPos.y.toFixed(4), z: +S.endPos.z.toFixed(4) }
+        }
+      : { mode: 'static' }
+  };
+
+  try {
+    const r = await fetch('/save-config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(config)
+    });
+    const d = await r.json();
+    if (d.ok) {
+      fb.textContent = 'spawn_config.json sauvé sur Drive ✓';
+      fb.style.color = '#4caf50';
+    } else throw new Error(d.error);
+  } catch(e) {
+    fb.textContent = `Erreur : ${e.message}`;
+    fb.style.color = '#f44336';
+  }
+  btn.disabled = false;
+};
+
+function setFeedback(msg, color) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg; el.style.color = color;
+}
+</script>
+</body>
+</html>
