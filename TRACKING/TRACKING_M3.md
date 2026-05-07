@@ -13,10 +13,10 @@
 
 | ID | Frégate | Mission | Priorité | Statut | Bloqueur |
 |----|---------|---------|----------|--------|----------|
-| F01 | VALIDATION | GLB + Audio → rapport JSON | P1 | 🔴 A FORGER | — |
-| F02 | LOGISTICS | Attach props → actor_equipped.glb | P2 | 🔴 A FORGER | F01 |
-| F03 | SCENOGRAPHY | Spawn + Trajectoire → spawn_config.json | P0 | 🔴 A FORGER | — |
-| F04 | PHOTOGRAPHY | Camera + Lights → 2 JSONs | P1 | 🔴 A FORGER | F03 |
+| F01 | VALIDATION | GLB + Audio → rapport JSON | P1 | ✅ FORGE | — |
+| F02 | LOGISTICS | Attach props → actor_equipped.glb | P2 | ✅ FORGE | F01 |
+| F03 | SCENOGRAPHY | Spawn + Trajectoire → spawn_config.json | P0 | ✅ FORGE | — |
+| F04 | PHOTOGRAPHY | Camera + Lights → 2 JSONs | P1 | ✅ FORGE | F03 |
 | F05 | ALCHEMIST | Render GPU T4 → frames PNG | P0 | 🔴 A FORGER | F03 F04 |
 | F06 | CARRIER | RIFE + ffmpeg → MP4 final | P0 | 🔴 A FORGER | F05 |
 
@@ -28,7 +28,7 @@ Raisonnement : valider le pipeline ffmpeg/RIFE et les JSON flows
 avant de toucher au GPU headless (F05 = plus critique, forge en dernier).
 
 ## PROGRESSION GLOBALE
-Mode III Ascension : [░░░░░░░░░░░░] 0% — EN PREPARATION
+Mode III Ascension : [██████████░░] 67% — 4/6 FRÉGATES FORGÉES
 
 ## DECISIONS ARCHITECTURALES SCELLEES
 
