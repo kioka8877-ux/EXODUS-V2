@@ -264,13 +264,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13p
           <span class="fb-fps">24fps</span>
           <span class="fb-note">Bypass RIFE</span>
         </button>
+        <button class="fps-btn" onclick="setFps(30)" id="fps-30">
+          <span class="fb-fps">30fps</span>
+          <span class="fb-note">Standard</span>
+        </button>
         <button class="fps-btn active" onclick="setFps(60)" id="fps-60">
           <span class="fb-fps">60fps</span>
           <span class="fb-note">Recommandé</span>
-        </button>
-        <button class="fps-btn" onclick="setFps(120)" id="fps-120">
-          <span class="fb-fps">120fps</span>
-          <span class="fb-note">Pro+</span>
         </button>
       </div>
     </div>
@@ -431,7 +431,7 @@ function setPos(pos) {
 
 function setFps(fps) {
   state.fps = fps;
-  ['24','60','120'].forEach(f =>
+  ['24','30','60'].forEach(f =>
     document.getElementById('fps-'+f).classList.toggle('active', parseInt(f) === fps));
   document.getElementById('pi-fps').textContent = fps + 'fps';
 }
