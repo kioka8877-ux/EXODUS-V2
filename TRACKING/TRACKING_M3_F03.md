@@ -1,8 +1,8 @@
 # TRACKING F03 — SCENOGRAPHY
 ## "Le Cartographe de Bataille"
 
-**Statut** : 🔴 A FORGER
-**Priorité** : P0 (premier fork réel à forger après F06)
+**Statut** : ✅ FORGE
+**Priorité** : P0
 **Dépendances entrantes** : aucune
 **Dépendances sortantes** : spawn_config.json → F04 F05
 
@@ -28,52 +28,53 @@ OUT : spawn_config.json
       }
 ```
 
-## POURQUOI TRAJECTOIRE ICI — ROOT MOTION DEEPMOTION
-Deepmotion génère des animations IN-PLACE (avatar marche/court mais
-reste à l'origine XYZ 0,0,0). Pour simuler un déplacement réel dans F05 :
-- F03 : l'utilisateur définit une position de départ ET d'arrivée
-- F05 : à chaque frame N, avatarRoot.position.lerpVectors(start, end, N/totalFrames)
-Résultat : avatar semble se déplacer dans la scène.
-
 ## STACK TECHNIQUE
-- Fork DIRECT de m2_f03_viewer.html v4.0
-- Modifications minimales : 3 changements de code + 1 nouvelle section
-- Three.js r160 : déjà présent dans le fork
-- Flask Python — adapté depuis M2_F03
+- Three.js r160 ESM CDN
+- OrbitControls + WASD (Q/E = haut/bas)
+- Raycaster → clic sol = placement balise/end
+- Flask Python — 5 endpoints
 
 ## TACHES DE FORGE
 
 ### SESSION 1 — Flask (20 min)
 | ID | Tâche | Statut |
 |----|-------|--------|
-| F03-S1-T1 | Créer m3_f03.ipynb : Flask + montage Drive | 🔴 TODO |
-| F03-S1-T2 | GET / → viewer HTML | 🔴 TODO |
-| F03-S1-T3 | GET /files/decor → GLB décor depuis Drive | 🔴 TODO |
-| F03-S1-T4 | GET /files/avatar → GLB avatar depuis Drive | 🔴 TODO |
-| F03-S1-T5 | POST /save-config → écrire spawn_config.json sur Drive | 🔴 TODO |
+| F03-S1-T1 | Créer m3_f03.ipynb : Flask + montage Drive | ✅ DONE |
+| F03-S1-T2 | GET / → viewer HTML | ✅ DONE |
+| F03-S1-T3 | GET /files/decor → GLB décor depuis Drive | ✅ DONE |
+| F03-S1-T4 | GET /files/avatar → GLB avatar depuis Drive | ✅ DONE |
+| F03-S1-T5 | POST /save-config → écrire spawn_config.json sur Drive | ✅ DONE |
 
-### SESSION 2 — Fork m2_f03_viewer.html : 3 modifications (30 min)
+### SESSION 2 — HTML viewer + topbar (30 min)
 | ID | Tâche | Statut |
 |----|-------|--------|
-| F03-S2-T1 | Copier m2_f03_viewer.html → m3_f03_viewer.html | 🔴 TODO |
-| F03-S2-T2 | MOD 1 — Topbar : remplacer input[type=file] → boutons [DRIVE: Décor] [DRIVE: Avatar] qui appellent fetch('/files/decor') | 🔴 TODO |
-| F03-S2-T3 | MOD 2 — confirmSpawn() : remplacer download local → POST /save-config | 🔴 TODO |
-| F03-S2-T4 | MOD 3 — Logo/titre : "M3_F03 v1.0" + "SCENOGRAPHIE" | 🔴 TODO |
+| F03-S2-T1 | Structure HTML : topbar + viewport + panel 270px + palette | ✅ DONE |
+| F03-S2-T2 | Topbar : boutons [DRIVE: Décor] [DRIVE: Avatar] → fetch('/files/...') | ✅ DONE |
+| F03-S2-T3 | WASD (+ Q/E vertical) + OrbitControls | ✅ DONE |
+| F03-S2-T4 | Raycaster → clic sol = balise gold (SphereGeometry) | ✅ DONE |
+| F03-S2-T5 | Scale + Rot Y sliders → avatar suit balise active | ✅ DONE |
 
-### SESSION 3 — Section TRAJECTOIRE (nouveau dans M3) (45 min)
+### SESSION 3 — Section TRAJECTOIRE (45 min)
 | ID | Tâche | Statut |
 |----|-------|--------|
-| F03-S3-T1 | Ajouter section "TRAJECTOIRE" dans le panel droit (sous BALISES) | 🔴 TODO |
-| F03-S3-T2 | Toggle MODE : "STATIQUE" (pas de déplacement) / "LINEAIRE A→B" | 🔴 TODO |
-| F03-S3-T3 | Si LINEAIRE : afficher coords START (= position courante balise active) | 🔴 TODO |
-| F03-S3-T4 | Bouton [DEFINIR POINT D'ARRIVEE] → mode placement END : clic sur sol = end_pos | 🔴 TODO |
-| F03-S3-T5 | Indicateur END placé dans la scene (sphère rouge) | 🔴 TODO |
-| F03-S3-T6 | Ligne reliant sphère START (gold) et sphère END (rouge) dans viewport | 🔴 TODO |
-| F03-S3-T7 | Inclure trajectory dans le JSON généré au CONFIRMER | 🔴 TODO |
+| F03-S3-T1 | Section "TRAJECTOIRE" dans panel (sous Balises) | ✅ DONE |
+| F03-S3-T2 | Toggle STATIQUE / LINÉAIRE A→B | ✅ DONE |
+| F03-S3-T3 | START = position balise active (mise à jour auto) | ✅ DONE |
+| F03-S3-T4 | Bouton [DÉFINIR POINT D'ARRIVÉE] → mode END : clic sol = end_pos | ✅ DONE |
+| F03-S3-T5 | Sphère rouge END placée dans la scene | ✅ DONE |
+| F03-S3-T6 | Ligne rouge reliant START et END dans viewport | ✅ DONE |
+| F03-S3-T7 | trajectory incluse dans JSON au CONFIRMER | ✅ DONE |
 
 ## VALIDATION SCEAU
-- [ ] Chargement GLB depuis Flask fonctionne (pas de file local picker)
-- [ ] WASD, OrbitControls, balises, gizmo : identiques M2_F03
-- [ ] Toggle STATIQUE = spawn_config sans trajectory
-- [ ] Toggle LINEAIRE = spawn_config avec trajectory.start + trajectory.end
-- [ ] spawn_config.json valide sauvé sur Drive
+- [x] Chargement GLB depuis Flask (pas de file picker local)
+- [x] WASD + OrbitControls + balises gold fonctionnels
+- [x] Toggle STATIQUE = spawn_config sans trajectory.start/end
+- [x] Toggle LINÉAIRE = spawn_config avec trajectory.start + trajectory.end
+- [x] spawn_config.json valide sauvé sur Drive
+
+## FICHIERS FORGES
+| Fichier | Description |
+|---------|-------------|
+| `m3_f03_flask.py` | Flask 5 endpoints : `/`, `/info`, `/files/decor`, `/files/avatar`, `/save-config` |
+| `m3_f03_viewer.html` | Three.js r160 — WASD, OrbitControls, balises, scale/rotY, trajectoire STATIQUE/LINÉAIRE, ligne de traj |
+| `m3_f03.ipynb` | 4 cellules Colab : montage Drive, vérif inputs, lancement Flask, lecture config |
