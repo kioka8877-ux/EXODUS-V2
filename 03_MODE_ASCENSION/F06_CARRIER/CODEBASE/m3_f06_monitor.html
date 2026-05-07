@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3_F06 — Carrier v1.0</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d0f; color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+/* TOPBAR */
+#topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; background: #141416;
+  border-bottom: 1px solid #2a2a2e; flex-shrink: 0; flex-wrap: wrap;
+}
+.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e; text-transform: uppercase; }
+.ver  { font-size: 10px; color: #333; }
+.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 4px; background: #1e1e22;
+  border: 1px solid #2a2a2e; font-size: 11px; color: #666;
+}
+.chip .k { color: #c8a96e; font-weight: 600; }
+.chip.ok { border-color: #2a5c2a; color: #4caf50; }
+/* MAIN */
+#main { display: flex; flex: 1; overflow: hidden; }
+/* LEFT CONFIG */
+#config-panel {
+  width: 300px; background: #141416; border-right: 1px solid #2a2a2e;
+  display: flex; flex-direction: column; padding: 14px; gap: 14px;
+  overflow-y: auto; flex-shrink: 0;
+}
+/* RIGHT PROGRESS */
+#progress-panel {
+  flex: 1; display: flex; flex-direction: column;
+  padding: 20px 24px; gap: 16px; overflow-y: auto;
+}
+/* SECTIONS */
+.sec { display: flex; flex-direction: column; gap: 8px; }
+.sec-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
+  color: #444; padding-bottom: 5px; border-bottom: 1px solid #1e1e22;
+}
+/* TOGGLE */
+.toggle-row { display: flex; gap: 6px; }
+.tog-btn {
+  flex: 1; padding: 8px; border-radius: 6px;
+  border: 1px solid #2a2a2e; background: #1c1c20;
+  font-size: 11px; color: #777; cursor: pointer; transition: all .18s;
+  text-align: center; font-weight: 600;
+}
+.tog-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+.tog-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+/* TEXT CONFIG */
+#text-config { display: flex; flex-direction: column; gap: 8px; }
+#text-config.hidden { display: none; }
+.param-row { display: flex; flex-direction: column; gap: 4px; }
+.param-label { display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+.param-label span { color: #e0e0e0; font-family: monospace; font-size: 11px; }
+input[type="text"] {
+  width: 100%; padding: 7px 10px; border-radius: 5px;
+  background: #0d0d0f; border: 1px solid #2a2a2e; color: #e0e0e0;
+  font-size: 12px; outline: none; transition: border-color .18s;
+}
+input[type="text"]:focus { border-color: #c8a96e; }
+input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #2a2a2e; border-radius: 2px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #c8a96e; cursor: pointer; }
+/* COLOR PRESETS */
+.color-row { display: flex; gap: 5px; }
+.col-btn {
+  flex: 1; padding: 6px; border-radius: 5px;
+  border: 1px solid #2a2a2e; background: #1c1c20;
+  font-size: 10px; cursor: pointer; transition: all .18s; text-align: center;
+}
+.col-btn.active { border-color: #c8a96e; }
+.col-btn[data-col="yellow"]  { color: #ffdf00; }
+.col-btn[data-col="white"]   { color: #ffffff; }
+.col-btn[data-col="black"]   { color: #888; background: #333; }
+.col-btn[data-col="red"]     { color: #e05050; }
+/* POSITION */
+.pos-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+.pos-btn {
+  padding: 7px; border-radius: 5px;
+  border: 1px solid #2a2a2e; background: #1c1c20;
+  font-size: 10px; color: #777; cursor: pointer; transition: all .18s; text-align: center;
+}
+.pos-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+.pos-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+/* FPS SELECTION */
+.fps-row { display: flex; gap: 5px; }
+.fps-btn {
+  flex: 1; padding: 8px; border-radius: 6px;
+  border: 1px solid #2a2a2e; background: #1c1c20;
+  font-size: 11px; color: #777; cursor: pointer; transition: all .18s; text-align: center;
+}
+.fps-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+.fps-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+.fps-btn .fb-fps { font-weight: 700; display: block; }
+.fps-btn .fb-note { font-size: 9px; color: #555; margin-top: 2px; display: block; }
+.fps-btn.active .fb-note { color: #a07840; }
+/* PREVIEW */
+#preview-box {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px; background: #0d0d0f; border: 1px solid #1e1e22;
+  border-radius: 8px;
+}
+#thumb-wrap {
+  width: 64px; height: 114px; background: #1a1a1e;
+  border-radius: 5px; overflow: hidden; flex-shrink: 0;
+  position: relative; border: 1px solid #2a2a2e;
+}
+#thumb-img { width: 100%; height: 100%; object-fit: cover; display: none; }
+#thumb-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #2a2a2e; font-size: 20px; }
+#text-overlay-preview {
+  position: absolute; left: 0; right: 0;
+  font-size: 5px; font-weight: 700; text-align: center;
+  padding: 2px 3px; text-shadow: 1px 1px 0 #000;
+  pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#preview-info { flex: 1; }
+.pi-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 5px; }
+.pi-label { color: #555; }
+.pi-val { color: #e0e0e0; font-family: monospace; }
+/* PROGRESS PANEL */
+#progress-panel h2 { font-size: 13px; color: #c8a96e; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.stage-row { display: flex; flex-direction: column; gap: 6px; }
+.stage-item {
+  background: #141416; border: 1px solid #1e1e22;
+  border-radius: 8px; padding: 12px 14px;
+  transition: border-color .2s;
+}
+.stage-item.active { border-color: #c8a96e; }
+.stage-item.done   { border-color: #2a5c2a; }
+.stage-item.waiting { opacity: .5; }
+.si-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.si-name { font-size: 12px; font-weight: 600; color: #bbb; }
+.si-name .sn-num { color: #c8a96e; margin-right: 6px; }
+.si-pct { font-size: 12px; font-family: monospace; color: #c8a96e; }
+.si-pct.done-pct { color: #4caf50; }
+.si-bar-wrap { height: 4px; background: #1e1e22; border-radius: 2px; }
+.si-bar { height: 100%; background: #c8a96e; border-radius: 2px; width: 0%; transition: width .3s; }
+.si-bar.done-bar { background: #4caf50; }
+.si-eta { font-size: 10px; color: #555; margin-top: 5px; }
+/* SUMMARY ROW */
+#summary-row {
+  display: flex; gap: 10px; padding: 12px 14px;
+  background: #0d0d0f; border: 1px solid #1e1e22; border-radius: 8px;
+}
+.sum-item { flex: 1; text-align: center; }
+.sum-val { font-size: 18px; font-weight: 700; color: #c8a96e; font-family: monospace; }
+.sum-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+/* BUTTONS */
+.abtn {
+  padding: 11px 14px; border-radius: 7px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  transition: all .18s; width: 100%;
+}
+.abtn-ok {
+  background: linear-gradient(135deg, #c8a96e, #a07840); color: #0d0d0f;
+  box-shadow: 0 2px 10px rgba(200,169,110,.2);
+}
+.abtn-ok:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(200,169,110,.35); }
+.abtn-ok:disabled { background: #1e1e22; color: #444; cursor: not-allowed; transform: none; box-shadow: none; }
+.abtn-dl {
+  background: #162016; color: #4caf50; border: 1px solid #2a5c2a;
+}
+.abtn-dl:hover { background: #1e2e1e; }
+.abtn-dl:disabled { background: #1e1e22; color: #444; border-color: #2a2a2e; cursor: not-allowed; }
+.abtn-cancel { background: #200000; color: #e05050; border: 1px solid #3a0000; font-size: 11px; }
+.abtn-cancel:hover { background: #2a0000; }
+#log { font-size: 10px; color: #c8a96e; background: #1a1608; padding: 8px 10px; border-radius: 5px; border-left: 2px solid #c8a96e; line-height: 1.6; display: none; }
+#log.err { color: #e05050; background: #180000; border-left-color: #e05050; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">EXODUS</span>
+  <span class="ver">M3_F06 v1.0</span>
+  <div class="divider"></div>
+  <div class="chip">TRANSPORTEUR</div>
+  <div class="chip" id="chip-frames"><span class="k" id="chip-frames-val">—</span> frames</div>
+  <div class="chip" id="chip-dur"><span class="k" id="chip-dur-val">—</span>s</div>
+  <div class="chip" id="chip-audio">Audio : <span class="k" id="chip-audio-val">—</span></div>
+  <div class="divider"></div>
+  <div class="chip" id="chip-status">Status : <span class="k" id="chip-status-val">PRET</span></div>
+</div>
+
+<div id="main">
+
+  <!-- CONFIG GAUCHE -->
+  <div id="config-panel">
+
+    <div class="sec">
+      <div class="sec-title">OVERLAY TEXTE</div>
+      <div class="toggle-row">
+        <button class="tog-btn active" onclick="setTextMode(false)" id="tog-notxt">SANS TEXTE</button>
+        <button class="tog-btn" onclick="setTextMode(true)"  id="tog-txt">AVEC TEXTE</button>
+      </div>
+    </div>
+
+    <div id="text-config" class="hidden">
+      <div class="sec">
+        <div class="sec-title">CONTENU</div>
+        <div class="param-row">
+          <div class="param-label">Texte</div>
+          <input type="text" id="overlay-text" placeholder="Votre texte ici..."
+                 oninput="updatePreview()" value="">
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-title">COULEUR</div>
+        <div class="color-row">
+          <button class="col-btn active" data-col="yellow" onclick="setColor('yellow','#ffdf00')">JAUNE</button>
+          <button class="col-btn" data-col="white"  onclick="setColor('white','#ffffff')">BLANC</button>
+          <button class="col-btn" data-col="black"  onclick="setColor('black','#000000')">NOIR</button>
+          <button class="col-btn" data-col="red"    onclick="setColor('red','#e05050')">ROUGE</button>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-title">POSITION</div>
+        <div class="pos-row">
+          <button class="pos-btn" onclick="setPos('top')"    id="pos-top">HAUT</button>
+          <button class="pos-btn active" onclick="setPos('center')" id="pos-center">CENTRE</button>
+          <button class="pos-btn" onclick="setPos('bottom')" id="pos-bottom">BAS</button>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-title">TAILLE</div>
+        <div class="param-row">
+          <div class="param-label">Taille <span id="size-val">48px</span></div>
+          <input type="range" id="font-size" min="24" max="96" value="48"
+                 oninput="document.getElementById('size-val').textContent=this.value+'px'; updatePreview()">
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">PREVIEW</div>
+      <div id="preview-box">
+        <div id="thumb-wrap">
+          <img id="thumb-img" src="">
+          <div id="thumb-placeholder">&#9654;</div>
+          <div id="text-overlay-preview"></div>
+        </div>
+        <div id="preview-info">
+          <div class="pi-row"><span class="pi-label">Frames</span><span class="pi-val" id="pi-frames">—</span></div>
+          <div class="pi-row"><span class="pi-label">Durée</span><span class="pi-val" id="pi-dur">—</span></div>
+          <div class="pi-row"><span class="pi-label">Audio</span><span class="pi-val" id="pi-audio">—</span></div>
+          <div class="pi-row"><span class="pi-label">FPS final</span><span class="pi-val" id="pi-fps">60fps</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title">INTERPOLATION (FPS FINAL)</div>
+      <div class="fps-row">
+        <button class="fps-btn" onclick="setFps(24)" id="fps-24">
+          <span class="fb-fps">24fps</span>
+          <span class="fb-note">Bypass RIFE</span>
+        </button>
+        <button class="fps-btn active" onclick="setFps(60)" id="fps-60">
+          <span class="fb-fps">60fps</span>
+          <span class="fb-note">Recommandé</span>
+        </button>
+        <button class="fps-btn" onclick="setFps(120)" id="fps-120">
+          <span class="fb-fps">120fps</span>
+          <span class="fb-note">Pro+</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <button class="abtn abtn-ok" id="btn-encode" onclick="startEncode()">
+        LANCER L'ENCODAGE
+      </button>
+      <button class="abtn abtn-cancel" id="btn-cancel" onclick="cancelEncode()" style="display:none;">
+        ANNULER
+      </button>
+      <button class="abtn abtn-dl" id="btn-dl" onclick="downloadMp4()" disabled>
+        TELECHARGER MP4
+      </button>
+      <div id="log"></div>
+    </div>
+
+  </div>
+
+  <!-- PROGRESS DROITE -->
+  <div id="progress-panel">
+    <div>
+      <h2>OPERATIONS D'ENCODAGE</h2>
+      <p style="font-size:11px;color:#444;margin-top:4px;">Flux de production — Mode III Ascension</p>
+    </div>
+
+    <div id="summary-row">
+      <div class="sum-item">
+        <div class="sum-val" id="sum-frames">0</div>
+        <div class="sum-label">Frames traitées</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-val" id="sum-pct">0%</div>
+        <div class="sum-label">Progression</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-val" id="sum-eta">—</div>
+        <div class="sum-label">Temps restant</div>
+      </div>
+      <div class="sum-item">
+        <div class="sum-val" id="sum-stage">—</div>
+        <div class="sum-label">Etape active</div>
+      </div>
+    </div>
+
+    <div class="stage-row">
+      <div class="stage-item waiting" id="stage-1">
+        <div class="si-header">
+          <div class="si-name"><span class="sn-num">01</span>INTERPOLATION RIFE</div>
+          <div class="si-pct" id="pct-1">—</div>
+        </div>
+        <div class="si-bar-wrap"><div class="si-bar" id="bar-1"></div></div>
+        <div class="si-eta" id="eta-1">En attente</div>
+      </div>
+
+      <div class="stage-item waiting" id="stage-2">
+        <div class="si-header">
+          <div class="si-name"><span class="sn-num">02</span>ENCODAGE H.264 ffmpeg</div>
+          <div class="si-pct" id="pct-2">—</div>
+        </div>
+        <div class="si-bar-wrap"><div class="si-bar" id="bar-2"></div></div>
+        <div class="si-eta" id="eta-2">En attente</div>
+      </div>
+
+      <div class="stage-item waiting" id="stage-3">
+        <div class="si-header">
+          <div class="si-name"><span class="sn-num">03</span>MIXAGE AUDIO</div>
+          <div class="si-pct" id="pct-3">—</div>
+        </div>
+        <div class="si-bar-wrap"><div class="si-bar" id="bar-3"></div></div>
+        <div class="si-eta" id="eta-3">En attente</div>
+      </div>
+
+      <div class="stage-item waiting" id="stage-4">
+        <div class="si-header">
+          <div class="si-name"><span class="sn-num">04</span>OVERLAY TEXTE</div>
+          <div class="si-pct" id="pct-4">—</div>
+        </div>
+        <div class="si-bar-wrap"><div class="si-bar" id="bar-4"></div></div>
+        <div class="si-eta" id="eta-4">En attente</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─── STATE ────────────────────────────────────────────────────────
+let state = {
+  textEnabled: false,
+  textColor: '#ffdf00',
+  textPos: 'center',
+  fps: 60,
+  polling: null,
+  info: null
+};
+
+// ─── INIT ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  fetchInfo();
+  loadThumbnail();
+});
+
+async function fetchInfo() {
+  try {
+    const r = await fetch('/info');
+    if (!r.ok) return;
+    state.info = await r.json();
+    const { frame_count, has_audio, audio_duration, source_fps } = state.info;
+    document.getElementById('chip-frames-val').textContent = frame_count;
+    document.getElementById('chip-dur-val').textContent =
+      (frame_count / (source_fps || 24)).toFixed(1);
+    document.getElementById('chip-audio-val').textContent = has_audio ? 'OUI' : 'NON';
+    document.getElementById('pi-frames').textContent = frame_count;
+    document.getElementById('pi-dur').textContent =
+      (frame_count / (source_fps || 24)).toFixed(1) + 's';
+    document.getElementById('pi-audio').textContent = has_audio ? 'OUI' : 'NON';
+    if (!has_audio) {
+      document.getElementById('stage-3').style.opacity = '.3';
+    }
+  } catch(e) {
+    console.warn('fetchInfo:', e);
+  }
+}
+
+function loadThumbnail() {
+  const img = document.getElementById('thumb-img');
+  img.onload = () => {
+    img.style.display = 'block';
+    document.getElementById('thumb-placeholder').style.display = 'none';
+  };
+  img.src = '/files/thumbnail?' + Date.now();
+}
+
+// ─── CONTROLS ─────────────────────────────────────────────────────
+function setTextMode(enabled) {
+  state.textEnabled = enabled;
+  document.getElementById('tog-txt').classList.toggle('active', enabled);
+  document.getElementById('tog-notxt').classList.toggle('active', !enabled);
+  const cfg = document.getElementById('text-config');
+  enabled ? cfg.classList.remove('hidden') : cfg.classList.add('hidden');
+  updatePreview();
+}
+
+function setColor(key, hex) {
+  state.textColor = hex;
+  document.querySelectorAll('.col-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.col === key));
+  updatePreview();
+}
+
+function setPos(pos) {
+  state.textPos = pos;
+  document.querySelectorAll('.pos-btn').forEach(b =>
+    b.classList.toggle('active', b.id === 'pos-' + pos));
+  updatePreview();
+}
+
+function setFps(fps) {
+  state.fps = fps;
+  ['24','60','120'].forEach(f =>
+    document.getElementById('fps-'+f).classList.toggle('active', parseInt(f) === fps));
+  document.getElementById('pi-fps').textContent = fps + 'fps';
+}
+
+function updatePreview() {
+  const ov = document.getElementById('text-overlay-preview');
+  if (!state.textEnabled) { ov.style.display = 'none'; return; }
+  const txt = document.getElementById('overlay-text').value || 'Texte';
+  const sz = document.getElementById('font-size').value;
+  ov.style.display = 'block';
+  ov.style.color = state.textColor;
+  ov.textContent = txt;
+  // Scale font size proportionally (thumb is ~1/22 scale of 1080px)
+  ov.style.fontSize = Math.round(sz / 22) + 'px';
+  if (state.textPos === 'top')    { ov.style.top = '4px';  ov.style.bottom = 'auto'; ov.style.transform = 'none'; }
+  if (state.textPos === 'center') { ov.style.top = '50%';  ov.style.bottom = 'auto'; ov.style.transform = 'translateY(-50%)'; }
+  if (state.textPos === 'bottom') { ov.style.top = 'auto'; ov.style.bottom = '4px';  ov.style.transform = 'none'; }
+}
+
+// ─── ENCODE ───────────────────────────────────────────────────────
+async function startEncode() {
+  const payload = {
+    fps_target: state.fps,
+    text_enabled: state.textEnabled,
+    text: state.textEnabled ? document.getElementById('overlay-text').value : '',
+    text_color: state.textColor,
+    text_position: state.textPos,
+    text_size: parseInt(document.getElementById('font-size').value)
+  };
+  setLog('');
+  try {
+    const r = await fetch('/encode', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (!r.ok) { setLog('Erreur: ' + (d.error || r.status), true); return; }
+    document.getElementById('btn-encode').disabled = true;
+    document.getElementById('btn-cancel').style.display = 'block';
+    document.getElementById('chip-status-val').textContent = 'EN COURS';
+    startPolling();
+  } catch(e) {
+    setLog('Erreur réseau: ' + e.message, true);
+  }
+}
+
+async function cancelEncode() {
+  await fetch('/cancel', { method: 'POST' });
+  stopPolling();
+  document.getElementById('btn-encode').disabled = false;
+  document.getElementById('btn-cancel').style.display = 'none';
+  document.getElementById('chip-status-val').textContent = 'ANNULÉ';
+  setLog('Encodage annulé.');
+}
+
+function downloadMp4() {
+  window.location.href = '/download';
+}
+
+// ─── POLLING ──────────────────────────────────────────────────────
+function startPolling() {
+  state.polling = setInterval(pollStatus, 2000);
+}
+function stopPolling() {
+  if (state.polling) { clearInterval(state.polling); state.polling = null; }
+}
+
+async function pollStatus() {
+  try {
+    const r = await fetch('/status');
+    if (!r.ok) return;
+    const d = await r.json();
+    applyStatus(d);
+  } catch(e) {}
+}
+
+function applyStatus(d) {
+  const { stage, stage_pct, total_pct, frames_done, eta_s, message, done, error } = d;
+
+  // Summary row
+  document.getElementById('sum-frames').textContent = frames_done || 0;
+  document.getElementById('sum-pct').textContent = (total_pct || 0).toFixed(0) + '%';
+  document.getElementById('sum-eta').textContent = eta_s != null ? fmtEta(eta_s) : '—';
+  document.getElementById('sum-stage').textContent = stage ? stage + '/4' : '—';
+
+  // Stage bars 1-4
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('stage-' + i);
+    const bar = document.getElementById('bar-' + i);
+    const pct = document.getElementById('pct-' + i);
+    const eta = document.getElementById('eta-' + i);
+    el.classList.remove('active', 'done', 'waiting');
+    if (i < stage) {
+      el.classList.add('done');
+      bar.classList.add('done-bar');
+      bar.style.width = '100%';
+      pct.classList.add('done-pct');
+      pct.textContent = '100%';
+      eta.textContent = 'Terminé';
+    } else if (i === stage) {
+      el.classList.add('active');
+      bar.style.width = (stage_pct || 0) + '%';
+      pct.textContent = (stage_pct || 0).toFixed(0) + '%';
+      eta.textContent = message || 'En cours...';
+    } else {
+      el.classList.add('waiting');
+      bar.style.width = '0%';
+      pct.textContent = '—';
+      eta.textContent = 'En attente';
+    }
+  }
+
+  if (error) {
+    setLog('Erreur: ' + error, true);
+    stopPolling();
+    document.getElementById('btn-encode').disabled = false;
+    document.getElementById('btn-cancel').style.display = 'none';
+    document.getElementById('chip-status-val').textContent = 'ERREUR';
+  }
+
+  if (done) {
+    stopPolling();
+    document.getElementById('btn-cancel').style.display = 'none';
+    document.getElementById('btn-dl').disabled = false;
+    document.getElementById('chip-status-val').textContent = 'TERMINÉ';
+    document.getElementById('chip-status').classList.add('ok');
+    setLog('Encodage terminé — FINAL_OUTPUT.mp4 prêt sur Drive.');
+  }
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────
+function fmtEta(s) {
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), sec = s % 60;
+  return m + 'min ' + sec + 's';
+}
+
+function setLog(msg, isErr) {
+  const el = document.getElementById('log');
+  if (!msg) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.className = isErr ? 'err' : '';
+  el.textContent = msg;
+}
+</script>
+</body>
+</html>
