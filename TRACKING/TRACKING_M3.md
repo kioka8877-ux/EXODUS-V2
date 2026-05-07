@@ -3,7 +3,7 @@
 
 ```
 ╔═══════════════════════════════════════════════════════════════════╗
-║  MODE III — ASCENSION — EN FORGE                                 ║
+║  MODE III — ASCENSION — SCELLÉ ✅                                ║
 ║  6 Frégates — Pipeline Three.js + Flask + Playwright + RIFE      ║
 ║  Doctrine ATOM-IC — Palette Impériale #c8a96e                    ║
 ╚═══════════════════════════════════════════════════════════════════╝
@@ -18,7 +18,7 @@
 | F03 | SCENOGRAPHY | Spawn + Trajectoire → spawn_config.json | P0 | ✅ FORGE | — |
 | F04 | PHOTOGRAPHY | Camera + Lights → 2 JSONs | P1 | ✅ FORGE | F03 |
 | F05 | ALCHEMIST | Render GPU T4 → frames PNG | P0 | ✅ FORGE | F03 F04 |
-| F06 | CARRIER | RIFE + ffmpeg → MP4 final | P0 | 🔴 A FORGER | F05 |
+| F06 | CARRIER | RIFE + ffmpeg → MP4 final | P0 | ✅ FORGE | F05 |
 
 ## ORDRE DE FORGE (Pareto)
 ```
@@ -28,7 +28,7 @@ Raisonnement : valider le pipeline ffmpeg/RIFE et les JSON flows
 avant de toucher au GPU headless (F05 = plus critique, forge en dernier).
 
 ## PROGRESSION GLOBALE
-Mode III Ascension : [█████████████░] 83% — 5/6 FRÉGATES FORGÉES
+Mode III Ascension : [████████████████] 100% — 6/6 FRÉGATES FORGÉES ✅
 
 ## DECISIONS ARCHITECTURALES SCELLEES
 
