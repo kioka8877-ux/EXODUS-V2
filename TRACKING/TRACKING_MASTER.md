@@ -254,3 +254,26 @@ quand il fournit un GLB depuis Tripo AI / Meshy AI.
 <!-- v8.0 — PHASE 8 DUAL PIPELINE ouverte — 02.05.2026 -->
 <!-- v7.1 — U03 D7 SCELLÉE 3/3 — 02.05.2026 -->
 <!-- v7.0 — CODEX BRAINSTORM v1 — Phase 7 ouverte — 02.05.2026 -->
+
+
+---
+
+## MODE III — ASCENSION (PHASE 9 — EN FORGE)
+
+| ID | Fregate | Mission | Priorite | Statut | Bloqueur |
+|----|---------|---------|----------|--------|----------|
+| M3-F01 | VALIDATION | GLB + Audio → rapport JSON | P1 | 🔴 A FORGER | — |
+| M3-F02 | LOGISTICS | Attach props → actor_equipped.glb | P2 | 🔴 A FORGER | F01 |
+| M3-F03 | SCENOGRAPHY | Spawn + Trajectoire → spawn_config.json | P0 | 🔴 A FORGER | — |
+| M3-F04 | PHOTOGRAPHY | Camera + Lights → 2 JSONs | P1 | 🔴 A FORGER | F03 |
+| M3-F05 | ALCHEMIST | Render GPU T4 → frames PNG | P0 | 🔴 A FORGER | F03 F04 |
+| M3-F06 | CARRIER | RIFE + ffmpeg → MP4 final | P0 | 🔴 A FORGER | F05 |
+
+**Doctrine M3** : Three.js + Flask + Playwright GPU T4 + RIFE
+**Palette** : Imperium Gold #c8a96e — Warhammer 40K
+**Root Motion** : Trajectoire lineaire F03 → F05 (Deepmotion in-place fix)
+**Ordre de forge** : F06 → F01 → F03 → F04 → F02 → F05
+
+Mode III Ascension : [░░░░░░░░░░░░] 0% — PHASE 9 OUVERTE
+
+<!-- v9.0 — MODE III ASCENSION Phase 9 ouverte — 07.05.2026 -->
