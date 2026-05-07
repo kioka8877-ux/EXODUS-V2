@@ -3,8 +3,8 @@
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                 EXODUS V2 — LAUNCHER — AIGUILLAGE IMPERIAL                  ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
-║  Version: 1.0.0                                                              ║
-║  Mission: Point d'entrée unique. Routing vers Mode 1 ou Mode 2.             ║
+║  Version: 1.1.0                                                              ║
+║  Mission: Point d'entrée unique. Routing vers Mode 1, 2 ou 3.              ║
 ║  Loi: ZERO logique métier. ZERO transformation de données. ROUTING PUR.     ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 
@@ -21,12 +21,17 @@ MODES :
     [2] MODE FROM SCRATCH    — Pipeline Mode 2 (Forgé)
         Input : avatar GLB animé + audio optionnel → FINAL_OUTPUT.mp4
 
+    [3] MODE ASCENSION       — Pipeline Mode 3 (Three.js)
+        Input : avatar GLB + audio optionnel → viewer interactif + rendu vidéo
+
 Usage:
     python EXO_LAUNCHER.py                  # Menu interactif
     python EXO_LAUNCHER.py --mode 1         # Forcer Mode 1
     python EXO_LAUNCHER.py --mode 2         # Forcer Mode 2
+    python EXO_LAUNCHER.py --mode 3         # Forcer Mode 3
     python EXO_LAUNCHER.py --mode 1 --args "--unit U00 --verbose"
     python EXO_LAUNCHER.py --mode 2 --args "--fregate F01 --verbose"
+    python EXO_LAUNCHER.py --mode 3 --args "--fregate F01 --verbose"
     python EXO_LAUNCHER.py --dry-run        # Affiche le routing sans lancer
 """
 
@@ -36,7 +41,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-LAUNCHER_VERSION = "1.0.0"
+LAUNCHER_VERSION = "1.1.0"
 
 BANNER = """
 ╔═══════════════════════════════════════════════════════╗
@@ -48,7 +53,7 @@ BANNER = """
 ║  ███████ ██   ██  ██████  ██████   █████  ███████    ║
 ║                                                       ║
 ║           << FORGE-MONDE EXODUS V2 >>                ║
-║           << DUAL PIPELINE DOCTRINE >>               ║
+║           << TRIPLE PIPELINE DOCTRINE >>             ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
 """
@@ -67,6 +72,11 @@ MENU = """
 ║          Pipeline Forgé                              ║
 ║          Input : avatar GLB animé + audio optionnel  ║
 ║          → composition directe 4K/120FPS             ║
+║                                                       ║
+║   [ 3 ]  MODE ASCENSION                              ║
+║          Pipeline Three.js                           ║
+║          Input : avatar GLB + audio optionnel        ║
+║          → viewer interactif + rendu vidéo           ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
 """
@@ -99,6 +109,19 @@ PIPELINE_ENTRYPOINTS = {
             "F06": "12_M2_F06_CARRIER/CODEBASE/EXO_M2_F06_CARRIER.py",
         },
         "readme": "07_M2_F01_ANIMATION/README_DEV.md",
+    },
+    3: {
+        "label": "ASCENSION",
+        "description": "Pipeline Three.js Mode 3",
+        "units": {
+            "F01": "03_MODE_ASCENSION/F01_VALIDATION/CODEBASE/m3_f01_flask.py",
+            "F02": "03_MODE_ASCENSION/F02_LOGISTICS/CODEBASE/m3_f02_flask.py",
+            "F03": "03_MODE_ASCENSION/F03_SCENOGRAPHY/CODEBASE/m3_f03_flask.py",
+            "F04": "03_MODE_ASCENSION/F04_PHOTOGRAPHY/CODEBASE/m3_f04_flask.py",
+            "F05": "03_MODE_ASCENSION/F05_ALCHEMIST/CODEBASE/m3_f05_flask.py",
+            "F06": "03_MODE_ASCENSION/F06_CARRIER/CODEBASE/m3_f06_flask.py",
+        },
+        "readme": "03_MODE_ASCENSION/F01_VALIDATION/CODEBASE/m3_f01.ipynb",
     },
 }
 
@@ -134,19 +157,19 @@ def write_session_json(mode: int, drive_root: str, extra_args: str = "") -> None
 
 def print_banner() -> None:
     print(BANNER)
-    print(f"  Launcher v{LAUNCHER_VERSION} — Doctrine Dual Pipeline")
+    print(f"  Launcher v{LAUNCHER_VERSION} — Doctrine Triple Pipeline")
     print()
 
 
 def choose_mode_interactive() -> int:
-    """Demande à l'Opérateur de choisir son mode. Retourne 1 ou 2."""
+    """Demande à l'Opérateur de choisir son mode. Retourne 1, 2 ou 3."""
     print(MENU)
     while True:
         try:
-            choice = input("Votre choix [1/2] : ").strip()
-            if choice in ("1", "2"):
+            choice = input("Votre choix [1/2/3] : ").strip()
+            if choice in ("1", "2", "3"):
                 return int(choice)
-            print("  → Entrée invalide. Tapez 1 ou 2.")
+            print("  → Entrée invalide. Tapez 1, 2 ou 3.")
         except (KeyboardInterrupt, EOFError):
             print("\n  → Annulé.")
             sys.exit(0)
@@ -222,13 +245,13 @@ def route_to_pipeline(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="EXODUS V2 — Launcher Dual Pipeline",
+        description="EXODUS V2 — Launcher Triple Pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
     parser.add_argument(
-        "--mode", type=int, choices=[1, 2], default=None,
-        help="Mode pipeline : 1=Video-to-Video, 2=From Scratch",
+        "--mode", type=int, choices=[1, 2, 3], default=None,
+        help="Mode pipeline : 1=Video-to-Video, 2=From Scratch, 3=Ascension",
     )
     parser.add_argument(
         "--drive-root", type=str,
@@ -279,4 +302,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
