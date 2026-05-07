@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M3_F04 — Photography v1.0</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d0f; color: #e0e0e0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+#topbar {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+  padding: 7px 12px; background: #141416; border-bottom: 1px solid #2a2a2e;
+}
+.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e; text-transform: uppercase; }
+.ver  { font-size: 10px; color: #333; }
+.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; }
+.chip {
+  padding: 3px 8px; border-radius: 4px; background: #1e1e22;
+  border: 1px solid #2a2a2e; font-size: 11px; color: #666;
+}
+.chip .k { color: #c8a96e; font-weight: 600; }
+.chip.ok { border-color: #2a5c2a; color: #4caf50; }
+.tb-btn {
+  padding: 5px 11px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
+  font-weight: 600; transition: all .18s;
+}
+.tb-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+#main { display: flex; flex: 1; overflow: hidden; }
+canvas#viewport { flex: 1; display: block; }
+/* PANEL */
+#panel {
+  width: 270px; background: #141416; border-left: 1px solid #2a2a2e;
+  display: flex; flex-direction: column; padding: 12px; gap: 10px;
+  overflow-y: auto; flex-shrink: 0;
+}
+.sec { display: flex; flex-direction: column; gap: 6px; }
+.sec-title {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
+  color: #444; padding-bottom: 4px; border-bottom: 1px solid #1e1e22;
+}
+/* Presets */
+.preset-row { display: flex; gap: 5px; }
+.preset-btn {
+  flex: 1; padding: 7px 4px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 10px; color: #888; cursor: pointer;
+  font-weight: 700; letter-spacing: .06em; text-align: center; transition: all .18s;
+}
+.preset-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+.preset-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+/* Sliders */
+.row { display: flex; align-items: center; gap: 6px; font-size: 11px; margin-bottom: 2px; }
+.row label { color: #666; min-width: 52px; font-size: 10px; }
+input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
+.val { color: #aaa; font-size: 10px; min-width: 38px; text-align: right; font-family: monospace; }
+/* Color inputs */
+.color-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.color-row label { color: #666; font-size: 10px; min-width: 52px; }
+input[type=color] {
+  width: 36px; height: 22px; border: 1px solid #2a2a2e; border-radius: 3px;
+  background: none; cursor: pointer; padding: 1px;
+}
+/* Checkbox */
+.chk-row { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #888; }
+input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
+/* Buttons */
+.btn-confirm {
+  padding: 10px; border-radius: 7px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; transition: all .2s; width: 100%;
+  background: #c8a96e; color: #0d0d0f;
+}
+.btn-confirm:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #2a2a2e; }
+.btn-confirm:not(:disabled):hover { background: #e0c080; }
+.feedback { font-size: 11px; color: #4caf50; text-align: center; min-height: 14px; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">M3 — F04</span>
+  <span class="ver">Photography v1.0</span>
+  <div class="divider"></div>
+  <div class="chip"><span class="k">Avatar</span><span id="chip-avatar">—</span></div>
+  <div class="chip"><span class="k">Décor</span><span id="chip-decor">—</span></div>
+  <div class="chip"><span class="k">Spawn</span><span id="chip-spawn">—</span></div>
+  <div class="divider"></div>
+  <button class="tb-btn" onclick="loadAvatar()">DRIVE : Avatar</button>
+  <button class="tb-btn" onclick="loadDecor()">DRIVE : Décor</button>
+</div>
+
+<div id="main">
+  <canvas id="viewport"></canvas>
+
+  <div id="panel">
+
+    <!-- Presets -->
+    <div class="sec">
+      <div class="sec-title">Presets Eclairage</div>
+      <div class="preset-row">
+        <button class="preset-btn" id="pr-studio"  onclick="applyPreset('STUDIO')">STUDIO</button>
+        <button class="preset-btn" id="pr-outdoor" onclick="applyPreset('OUTDOOR')">OUTDOOR</button>
+        <button class="preset-btn" id="pr-neon"    onclick="applyPreset('NEON')">NEON</button>
+      </div>
+    </div>
+
+    <!-- Camera -->
+    <div class="sec">
+      <div class="sec-title">Camera Principale</div>
+      <div class="row"><label>FOV</label>
+        <input type="range" id="sl-fov" min="15" max="120" step="1" value="55" oninput="updateCam()">
+        <span class="val" id="v-fov">55°</span>
+      </div>
+      <div class="row"><label>Pos X</label>
+        <input type="range" id="sl-cx" min="-50" max="50" step="0.1" value="0" oninput="updateCam()">
+        <span class="val" id="v-cx">0</span>
+      </div>
+      <div class="row"><label>Pos Y</label>
+        <input type="range" id="sl-cy" min="0" max="30" step="0.1" value="3" oninput="updateCam()">
+        <span class="val" id="v-cy">3</span>
+      </div>
+      <div class="row"><label>Pos Z</label>
+        <input type="range" id="sl-cz" min="-50" max="50" step="0.1" value="6" oninput="updateCam()">
+        <span class="val" id="v-cz">6</span>
+      </div>
+    </div>
+
+    <!-- Ambiante -->
+    <div class="sec">
+      <div class="sec-title">Lumière Ambiante</div>
+      <div class="row"><label>Intensité</label>
+        <input type="range" id="sl-ai" min="0" max="5" step="0.05" value="1.5" oninput="updateLights()">
+        <span class="val" id="v-ai">1.5</span>
+      </div>
+      <div class="color-row"><label>Couleur</label>
+        <input type="color" id="col-a" value="#ffffff" oninput="updateLights()">
+      </div>
+    </div>
+
+    <!-- Directionnelle -->
+    <div class="sec">
+      <div class="sec-title">Lumière Directionnelle</div>
+      <div class="row"><label>Intensité</label>
+        <input type="range" id="sl-di" min="0" max="6" step="0.1" value="2.0" oninput="updateLights()">
+        <span class="val" id="v-di">2.0</span>
+      </div>
+      <div class="color-row"><label>Couleur</label>
+        <input type="color" id="col-d" value="#fff4e0" oninput="updateLights()">
+      </div>
+      <div class="row"><label>Dir X</label>
+        <input type="range" id="sl-dx" min="-20" max="20" step="0.5" value="5" oninput="updateLights()">
+        <span class="val" id="v-dx">5</span>
+      </div>
+      <div class="row"><label>Dir Y</label>
+        <input type="range" id="sl-dy" min="0" max="30" step="0.5" value="10" oninput="updateLights()">
+        <span class="val" id="v-dy">10</span>
+      </div>
+      <div class="row"><label>Dir Z</label>
+        <input type="range" id="sl-dz" min="-20" max="20" step="0.5" value="5" oninput="updateLights()">
+        <span class="val" id="v-dz">5</span>
+      </div>
+      <div class="chk-row">
+        <input type="checkbox" id="chk-shadow" checked onchange="updateLights()">
+        <label for="chk-shadow">Ombres portées</label>
+      </div>
+    </div>
+
+    <!-- Hemisphere -->
+    <div class="sec">
+      <div class="sec-title">Hemisphere</div>
+      <div class="row"><label>Intensité</label>
+        <input type="range" id="sl-hi" min="0" max="3" step="0.05" value="0.6" oninput="updateLights()">
+        <span class="val" id="v-hi">0.6</span>
+      </div>
+      <div class="color-row"><label>Sky</label>
+        <input type="color" id="col-hs" value="#8888ff" oninput="updateLights()">
+      </div>
+      <div class="color-row"><label>Ground</label>
+        <input type="color" id="col-hg" value="#443322" oninput="updateLights()">
+      </div>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div class="sec">
+      <button class="btn-confirm" id="btn-confirm" onclick="saveConfig()">CONFIRMER DRIVE</button>
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { GLTFLoader }    from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+
+// ─── SCENE ────────────────────────────────────────────────────────
+const canvas   = document.getElementById('viewport');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111113);
+
+// Editor camera (navigate with OrbitControls)
+const editorCam = new THREE.PerspectiveCamera(55, 1, 0.01, 2000);
+editorCam.position.set(10, 8, 15);
+const orbit = new OrbitControls(editorCam, renderer.domElement);
+orbit.update();
+
+// Main camera (the one being configured → shown via CameraHelper)
+const mainCam = new THREE.PerspectiveCamera(55, 1, 0.01, 10000);
+mainCam.position.set(0, 3, 6);
+
+const camHelper = new THREE.CameraHelper(mainCam);
+// Gold tint for helper
+camHelper.material = new THREE.LineBasicMaterial({ color: 0xc8a96e, opacity: 0.7, transparent: true });
+scene.add(camHelper);
+
+// ─── LIGHTS ───────────────────────────────────────────────────────
+const ambLight  = new THREE.AmbientLight(0xffffff, 1.5);
+const dirLight  = new THREE.DirectionalLight(0xfff4e0, 2.0);
+dirLight.position.set(5, 10, 5);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(2048, 2048);
+const hemiLight = new THREE.HemisphereLight(0x8888ff, 0x443322, 0.6);
+scene.add(ambLight, dirLight, hemiLight);
+
+// ─── RESIZE ───────────────────────────────────────────────────────
+new ResizeObserver(() => {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  editorCam.aspect = w / h;
+  editorCam.updateProjectionMatrix();
+  mainCam.aspect = w / h;
+  mainCam.updateProjectionMatrix();
+}).observe(canvas);
+
+// ─── RENDER LOOP ──────────────────────────────────────────────────
+(function animate() {
+  requestAnimationFrame(animate);
+  orbit.update();
+  camHelper.update();
+  renderer.render(scene, editorCam);
+})();
+
+// ─── PRESETS ──────────────────────────────────────────────────────
+const PRESETS = {
+  STUDIO: {
+    ai: 1.5, ac: '#ffffff',
+    di: 2.0, dc: '#fff4e0', dx: 5,  dy: 10, dz: 5,  shadow: true,
+    hi: 0.6, hs: '#8888ff', hg: '#443322',
+    hdri: 'studio_soft'
+  },
+  OUTDOOR: {
+    ai: 0.8, ac: '#ffffff',
+    di: 3.5, dc: '#fffbe0', dx: 8,  dy: 15, dz: 3,  shadow: true,
+    hi: 0.8, hs: '#87ceeb', hg: '#556644',
+    hdri: 'outdoor_clear'
+  },
+  NEON: {
+    ai: 2.0, ac: '#ff00ff',
+    di: 0.5, dc: '#ffffff', dx: 0,  dy: 5,  dz: 0,  shadow: false,
+    hi: 1.2, hs: '#00ffff', hg: '#ff00ff',
+    hdri: 'neutre'
+  }
+};
+
+window.applyPreset = (name) => {
+  const p = PRESETS[name];
+  if (!p) return;
+  setSlider('sl-ai', p.ai); setSlider('sl-di', p.di);
+  setSlider('sl-dx', p.dx); setSlider('sl-dy', p.dy); setSlider('sl-dz', p.dz);
+  setSlider('sl-hi', p.hi);
+  document.getElementById('col-a').value  = p.ac;
+  document.getElementById('col-d').value  = p.dc;
+  document.getElementById('col-hs').value = p.hs;
+  document.getElementById('col-hg').value = p.hg;
+  document.getElementById('chk-shadow').checked = p.shadow;
+  ['pr-studio','pr-outdoor','pr-neon'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById(`pr-${name.toLowerCase()}`).classList.add('active');
+  updateLights();
+  document.getElementById('feedback').textContent = `Preset ${name} appliqué`;
+  document.getElementById('feedback').style.color = '#c8a96e';
+};
+
+function setSlider(id, val) {
+  document.getElementById(id).value = val;
+}
+
+// ─── UPDATE CAMERA ────────────────────────────────────────────────
+window.updateCam = () => {
+  const fov = parseFloat(document.getElementById('sl-fov').value);
+  const cx  = parseFloat(document.getElementById('sl-cx').value);
+  const cy  = parseFloat(document.getElementById('sl-cy').value);
+  const cz  = parseFloat(document.getElementById('sl-cz').value);
+  document.getElementById('v-fov').textContent = fov + '°';
+  document.getElementById('v-cx').textContent  = cx.toFixed(1);
+  document.getElementById('v-cy').textContent  = cy.toFixed(1);
+  document.getElementById('v-cz').textContent  = cz.toFixed(1);
+  mainCam.fov = fov;
+  mainCam.position.set(cx, cy, cz);
+  mainCam.updateProjectionMatrix();
+};
+
+// ─── UPDATE LIGHTS ────────────────────────────────────────────────
+window.updateLights = () => {
+  const ai = parseFloat(document.getElementById('sl-ai').value);
+  const di = parseFloat(document.getElementById('sl-di').value);
+  const dx = parseFloat(document.getElementById('sl-dx').value);
+  const dy = parseFloat(document.getElementById('sl-dy').value);
+  const dz = parseFloat(document.getElementById('sl-dz').value);
+  const hi = parseFloat(document.getElementById('sl-hi').value);
+  document.getElementById('v-ai').textContent = ai.toFixed(2);
+  document.getElementById('v-di').textContent = di.toFixed(1);
+  document.getElementById('v-dx').textContent = dx.toFixed(1);
+  document.getElementById('v-dy').textContent = dy.toFixed(1);
+  document.getElementById('v-dz').textContent = dz.toFixed(1);
+  document.getElementById('v-hi').textContent = hi.toFixed(2);
+
+  ambLight.intensity = ai;
+  ambLight.color.set(document.getElementById('col-a').value);
+  dirLight.intensity = di;
+  dirLight.color.set(document.getElementById('col-d').value);
+  dirLight.position.set(dx, dy, dz);
+  dirLight.castShadow = document.getElementById('chk-shadow').checked;
+  hemiLight.intensity = hi;
+  hemiLight.color.set(document.getElementById('col-hs').value);
+  hemiLight.groundColor.set(document.getElementById('col-hg').value);
+};
+
+// ─── LOAD GLB ─────────────────────────────────────────────────────
+window.loadAvatar = () => loadGLB('/files/avatar', 'chip-avatar', true);
+window.loadDecor  = () => loadGLB('/files/decor',  'chip-decor',  false);
+
+async function loadGLB(url, chipId, isAvatar) {
+  document.getElementById(chipId).textContent = '…';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.statusText);
+    const buf = await res.arrayBuffer();
+    new GLTFLoader().parse(buf, '', (gltf) => {
+      gltf.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }});
+      scene.add(gltf.scene);
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      const ctr = box.getCenter(new THREE.Vector3());
+      const sz  = box.getSize(new THREE.Vector3()).length();
+      if (isAvatar) {
+        // Position avatar using spawn_config if loaded
+        if (window._spawnCfg) {
+          const s = window._spawnCfg;
+          gltf.scene.position.set(s.spawn.x, s.spawn.y, s.spawn.z);
+          gltf.scene.scale.setScalar(s.scale || 1);
+          gltf.scene.rotation.y = ((s.rot_y || 0) * Math.PI) / 180;
+        }
+      } else {
+        // Frame decor in editor camera
+        editorCam.position.set(ctr.x, ctr.y + sz * 0.4, ctr.z + sz * 0.8);
+        orbit.target.copy(ctr); orbit.update();
+      }
+      document.getElementById(chipId).textContent = 'OK';
+      document.getElementById(chipId).parentElement.className = 'chip ok';
+    }, err => { throw err; });
+  } catch(e) {
+    document.getElementById(chipId).textContent = 'ERR';
+    setFeedback(`Erreur : ${e.message}`, '#f44336');
+  }
+}
+
+// ─── AUTO-LOAD SPAWN CONFIG ───────────────────────────────────────
+async function loadSpawnConfig() {
+  try {
+    const r = await fetch('/config/spawn');
+    if (!r.ok) { document.getElementById('chip-spawn').textContent = 'absent'; return; }
+    window._spawnCfg = await r.json();
+    document.getElementById('chip-spawn').textContent = 'OK';
+    document.getElementById('chip-spawn').parentElement.className = 'chip ok';
+  } catch(e) {
+    document.getElementById('chip-spawn').textContent = 'ERR';
+  }
+}
+
+// ─── SAVE CONFIG ──────────────────────────────────────────────────
+window.saveConfig = async () => {
+  const btn = document.getElementById('btn-confirm');
+  const fb  = document.getElementById('feedback');
+  btn.disabled = true;
+  fb.textContent = 'Sauvegarde…'; fb.style.color = '#c8a96e';
+
+  const fov = parseFloat(document.getElementById('sl-fov').value);
+  const cx  = parseFloat(document.getElementById('sl-cx').value);
+  const cy  = parseFloat(document.getElementById('sl-cy').value);
+  const cz  = parseFloat(document.getElementById('sl-cz').value);
+  const ai  = parseFloat(document.getElementById('sl-ai').value);
+  const di  = parseFloat(document.getElementById('sl-di').value);
+  const dx  = parseFloat(document.getElementById('sl-dx').value);
+  const dy  = parseFloat(document.getElementById('sl-dy').value);
+  const dz  = parseFloat(document.getElementById('sl-dz').value);
+  const hi  = parseFloat(document.getElementById('sl-hi').value);
+
+  // Detect active preset
+  let hdri = 'studio_soft';
+  ['STUDIO','OUTDOOR','NEON'].forEach(n => {
+    if (document.getElementById(`pr-${n.toLowerCase()}`).classList.contains('active')) {
+      hdri = PRESETS[n].hdri;
+    }
+  });
+
+  const payload = {
+    camera_config: {
+      fov, position: { x: +cx.toFixed(4), y: +cy.toFixed(4), z: +cz.toFixed(4) },
+      near: 0.01, far: 10000
+    },
+    light_config: {
+      preset: hdri,
+      ambient:     { intensity: ai, color: document.getElementById('col-a').value },
+      directional: {
+        intensity: di, color: document.getElementById('col-d').value,
+        shadows: document.getElementById('chk-shadow').checked,
+        position: { x: +dx.toFixed(2), y: +dy.toFixed(2), z: +dz.toFixed(2) }
+      },
+      hemisphere:  {
+        sky: document.getElementById('col-hs').value,
+        ground: document.getElementById('col-hg').value,
+        intensity: hi
+      },
+      hdri
+    }
+  };
+
+  try {
+    const r = await fetch('/save-config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if (d.ok) {
+      fb.textContent = 'camera_config.json + light_config.json sauvés ✓';
+      fb.style.color = '#4caf50';
+    } else throw new Error(d.error);
+  } catch(e) {
+    fb.textContent = `Erreur : ${e.message}`;
+    fb.style.color = '#f44336';
+  }
+  btn.disabled = false;
+};
+
+function setFeedback(msg, color) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg; el.style.color = color;
+}
+
+// Init
+loadSpawnConfig();
+</script>
+</body>
+</html>
