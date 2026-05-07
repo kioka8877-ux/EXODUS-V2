@@ -121,9 +121,10 @@ def _run_pipeline(config):
         # ── ETAPE 1 : RIFE ────────────────────────────────────────
         if cancel_flag.is_set(): return _abort()
         _update(1, 0, "Initialisation RIFE...")
-        if fps_target == 24:
-            # bypass — copie directe
+        if fps_target in (24, 30):
+            # bypass RIFE — copie directe (24fps) ou sous-échantillonnage (30fps)
             import shutil
+            # Pour 30fps depuis 24fps : on copie toutes les frames et ffmpeg gère le timing
             for i, f in enumerate(frames):
                 if cancel_flag.is_set(): return _abort()
                 shutil.copy(f, RIFE_OUT / f.name)
