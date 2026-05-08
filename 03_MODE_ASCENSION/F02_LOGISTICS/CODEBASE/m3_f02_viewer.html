@@ -111,8 +111,8 @@ select.bone-select:focus { border-color: #c8a96e; }
   <div class="chip"><span class="k">Avatar</span><span id="chip-avatar">—</span></div>
   <div class="chip"><span class="k">Props</span><span id="chip-props">0</span></div>
   <div class="divider"></div>
-  <button class="tb-btn" id="btn-load-avatar" onclick="loadAvatar()">CHARGER AVATAR DRIVE</button>
-  <button class="tb-btn" id="btn-load-prop" onclick="loadPropFromDrive()" disabled>CHARGER PROP +</button>
+  <button class="tb-btn" id="btn-load-avatar">CHARGER AVATAR DRIVE</button>
+  <button class="tb-btn" id="btn-load-prop" disabled>CHARGER PROP +</button>
 </div>
 
 <div id="main">
@@ -121,7 +121,7 @@ select.bone-select:focus { border-color: #c8a96e; }
   <div id="panel">
     <!-- SKIP -->
     <div class="sec">
-      <button class="btn-skip" onclick="doSkip()">SKIP — SANS PROPS</button>
+      <button class="btn-skip" id="btn-skip">SKIP — SANS PROPS</button>
     </div>
 
     <!-- Statut Avatar -->
@@ -153,7 +153,7 @@ select.bone-select:focus { border-color: #c8a96e; }
 
     <!-- Confirmer -->
     <div class="sec">
-      <button class="btn-confirm" id="btn-confirm" disabled onclick="exportAndSave()">
+      <button class="btn-confirm" id="btn-confirm" disabled>
         CONFIRMER + EXPORT GLB
       </button>
       <div class="feedback" id="feedback"></div>
@@ -457,6 +457,12 @@ fetch('/info').then(r => r.json()).then(d => {
     document.getElementById('chip-props').textContent = `${d.props.length} dispo`;
   }
 });
+// ─── EVENT WIRING ─────────────────────────────────────────────────
+document.getElementById('btn-load-avatar').addEventListener('click', function(){ loadAvatar(); });
+document.getElementById('btn-load-prop').addEventListener('click', function(){ loadPropFromDrive(); });
+document.getElementById('btn-skip').addEventListener('click', function(){ doSkip(); });
+document.getElementById('btn-confirm').addEventListener('click', function(){ exportAndSave(); });
+
 </script>
 </body>
 </html>
