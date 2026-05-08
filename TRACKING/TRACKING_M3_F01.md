@@ -1,7 +1,7 @@
 # TRACKING F01 — VALIDATION
 ## "Le Scrutateur du Mechanicus"
 
-**Statut** : ✅ FORGE
+**Statut** : ✅ SCELLÉ — TEST PROD OK (2026-05-08)
 **Priorité** : P1
 **Dépendances entrantes** : aucune
 **Dépendances sortantes** : m3_f01_report.json → F02 F03 F04 F05 F06
@@ -69,6 +69,47 @@ OUT : m3_f01_report.json
 | F01-S4-T3 | Badge résultat (vert OK / rouge FAIL) avec marge en secondes | ✅ DONE |
 | F01-S4-T4 | JSON preview monospace auto-généré | ✅ DONE |
 | F01-S4-T5 | POST /save-report → feedback "Sauvé sur Drive" | ✅ DONE |
+
+
+## SCEAU DE TEST EN PRODUCTION
+
+**Date** : 2026-05-08
+**Environnement** : Google Colab — proxy `*.colab.dev` — Flask local
+
+### Résultat JSON validé
+
+```json
+{
+  "status": "OK",
+  "has_audio": false,
+  "anim_duration": 4.133,
+  "selected_clip": "A-person-runnin"
+}
+```
+
+### Post-Mortem — Erreurs détectées et patchées
+
+| # | Problème | Cause | Patch appliqué |
+|---|----------|-------|----------------|
+| 1 | `ReferenceError: setAudio is not defined` | `<script type="module">` isole les fonctions — `onclick=` inline ne trouve rien en scope global | `<script type="module">` → `<script>` classique |
+| 2 | `Failed to resolve module specifier "three"` | Proxy Colab bloque les bare module specifiers | Retrait imports ES · Three.js chargé via CDN `three@0.128.0` |
+| 3 | Cache agressif proxy Colab | Ctrl+Shift+R insuffisant | Cache-busting `?v=N` dans l'URL |
+| 4 | Cellule Flask écrase le patch HTML | `shutil.copy` re-exécuté après patch local | Ne pas re-exécuter la cellule Flask après patch |
+
+### Règle de doctrine généralisée
+> Ne jamais utiliser `onclick=` inline quand les fonctions sont définies dans un `<script>`.
+> Toujours câbler via `addEventListener`. Jamais `type="module"` avec Three.js CDN classic.
+
+### Impact frégates sœurs
+Post-mortem appliqué en audit préventif F02–F06 (2026-05-08) :
+- **F02** : SAFE — onclick inline non-critique (script classique) → nettoyé
+- **F03** : CRITIQUE → patché (commit `66f7b3d203`)
+- **F04** : CRITIQUE → patché (commit `6030c50b09`)
+- **F05** : CRITIQUE (importmap + bare specifiers) → patché (commit `5d871b57d7`)
+- **F06** : SAFE — onclick inline non-critique → nettoyé (commit `e9683a60ad`)
+
+---
+**Verdict final** : F01 VALIDATION scellée. Pipeline JSON opérationnel. Frégate prête à transmettre `m3_f01_report.json` aux frégates aval (F02–F06).
 
 ## VALIDATION SCEAU
 - [x] GLB charge sans renderer WebGL
