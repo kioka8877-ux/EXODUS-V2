@@ -199,8 +199,8 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13p
     <div class="sec">
       <div class="sec-title">OVERLAY TEXTE</div>
       <div class="toggle-row">
-        <button class="tog-btn active" onclick="setTextMode(false)" id="tog-notxt">SANS TEXTE</button>
-        <button class="tog-btn" onclick="setTextMode(true)"  id="tog-txt">AVEC TEXTE</button>
+        <button class="tog-btn active" id="tog-notxt">SANS TEXTE</button>
+        <button class="tog-btn"  id="tog-txt">AVEC TEXTE</button>
       </div>
     </div>
 
@@ -210,32 +210,31 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13p
         <div class="param-row">
           <div class="param-label">Texte</div>
           <input type="text" id="overlay-text" placeholder="Votre texte ici..."
-                 oninput="updatePreview()" value="">
+                 value="">
         </div>
       </div>
       <div class="sec">
         <div class="sec-title">COULEUR</div>
         <div class="color-row">
-          <button class="col-btn active" data-col="yellow" onclick="setColor('yellow','#ffdf00')">JAUNE</button>
-          <button class="col-btn" data-col="white"  onclick="setColor('white','#ffffff')">BLANC</button>
-          <button class="col-btn" data-col="black"  onclick="setColor('black','#000000')">NOIR</button>
-          <button class="col-btn" data-col="red"    onclick="setColor('red','#e05050')">ROUGE</button>
+          <button class="col-btn active" id="col-yellow" data-col="yellow">JAUNE</button>
+          <button class="col-btn" id="col-white" data-col="white">BLANC</button>
+          <button class="col-btn" id="col-black" data-col="black">NOIR</button>
+          <button class="col-btn" id="col-red" data-col="red">ROUGE</button>
         </div>
       </div>
       <div class="sec">
         <div class="sec-title">POSITION</div>
         <div class="pos-row">
-          <button class="pos-btn" onclick="setPos('top')"    id="pos-top">HAUT</button>
-          <button class="pos-btn active" onclick="setPos('center')" id="pos-center">CENTRE</button>
-          <button class="pos-btn" onclick="setPos('bottom')" id="pos-bottom">BAS</button>
+          <button class="pos-btn"    id="pos-top">HAUT</button>
+          <button class="pos-btn active" id="pos-center">CENTRE</button>
+          <button class="pos-btn" id="pos-bottom">BAS</button>
         </div>
       </div>
       <div class="sec">
         <div class="sec-title">TAILLE</div>
         <div class="param-row">
           <div class="param-label">Taille <span id="size-val">48px</span></div>
-          <input type="range" id="font-size" min="24" max="96" value="48"
-                 oninput="document.getElementById('size-val').textContent=this.value+'px'; updatePreview()">
+          <input type="range" id="font-size" min="24" max="96" value="48">
         </div>
       </div>
     </div>
@@ -260,15 +259,15 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13p
     <div class="sec">
       <div class="sec-title">INTERPOLATION (FPS FINAL)</div>
       <div class="fps-row">
-        <button class="fps-btn" onclick="setFps(24)" id="fps-24">
+        <button class="fps-btn" id="fps-24">
           <span class="fb-fps">24fps</span>
           <span class="fb-note">Bypass RIFE</span>
         </button>
-        <button class="fps-btn" onclick="setFps(30)" id="fps-30">
+        <button class="fps-btn" id="fps-30">
           <span class="fb-fps">30fps</span>
           <span class="fb-note">Standard</span>
         </button>
-        <button class="fps-btn active" onclick="setFps(60)" id="fps-60">
+        <button class="fps-btn active" id="fps-60">
           <span class="fb-fps">60fps</span>
           <span class="fb-note">Recommandé</span>
         </button>
@@ -276,13 +275,13 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13p
     </div>
 
     <div class="sec">
-      <button class="abtn abtn-ok" id="btn-encode" onclick="startEncode()">
+      <button class="abtn abtn-ok" id="btn-encode">
         LANCER L'ENCODAGE
       </button>
-      <button class="abtn abtn-cancel" id="btn-cancel" onclick="cancelEncode()" style="display:none;">
+      <button class="abtn abtn-cancel" id="btn-cancel" style="display:none;">
         ANNULER
       </button>
-      <button class="abtn abtn-dl" id="btn-dl" onclick="downloadMp4()" disabled>
+      <button class="abtn abtn-dl" id="btn-dl" disabled>
         TELECHARGER MP4
       </button>
       <div id="log"></div>
@@ -577,6 +576,25 @@ function setLog(msg, isErr) {
   el.className = isErr ? 'err' : '';
   el.textContent = msg;
 }
+// ─── EVENT WIRING ─────────────────────────────────────────────────
+document.getElementById('tog-notxt').addEventListener('click', function(){ setTextMode(false); });
+document.getElementById('tog-txt').addEventListener('click', function(){ setTextMode(true); });
+document.getElementById('col-yellow').addEventListener('click', function(){ setColor('yellow','#ffdf00'); });
+document.getElementById('col-white').addEventListener('click', function(){ setColor('white','#ffffff'); });
+document.getElementById('col-black').addEventListener('click', function(){ setColor('black','#000000'); });
+document.getElementById('col-red').addEventListener('click', function(){ setColor('red','#e05050'); });
+document.getElementById('pos-top').addEventListener('click', function(){ setPos('top'); });
+document.getElementById('pos-center').addEventListener('click', function(){ setPos('center'); });
+document.getElementById('pos-bottom').addEventListener('click', function(){ setPos('bottom'); });
+document.getElementById('fps-24').addEventListener('click', function(){ setFps(24); });
+document.getElementById('fps-30').addEventListener('click', function(){ setFps(30); });
+document.getElementById('fps-60').addEventListener('click', function(){ setFps(60); });
+document.getElementById('btn-encode').addEventListener('click', function(){ startEncode(); });
+document.getElementById('btn-cancel').addEventListener('click', function(){ cancelEncode(); });
+document.getElementById('btn-dl').addEventListener('click', function(){ downloadMp4(); });
+document.getElementById('overlay-text').addEventListener('input', function(){ updatePreview(); });
+document.getElementById('font-size').addEventListener('input', function(){ document.getElementById('size-val').textContent = this.value + 'px'; updatePreview(); });
+
 </script>
 </body>
 </html>
