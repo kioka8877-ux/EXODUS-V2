@@ -130,17 +130,17 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
       <div class="sec-title">Bloom</div>
       <div class="row">
         <label>Intensité</label>
-        <input type="range" id="sl-bloom-i" min="0" max="5" step="0.05" value="1.0" oninput="updateFX()">
+        <input type="range" id="sl-bloom-i" min="0" max="5" step="0.05" value="1.0">
         <span class="val" id="v-bloom-i">1.0</span>
       </div>
       <div class="row">
         <label>Rayon</label>
-        <input type="range" id="sl-bloom-r" min="0" max="1" step="0.01" value="0.4" oninput="updateFX()">
+        <input type="range" id="sl-bloom-r" min="0" max="1" step="0.01" value="0.4">
         <span class="val" id="v-bloom-r">0.40</span>
       </div>
       <div class="row">
         <label>Seuil</label>
-        <input type="range" id="sl-bloom-t" min="0" max="1" step="0.01" value="0.3" oninput="updateFX()">
+        <input type="range" id="sl-bloom-t" min="0" max="1" step="0.01" value="0.3">
         <span class="val" id="v-bloom-t">0.30</span>
       </div>
     </div>
@@ -150,12 +150,12 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
       <div class="sec-title">Vignette</div>
       <div class="row">
         <label>Offset</label>
-        <input type="range" id="sl-vig-o" min="0" max="1" step="0.01" value="0.3" oninput="updateFX()">
+        <input type="range" id="sl-vig-o" min="0" max="1" step="0.01" value="0.3">
         <span class="val" id="v-vig-o">0.30</span>
       </div>
       <div class="row">
         <label>Darkness</label>
-        <input type="range" id="sl-vig-d" min="0" max="1" step="0.01" value="0.5" oninput="updateFX()">
+        <input type="range" id="sl-vig-d" min="0" max="1" step="0.01" value="0.5">
         <span class="val" id="v-vig-d">0.50</span>
       </div>
     </div>
@@ -165,17 +165,17 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
       <div class="sec-title">Couleur</div>
       <div class="row">
         <label>Saturation</label>
-        <input type="range" id="sl-sat" min="-1" max="1" step="0.02" value="0" oninput="updateFX()">
+        <input type="range" id="sl-sat" min="-1" max="1" step="0.02" value="0">
         <span class="val" id="v-sat">0.00</span>
       </div>
       <div class="row">
         <label>Luminosité</label>
-        <input type="range" id="sl-bri" min="-1" max="1" step="0.02" value="0" oninput="updateFX()">
+        <input type="range" id="sl-bri" min="-1" max="1" step="0.02" value="0">
         <span class="val" id="v-bri">0.00</span>
       </div>
       <div class="row">
         <label>Contraste</label>
-        <input type="range" id="sl-con" min="-1" max="1" step="0.02" value="0" oninput="updateFX()">
+        <input type="range" id="sl-con" min="-1" max="1" step="0.02" value="0">
         <span class="val" id="v-con">0.00</span>
       </div>
     </div>
@@ -185,11 +185,11 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
       <div class="sec-title">Style</div>
       <div class="toggle-row">
         <span>FXAA Anti-aliasing</span>
-        <button class="toggle-btn on" id="btn-fxaa" onclick="toggleFXAA()">ON</button>
+        <button class="toggle-btn on" id="btn-fxaa">ON</button>
       </div>
       <div class="toggle-row">
         <span>Toon Shader</span>
-        <button class="toggle-btn" id="btn-toon" onclick="toggleToon()">OFF</button>
+        <button class="toggle-btn" id="btn-toon">OFF</button>
       </div>
     </div>
 
@@ -197,9 +197,9 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
     <div class="sec">
       <div class="sec-title">FPS Render</div>
       <div class="fps-row">
-        <button class="fps-btn active" id="fps-24" onclick="setFps(24)">24 fps</button>
-        <button class="fps-btn" id="fps-30" onclick="setFps(30)">30 fps</button>
-        <button class="fps-btn" id="fps-60" onclick="setFps(60)">60 fps</button>
+        <button class="fps-btn active" id="fps-24">24 fps</button>
+        <button class="fps-btn" id="fps-30">30 fps</button>
+        <button class="fps-btn" id="fps-60">60 fps</button>
       </div>
       <div class="progress-txt" id="frames-info">— frames</div>
     </div>
@@ -210,8 +210,8 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
     <div class="sec">
       <div class="progress-wrap"><div class="progress-bar" id="progress-bar"></div></div>
       <div class="progress-txt" id="progress-txt">Prêt</div>
-      <button class="btn-render" id="btn-render" onclick="launchRender()">LANCER RENDER</button>
-      <button class="btn-cancel" id="btn-cancel" onclick="cancelRender()">ANNULER</button>
+      <button class="btn-render" id="btn-render">LANCER RENDER</button>
+      <button class="btn-cancel" id="btn-cancel">ANNULER</button>
       <div class="feedback" id="feedback"></div>
     </div>
 
@@ -222,19 +222,10 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
 <div id="scene-ready" style="display:none"></div>
 <div id="frame-done" data-ready="0" style="display:none"></div>
 
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
-
 <script type="module">
-import * as THREE from 'three';
-import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import { GLTFLoader }    from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import {
   EffectComposer, RenderPass, EffectPass,
   BloomEffect, VignetteEffect, HueSaturationEffect,
@@ -638,6 +629,16 @@ if (!isRender) {
     composer.render();
   })();
 }
+
+// ─── EVENT WIRING ─────────────────────────────────────────────────
+document.getElementById('btn-fxaa').addEventListener('click', function(){ toggleFXAA(); });
+document.getElementById('btn-toon').addEventListener('click', function(){ toggleToon(); });
+document.getElementById('fps-24').addEventListener('click', function(){ setFps(24); });
+document.getElementById('fps-30').addEventListener('click', function(){ setFps(30); });
+document.getElementById('fps-60').addEventListener('click', function(){ setFps(60); });
+document.getElementById('btn-render').addEventListener('click', function(){ launchRender(); });
+document.getElementById('btn-cancel').addEventListener('click', function(){ cancelRender(); });
+['sl-bloom-i','sl-bloom-r','sl-bloom-t','sl-vig-o','sl-vig-d','sl-sat','sl-bri','sl-con'].forEach(function(id){ document.getElementById(id).addEventListener('input', function(){ updateFX(); }); });
 
 // ─── INIT ─────────────────────────────────────────────────────────
 loadSpawnConfig();
