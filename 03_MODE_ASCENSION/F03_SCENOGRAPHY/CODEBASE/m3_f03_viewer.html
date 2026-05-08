@@ -3,218 +3,115 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M3_F03 — Scenography v2.0</title>
+<title>M3_F03 — Scenography v1.0</title>
 <style>
+html { height: 100%; overflow: hidden; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
   background: #0d0d0f; color: #e0e0e0;
   font-family: 'Segoe UI', system-ui, sans-serif;
-  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  height: 100%; min-height: 100vh; overflow: hidden;
 }
-/* TOPBAR */
 #topbar {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 14px; background: #141416;
-  border-bottom: 1px solid #2a2a2e; flex-shrink: 0; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  flex-wrap: nowrap; overflow-x: auto;
+  padding: 7px 12px; background: #141416; border-bottom: 1px solid #2a2a2e;
+  scrollbar-width: none;
 }
-.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e; text-transform: uppercase; }
-.ver  { font-size: 10px; color: #333; }
-.file-group { display: flex; align-items: center; gap: 5px; }
-.file-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: .08em; }
-.file-btn { position: relative; cursor: pointer; }
-.file-btn input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
-.fbtn {
-  display: flex; align-items: center; gap: 5px; padding: 5px 10px;
-  border: 1px solid #2a2a2e; border-radius: 5px; background: #1c1c20;
-  font-size: 11px; color: #bbb; cursor: pointer; transition: border-color .2s; white-space: nowrap;
+#topbar::-webkit-scrollbar { display: none; }
+.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e;
+        text-transform: uppercase; white-space: nowrap; }
+.ver  { font-size: 10px; color: #333; white-space: nowrap; }
+.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; flex-shrink: 0; }
+.chip {
+  padding: 3px 8px; border-radius: 4px; background: #1e1e22;
+  border: 1px solid #2a2a2e; font-size: 11px; color: #666; white-space: nowrap;
 }
-.file-btn:hover .fbtn  { border-color: #c8a96e; }
-.file-btn.loaded .fbtn { border-color: #4caf50; color: #4caf50; }
-.file-btn.error  .fbtn { border-color: #e05050; color: #e05050; }
-.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; }
-#hint { font-size: 11px; color: #444; margin-left: 4px; }
-#prog-wrap { height: 3px; background: #1e1e22; border-radius: 2px; width: 140px; display: none; align-self: center; }
-#prog-bar  { height: 100%; background: #c8a96e; border-radius: 2px; width: 0%; transition: width .15s; }
-#prog-lbl  { font-size: 10px; color: #c8a96e; display: none; min-width: 32px; }
-/* MAIN */
-#main { display: flex; flex: 1; overflow: hidden; }
-#viewport { flex: 1; position: relative; }
-#viewport canvas { display: block; }
-#placeholder {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; color: #2a2a2e; gap: 12px; pointer-events: none;
+.chip .k { color: #c8a96e; font-weight: 600; }
+.chip.ok { border-color: #2a5c2a; color: #4caf50; }
+.tb-btn {
+  padding: 5px 12px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
+  font-weight: 600; transition: all .18s; white-space: nowrap; flex-shrink: 0;
 }
-#placeholder p { font-size: 12px; color: #333; }
-/* POPUP OVERLAY — position fixed pour couvrir tout l'ecran */
-#popup-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.65); display: none;
-  align-items: center; justify-content: center; z-index: 100;
-  backdrop-filter: blur(4px);
-}
-#popup-overlay.show { display: flex; }
-.popup-box {
-  background: #1a1a1e; border: 1px solid #333; border-radius: 12px;
-  padding: 24px 28px; min-width: 300px; max-width: 360px;
-  box-shadow: 0 12px 40px rgba(0,0,0,.9);
-}
-.popup-icon  { font-size: 26px; margin-bottom: 10px; }
-.popup-title { font-size: 15px; font-weight: 700; color: #e8e8e8; margin-bottom: 8px; }
-.popup-sub   {
-  font-size: 11px; color: #888; margin-bottom: 20px;
-  font-family: monospace; background: #111; padding: 7px 10px;
-  border-radius: 6px; border-left: 2px solid #c8a96e;
-}
-.popup-btns  { display: flex; gap: 10px; }
-.pb-yes {
-  flex: 1; padding: 11px; border-radius: 7px; border: none; cursor: pointer;
-  font-size: 12px; font-weight: 700;
-  background: linear-gradient(135deg, #c8a96e, #a07840); color: #0d0d0f;
-  transition: all .18s;
-}
-.pb-yes:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(200,169,110,.4); }
-.pb-no {
-  flex: 1; padding: 11px; border-radius: 7px; border: 1px solid #2a2a2e;
-  cursor: pointer; font-size: 12px; background: #141416; color: #777; transition: all .18s;
-}
-.pb-no:hover { background: #222; color: #bbb; }
-/* LOADING */
-#loading {
-  position: absolute; inset: 0; background: rgba(0,0,0,.78);
-  display: none; align-items: center; justify-content: center;
-  flex-direction: column; gap: 14px; z-index: 20;
-}
-#loading.show { display: flex; }
-.spinner { width: 36px; height: 36px; border: 3px solid #2a2a2e; border-top-color: #c8a96e; border-radius: 50%; animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-#loading-pct { font-size: 28px; font-weight: 700; color: #c8a96e; font-family: monospace; }
-#loading-msg { font-size: 11px; color: #666; }
-.load-bar-wrap { width: 180px; height: 4px; background: #1e1e22; border-radius: 2px; }
-.load-bar-fill { height: 100%; background: #c8a96e; border-radius: 2px; width: 0%; transition: width .15s; }
-/* HUD */
-#hud {
-  position: absolute; top: 10px; left: 10px;
-  background: rgba(0,0,0,.78); border: 1px solid #1e1e22;
-  border-radius: 8px; padding: 10px 13px; font-size: 11px;
-  color: #555; line-height: 2.0; backdrop-filter: blur(4px);
-  pointer-events: none; display: none; max-width: 270px;
-}
-#hud .k  { color: #c8a96e; font-weight: 600; }
-#hud .kb { color: #7ec8e3; font-weight: 600; }
-#hud hr  { border: none; border-top: 1px solid #1e1e22; margin: 4px 0; }
-#hud-pos {
-  position: absolute; bottom: 10px; left: 10px;
-  background: rgba(0,0,0,.7); border: 1px solid #1e1e22;
-  border-radius: 7px; padding: 6px 12px; font-size: 11px;
-  color: #888; font-family: monospace; backdrop-filter: blur(4px); pointer-events: none;
-}
-#hud-sel {
-  position: absolute; bottom: 10px; right: 10px;
-  background: rgba(0,0,0,.7); border: 1px solid #2a5c2a;
-  border-radius: 7px; padding: 6px 12px; font-size: 11px;
-  color: #4caf50; backdrop-filter: blur(4px); pointer-events: none; display: none; line-height: 1.7;
-}
+.tb-btn:hover { border-color: #c8a96e; color: #c8a96e; }
+.hint { font-size: 10px; color: #333; white-space: nowrap; }
+#main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+canvas#viewport { flex: 1; min-width: 0; display: block; width: 0 !important; height: 0 !important; }
 /* PANEL */
 #panel {
-  width: 265px; background: #141416; border-left: 1px solid #2a2a2e;
-  display: flex; flex-direction: column; padding: 14px; gap: 14px;
+  width: 260px; min-width: 260px; background: #141416;
+  border-left: 1px solid #2a2a2e;
+  display: flex; flex-direction: column; padding: 12px; gap: 12px;
   overflow-y: auto; flex-shrink: 0;
 }
-.sec { display: flex; flex-direction: column; gap: 8px; }
+.sec { display: flex; flex-direction: column; gap: 6px; }
 .sec-title {
   font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
-  color: #444; padding-bottom: 5px; border-bottom: 1px solid #1e1e22;
-  display: flex; align-items: center; gap: 5px;
+  color: #444; padding-bottom: 4px; border-bottom: 1px solid #1e1e22;
 }
-/* object cards */
-.obj-card {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 10px; border-radius: 6px;
-  border: 1px solid #1e1e22; background: #0f0f12;
-  cursor: pointer; transition: border-color .2s, background .2s;
-}
-.obj-card:hover { border-color: #3a3a3e; background: #141418; }
-.obj-card.selected { border-color: #c8a96e !important; background: #1a1608; }
-.obj-card.loaded   { border-left: 3px solid #4caf50; }
-.obj-card.fail     { border-left: 3px solid #e05050; }
-.obj-icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: #1e1e22; border-radius: 5px; flex-shrink: 0; }
-.obj-info { flex: 1; min-width: 0; }
-.obj-name { font-size: 12px; color: #ddd; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.obj-meta { font-size: 10px; color: #555; margin-top: 2px; }
-.obj-btn  {
-  padding: 3px 8px; border-radius: 4px; border: 1px solid #2a2a2e;
-  background: #1c1c20; color: #777; font-size: 10px; cursor: pointer;
-  transition: all .18s; flex-shrink: 0;
-}
-.obj-btn:hover { border-color: #c8a96e; color: #c8a96e; }
-/* PRESET SIZE BUTTONS */
-.size-presets { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-.size-btn {
-  padding: 8px 6px; border-radius: 6px;
+.row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.row label { color: #666; min-width: 56px; }
+input[type=range] { flex: 1; accent-color: #c8a96e; min-width: 0; }
+input[type=number] {
+  width: 56px; padding: 4px 6px; border-radius: 4px;
   border: 1px solid #2a2a2e; background: #1c1c20;
-  color: #999; font-size: 11px; cursor: pointer;
-  transition: all .18s; text-align: center; line-height: 1.4;
+  color: #aaa; font-size: 11px; outline: none;
 }
-.size-btn:hover { border-color: #c8a96e; color: #c8a96e; background: #1a1608; }
-.size-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
-.size-btn .sb-name { font-weight: 700; display: block; font-size: 11px; }
-.size-btn .sb-val  { display: block; font-size: 9px; color: #555; margin-top: 2px; }
-.size-btn.active .sb-val { color: #a07840; }
-/* BEACON LIST */
-.beacon-list { display: flex; flex-direction: column; gap: 5px; }
+input[type=number]:focus { border-color: #c8a96e; }
+.beacon-list { display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto; }
 .beacon-item {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 9px; border-radius: 6px;
-  border: 1px solid #1e1e22; background: #0f0f12;
-  transition: border-color .2s;
+  padding: 4px 8px; border-radius: 4px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; cursor: pointer;
+  display: flex; justify-content: space-between; transition: all .15s;
 }
-.beacon-item.has-avatar { border-left: 3px solid #4caf50; }
-.beacon-dot { width: 9px; height: 9px; border-radius: 50%; background: #c8a96e; flex-shrink: 0; }
-.beacon-dot.av { background: #4caf50; }
-.beacon-name { flex: 1; font-size: 11px; color: #ccc; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.beacon-actions { display: flex; gap: 3px; }
-.bc-btn {
-  padding: 3px 6px; border-radius: 4px; border: 1px solid #2a2a2e;
-  background: #141416; color: #666; font-size: 10px; cursor: pointer;
-  transition: all .18s; white-space: nowrap;
+.beacon-item:hover { border-color: #c8a96e; }
+.beacon-item.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+.beacon-item .coords { font-size: 9px; color: #555; }
+.beacon-item.active .coords { color: #8a7040; }
+.beacon-del { color: #555; cursor: pointer; font-size: 11px; }
+.beacon-del:hover { color: #f44336; }
+.toggle-row { display: flex; gap: 6px; }
+.tog-btn {
+  flex: 1; padding: 7px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #777; cursor: pointer;
+  font-weight: 600; transition: all .18s; text-align: center;
 }
-.bc-btn:hover        { border-color: #c8a96e; color: #c8a96e; }
-.bc-btn.av-on        { border-color: #2a5c2a; color: #4caf50; }
-.bc-btn.av-on:hover  { border-color: #4caf50; }
-.bc-btn.del:hover    { border-color: #e05050; color: #e05050; }
-.beacon-empty { font-size: 11px; color: #2a2a2e; text-align: center; padding: 14px 0; line-height: 1.7; }
-/* badge */
-.badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 4px; font-size: 11px; background: #1e1e22; color: #555; }
-.badge.ok   { background: #162016; color: #4caf50; }
-.badge.warn { background: #201a10; color: #c8a96e; }
-.badge.err  { background: #200000; color: #e05050; }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-/* sliders */
-.param-row { display: flex; flex-direction: column; gap: 5px; }
-.param-label { display: flex; justify-content: space-between; font-size: 12px; color: #999; }
-.param-label span { color: #e0e0e0; font-family: monospace; font-size: 11px; }
-input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #2a2a2e; border-radius: 2px; outline: none; }
-input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #c8a96e; cursor: pointer; }
-/* coords */
-.coords { display: grid; grid-template-columns: 18px 1fr; gap: 3px 6px; align-items: center; font-size: 11px; font-family: monospace; }
-.coords .ax { color: #c8a96e; font-weight: 700; }
-.coords .vl { color: #ddd; }
-.note { font-size: 10px; color: #444; line-height: 1.5; padding: 7px; background: #0d0d0f; border-radius: 5px; border-left: 2px solid #222; }
-/* JSON */
-#json-box {
-  background: #0d0d0f; border: 1px solid #1e1e22; border-radius: 5px;
-  padding: 8px; font-size: 10px; font-family: monospace; color: #555;
-  line-height: 1.6; white-space: pre; max-height: 130px; overflow-y: auto;
+.tog-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
+.coord-box {
+  padding: 6px 8px; border-radius: 4px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 10px; color: #666; font-family: monospace;
+  word-break: break-all;
 }
-.jk { color: #c8a96e; } .jv { color: #7ec8e3; } .js { color: #98c379; }
-/* boutons */
-.abtn { padding: 9px 14px; border-radius: 7px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; letter-spacing: .04em; transition: all .18s; width: 100%; }
-.abtn-reset { background: #1e1e22; color: #777; border: 1px solid #2a2a2e; }
-.abtn-reset:hover { background: #2a2a2e; color: #bbb; }
-.abtn-ok { background: linear-gradient(135deg, #c8a96e, #a07840); color: #0d0d0f; box-shadow: 0 2px 10px rgba(200,169,110,.2); }
-.abtn-ok:hover { transform: translateY(-1px); box-shadow: 0 4px 18px rgba(200,169,110,.35); }
-.abtn-ok:disabled { background: #1e1e22; color: #444; cursor: not-allowed; transform: none; box-shadow: none; }
-#log { font-size: 10px; color: #e05050; background: #180000; padding: 6px 8px; border-radius: 4px; display: none; line-height: 1.6; border: 1px solid #3a0000; }
+.coord-box .lbl { color: #c8a96e; font-weight: 600; margin-right: 4px; }
+.coord-box.end-box { border-color: #5c2a2a; }
+.coord-box.end-placed { border-color: #5c6a2a; color: #aaa; }
+.btn-action {
+  padding: 8px; border-radius: 5px; border: 1px solid #2a2a2e;
+  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
+  font-weight: 600; transition: all .18s; width: 100%; text-align: center;
+}
+.btn-action:hover { border-color: #c8a96e; color: #c8a96e; }
+.btn-action.active { border-color: #f44336; background: #1e0e0e; color: #f44336; }
+.btn-confirm {
+  padding: 10px; border-radius: 7px; border: none; cursor: pointer;
+  font-size: 12px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; transition: all .2s; width: 100%;
+  background: #c8a96e; color: #0d0d0f;
+}
+.btn-confirm:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #2a2a2e; }
+.btn-confirm:not(:disabled):hover { background: #e0c080; }
+.feedback { font-size: 11px; color: #4caf50; text-align: center; min-height: 14px; }
+.badge { padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.badge.wait { background: #222; color: #555; }
+.badge.ok   { background: #1a3a1a; color: #4caf50; border: 1px solid #2a5c2a; }
+.badge.load { background: #1a2a3a; color: #64b5f6; border: 1px solid #2a4a6a; }
+#status-bar {
+  padding: 3px 12px; font-size: 10px; color: #555;
+  background: #0d0d0f; border-top: 1px solid #1a1a1e;
+  flex-shrink: 0; text-align: center;
+}
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
@@ -222,937 +119,408 @@ input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 13p
 </head>
 <body>
 
-<!-- POPUP OVERLAY (position: fixed = couvre tout) -->
-<div id="popup-overlay">
-  <div class="popup-box">
-    <div class="popup-icon" id="popup-icon">📍</div>
-    <div class="popup-title" id="popup-title">Poser une balise ici ?</div>
-    <div class="popup-sub"  id="popup-sub">X: 0.00  Y: 0.00  Z: 0.00</div>
-    <div class="popup-btns">
-      <button class="pb-yes" id="popup-yes" onclick="popupYes()">Oui, poser</button>
-      <button class="pb-no"  onclick="popupNo()">Non</button>
-    </div>
-  </div>
-</div>
-
-<!-- TOPBAR -->
 <div id="topbar">
-  <span class="logo">M3 — F03</span>
-  <span class="ver">Scenography v2.0</span>
+  <span class="logo">M3 &#8212; F03</span>
+  <span class="ver">Scenography v1.0</span>
   <div class="divider"></div>
-  <div class="file-group">
-    <span class="file-label">Decor</span>
-    <label class="file-btn" id="btn-decor">
-      <input type="file" accept=".glb,.gltf" onchange="loadDecor(this)">
-      <div class="fbtn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span id="decor-name">map.glb</span>
-      </div>
-    </label>
-  </div>
-  <div class="file-group">
-    <span class="file-label">Avatar</span>
-    <label class="file-btn" id="btn-avatar">
-      <input type="file" accept=".glb,.gltf" onchange="loadAvatar(this)">
-      <div class="fbtn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span id="avatar-name">avatar.glb</span>
-      </div>
-    </label>
-  </div>
+  <div class="chip"><span class="k">D&#233;cor</span><span id="chip-decor">&#8212;</span></div>
+  <div class="chip"><span class="k">Avatar</span><span id="chip-avatar">&#8212;</span></div>
   <div class="divider"></div>
-  <div id="prog-wrap"><div id="prog-bar"></div></div>
-  <span id="prog-lbl"></span>
-  <span id="hint">Charger les deux GLBs</span>
+  <button class="tb-btn" id="btn-load-decor">DRIVE : D&#233;cor</button>
+  <button class="tb-btn" id="btn-load-avatar">DRIVE : Avatar</button>
+  <div class="divider"></div>
+  <span class="hint">WASD / clic = balise</span>
 </div>
 
-<!-- MAIN -->
 <div id="main">
-  <div id="viewport">
-    <div id="placeholder">
-      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2a2a2e" stroke-width="1"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-      <p>Charger map.glb et avatar.glb</p>
-      <p id="init-error" style="color:#e05050;font-size:10px;display:none"></p>
-    </div>
-    <div id="loading">
-      <div class="spinner"></div>
-      <div id="loading-pct">0%</div>
-      <div class="load-bar-wrap"><div class="load-bar-fill" id="ov-bar"></div></div>
-      <p id="loading-msg">Chargement...</p>
-    </div>
-    <div id="hud">
-      <span class="k">━━ CAMERA ━━━━━━━━━━━━━━━━━━━━━</span><br>
-      <span class="k">WASD</span> Avancer / Reculer / Strafe<br>
-      <span class="k">Q / E</span> Monter / Descendre<br>
-      <span class="k">Clic droit + drag</span> Pivoter 360°<br>
-      <span class="k">Scroll</span> Zoom avant / arriere<br>
-      <span class="k">R</span> Recentrer tout<br>
-      <hr>
-      <span class="k">━━ BALISES ━━━━━━━━━━━━━━━━━━━━</span><br>
-      <span class="kb">Double-clic sol</span> Creer une balise<br>
-      <span class="kb">Clic balise</span> Selectionner / deplacer<br>
-      <hr>
-      <span class="k">━━ AVATAR PLACE ━━━━━━━━━━━━━━━</span><br>
-      <span class="kb">Fleches</span> Deplacer X / Z<br>
-      <span class="kb">Shift + Fleches</span> Deplacement fin<br>
-      <span class="kb">[ / ]</span> Rotation Y<br>
-      <span class="kb">Gizmo</span> Tirer les fleches colorees<br>
-      <span class="k">F</span> Focus selection<br>
-    </div>
-    <div id="hud-pos">Survoler le decor</div>
-    <div id="hud-sel"></div>
-  </div>
+  <canvas id="viewport"></canvas>
 
-  <!-- PANEL -->
   <div id="panel">
-    <div class="sec">
-      <div class="sec-title">Statut</div>
-      <div id="badge" class="badge"><div class="dot"></div><span id="badge-txt">En attente</span></div>
-      <div id="log"></div>
-    </div>
 
     <div class="sec">
-      <div class="sec-title">Scene</div>
-      <div class="obj-card" id="card-decor" onclick="selectObj('decor')">
-        <div class="obj-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-        </div>
-        <div class="obj-info">
-          <div class="obj-name" id="card-decor-name">map.glb</div>
-          <div class="obj-meta" id="card-decor-meta">Non charge</div>
-        </div>
-        <button class="obj-btn" onclick="focusObj('decor',event)">Voir</button>
+      <div class="sec-title">Spawn Avatar</div>
+      <div class="row"><label>Scale</label>
+        <input type="range" id="sl-scale" min="0.1" max="5" step="0.001" value="1">
+        <input type="number" id="num-scale" value="1" step="0.001" min="0.001">
       </div>
-      <div class="obj-card" id="card-avatar" onclick="selectObj('avatar')">
-        <div class="obj-icon">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a8.38 8.38 0 0 1 13 0"/></svg>
-        </div>
-        <div class="obj-info">
-          <div class="obj-name" id="card-avatar-name">avatar.glb</div>
-          <div class="obj-meta" id="card-avatar-meta">Non charge</div>
-        </div>
-        <button class="obj-btn" onclick="focusObj('avatar',event)">Voir</button>
-        <button class="obj-btn" onclick="frontViewAvatar(event)" title="Camera face a l'avatar" style="margin-left:4px">Face</button>
+      <div class="row"><label>Rot Y&#176;</label>
+        <input type="range" id="sl-roty" min="-180" max="180" step="1" value="0">
+        <input type="number" id="num-roty" value="0" step="1">
       </div>
     </div>
 
     <div class="sec">
-      <div class="sec-title">Taille Avatar</div>
-      <div class="size-presets">
-        <button class="size-btn" onclick="applyPreset(1.10)" data-h="1.10">
-          <span class="sb-name">Enfant</span>
-          <span class="sb-val">1.10 m</span>
-        </button>
-        <button class="size-btn" onclick="applyPreset(1.55)" data-h="1.55">
-          <span class="sb-name">Ado</span>
-          <span class="sb-val">1.55 m</span>
-        </button>
-        <button class="size-btn" onclick="applyPreset(1.75)" data-h="1.75">
-          <span class="sb-name">Adulte</span>
-          <span class="sb-val">1.75 m</span>
-        </button>
-        <button class="size-btn" onclick="applyPreset(1.88)" data-h="1.88">
-          <span class="sb-name">Grand</span>
-          <span class="sb-val">1.88 m</span>
-        </button>
-      </div>
-      <div class="param-row" style="margin-top:4px">
-        <div class="param-label">Custom <span id="sv">1.00</span></div>
-        <input type="range" id="scale-sl" min="0.05" max="4.0" step="0.01" value="1.0" oninput="onScale(this.value)">
-      </div>
-      <div class="param-label" style="font-size:11px; color:#555">
-        Hauteur effective <span id="hv" style="color:#888">—</span>
-      </div>
+      <div class="sec-title">Balises &#8212; clic sol pour placer</div>
+      <div class="beacon-list" id="beacon-list"></div>
+      <div class="feedback" id="beacon-hint" style="color:#555">Aucune balise &#8212; clic sur le sol</div>
     </div>
 
     <div class="sec">
-      <div class="sec-title">
-        Balises
-        <span id="beacon-count" style="color:#444;font-size:9px">(0)</span>
+      <div class="sec-title">Trajectoire</div>
+      <div class="toggle-row">
+        <button class="tog-btn active" id="btn-static">STATIQUE</button>
+        <button class="tog-btn" id="btn-linear">LIN&#201;AIRE A&#8594;B</button>
       </div>
-      <div class="beacon-list" id="beacon-list">
-        <div class="beacon-empty" id="beacon-empty">
-          Double-clic sur le sol<br>pour creer une balise
-        </div>
+      <div id="traj-linear-ui" style="display:none; flex-direction:column; gap:6px;">
+        <div class="coord-box" id="box-start"><span class="lbl">START</span><span id="start-coords">&#8212;</span></div>
+        <button class="btn-action" id="btn-set-end">D&#201;FINIR POINT D'ARRIV&#201;E</button>
+        <div class="coord-box end-box" id="box-end"><span class="lbl">END</span><span id="end-coords">non d&#233;fini</span></div>
       </div>
     </div>
+
+    <div style="flex:1"></div>
 
     <div class="sec">
-      <div class="sec-title">Position Active</div>
-      <div class="coords">
-        <span class="ax">X</span><span class="vl" id="cx">—</span>
-        <span class="ax">Y</span><span class="vl" id="cy">—</span>
-        <span class="ax">Z</span><span class="vl" id="cz">—</span>
-      </div>
-      <div class="note">Coordonnees Three.js (Y-up).<br>Blender : loc = (x, -z, y)</div>
-    </div>
-
-    <div class="sec">
-      <div class="sec-title">Preview JSON</div>
-      <div id="json-box">Aucune balise definie...</div>
-    </div>
-
-    <div class="sec" style="margin-top:auto; gap:7px">
-      <button class="abtn abtn-reset" onclick="resetAll()">Tout effacer</button>
-      <button class="abtn abtn-ok" id="btn-ok" onclick="doSave()" disabled>
-        Confirmer + Sauver Drive
+      <button class="btn-confirm" id="btn-confirm" disabled>
+        CONFIRMER + SAUVER
       </button>
+      <div class="feedback" id="feedback"></div>
     </div>
+
   </div>
 </div>
+<div id="status-bar" id="status-bar">Chargement en cours&#8230;</div>
+
+
+
 
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-import { TransformControls } from "three/addons/controls/TransformControls.js";
 
-// ═══════════════════════════════════════════════════════════════
-//  M2_F03 VIEWER v4.0
-//  - 4 presets taille (Enfant/Ado/Adulte/Grand) + slider custom
-//  - Systeme de balises : double-clic → popup → balise nommee
-//  - Liste des balises dans le panel (assigner/voir/supprimer)
-//  - TransformControls (gizmo 3 fleches) + fleches clavier
-//  - Navigation WASD, traverse les murs
-// ═══════════════════════════════════════════════════════════════
+// ─── SCENE ────────────────────────────────────────────────────────
+const canvas   = document.getElementById('viewport');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+canvas.style.width = '';
+canvas.style.height = '';
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
 
-(function checkDeps() {
-  const miss = [];
-  if (typeof THREE === 'undefined') { miss.push('THREE'); }
-  else {
-    // GLTFLoader loaded via ES module
-    // OrbitControls loaded via ES module
-    // TransformControls loaded via ES module
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x111113);
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const dir = new THREE.DirectionalLight(0xffffff, 1.2);
+dir.position.set(5, 10, 5); dir.castShadow = true;
+scene.add(dir);
+
+const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
+camera.position.set(0, 5, 15);
+
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.update();
+
+// ─── RESIZE ───────────────────────────────────────────────────────
+function resizeRenderer() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (w > 0 && h > 0) {
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
   }
-  if (miss.length) {
-    const el = document.getElementById('init-error');
-    el.style.display = 'block';
-    el.textContent = 'ERREUR: ' + miss.join(', ') + ' — verifier connexion internet';
-    console.error('[M3F03] manquant:', miss);
-  } else {
-    console.log('[M3F03] THREE r' + THREE.REVISION + ' OK');
-  }
-})();
+}
+new ResizeObserver(resizeRenderer).observe(canvas);
+resizeRenderer();
 
-// ─── GLOBALS ───────────────────────────────────────────────────
-let scene, camera, renderer, orbitCtrl, transformCtrl, raycaster, mouse;
-let decorObj = null, avatarTemplate = null, marker = null;
-let decorMeshes = [];
-let scale = 1.0, avatarRotY = 0, avatarNaturalH = null;
-let selectedType = null, boxHelper = null;
-let pointerDown = null, lastClickTime = 0;
+// ─── WASD ─────────────────────────────────────────────────────────
 const keys = {};
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup',   e => keys[e.key.toLowerCase()] = false);
+function wasdMove() {
+  const spd = 0.12, fwd = new THREE.Vector3();
+  camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+  const right = new THREE.Vector3().crossVectors(fwd, THREE.Object3D.DEFAULT_UP).normalize();
+  if (keys['w']) camera.position.addScaledVector(fwd, spd);
+  if (keys['s']) camera.position.addScaledVector(fwd, -spd);
+  if (keys['a']) camera.position.addScaledVector(right, -spd);
+  if (keys['d']) camera.position.addScaledVector(right, spd);
+  if (keys['q']) camera.position.y += spd;
+  if (keys['e']) camera.position.y -= spd;
+}
 
-// Beacon system
-const beacons     = [];   // { id, name, pos:{x,y,z}, mesh, hasAvatar }
-let nextBeaconNum = 1;
-let activeBeaconId   = null;
-let pendingBeaconPos = null;
-let popupStep        = 0;   // 1 = confirm beacon  2 = confirm avatar
-
-// ─── INIT ──────────────────────────────────────────────────────
-(function init() {
-  if (typeof THREE === 'undefined') return;
-
-  const vp = document.getElementById('viewport');
-  const W = vp.clientWidth, H = vp.clientHeight;
-
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x111114);
-
-  camera = new THREE.PerspectiveCamera(55, W / H, 0.01, 10000);
-  camera.position.set(8, 6, 12);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(W, H);
-  renderer.shadowMap.enabled   = true;
-  renderer.shadowMap.type      = THREE.PCFSoftShadowMap;
-  renderer.outputEncoding      = THREE.sRGBEncoding;
-  renderer.toneMapping         = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
-  vp.appendChild(renderer.domElement);
-
-  // OrbitControls : clic DROIT = pivoter, molette = zoom, gauche = spawn/select
-  orbitCtrl = new OrbitControls(camera, renderer.domElement);
-  orbitCtrl.enableDamping = true;
-  orbitCtrl.dampingFactor = 0.07;
-  orbitCtrl.minDistance   = 0;
-  orbitCtrl.maxDistance   = 2000;
-  orbitCtrl.mouseButtons  = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
-  orbitCtrl.touches       = { ONE: null, TWO: THREE.TOUCH.DOLLY_ROTATE };
-
-  // TransformControls (gizmo fleches colorees)
-  transformCtrl = new TransformControls(camera, renderer.domElement);
-  transformCtrl.setMode('translate');
-  transformCtrl.setSpace('world');
-  scene.add(transformCtrl);
-
-  transformCtrl.addEventListener('dragging-changed', e => {
-    orbitCtrl.enabled = !e.value;
-  });
-  transformCtrl.addEventListener('change', () => {
-    if (!marker) return;
-    const bc = beacons.find(b => b.id === activeBeaconId);
-    if (bc) {
-      bc.pos = { x: marker.position.x, y: marker.position.y, z: marker.position.z };
-      if (bc.mesh) bc.mesh.position.set(bc.pos.x, bc.pos.y, bc.pos.z);
-    }
-    avatarRotY = marker.rotation.y;
-    if (boxHelper) boxHelper.update();
-    updateUI();
-  });
-
-  // Lumieres
-  scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-  const sun = new THREE.DirectionalLight(0xfff4e0, 2.5);
-  sun.position.set(15, 25, 15);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.camera.far = 500;
-  sun.shadow.camera.left = sun.shadow.camera.bottom = -100;
-  sun.shadow.camera.right = sun.shadow.camera.top = 100;
-  scene.add(sun);
-  scene.add(new THREE.HemisphereLight(0x8888ff, 0x443322, 0.6));
-  scene.add(new THREE.GridHelper(400, 200, 0x1a1a1e, 0x161618));
-
-  raycaster = new THREE.Raycaster();
-  mouse     = new THREE.Vector2();
-
-  const cv = renderer.domElement;
-  cv.addEventListener('contextmenu', e => e.preventDefault());
-  cv.addEventListener('pointermove',  onMove);
-  cv.addEventListener('pointerdown',  e => { pointerDown = { x: e.clientX, y: e.clientY }; });
-  cv.addEventListener('pointerup',    onUp);
-  window.addEventListener('resize',   onResize);
-  window.addEventListener('keydown',  onKeyDown);
-  window.addEventListener('keyup',    e => { keys[e.key] = false; });
-
-  (function loop() {
-    requestAnimationFrame(loop);
-    doWASD();
-    orbitCtrl.update();
-    renderer.render(scene, camera);
-  })();
+// ─── RENDER LOOP ──────────────────────────────────────────────────
+(function animate() {
+  requestAnimationFrame(animate);
+  wasdMove();
+  orbit.update();
+  renderer.render(scene, camera);
 })();
 
-// ─── RESIZE ────────────────────────────────────────────────────
-function onResize() {
-  const vp = document.getElementById('viewport');
-  camera.aspect = vp.clientWidth / vp.clientHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(vp.clientWidth, vp.clientHeight);
-}
+// ─── STATE ────────────────────────────────────────────────────────
+const S = {
+  decorMeshes:  [],
+  avatarObj:    null,
+  beacons:      [],
+  activeBeacon: null,
+  scale:        1,
+  rotY:         0,
+  trajMode:     'static',
+  endPos:       null,
+  settingEnd:   false,
+  endSphere:    null,
+  trajLine:     null,
+};
 
-// ─── WASD libre (traverse les murs) ────────────────────────────
-function doWASD() {
-  if (!orbitCtrl) return;
-  const dist  = camera.position.distanceTo(orbitCtrl.target);
-  const speed = Math.max(0.04, dist * 0.02);
-  const fwd   = new THREE.Vector3();
-  camera.getWorldDirection(fwd);
-  const right = new THREE.Vector3();
-  right.crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
-  const move = new THREE.Vector3();
-  if (keys['w'] || keys['W']) move.addScaledVector(fwd,    speed);
-  if (keys['s'] || keys['S']) move.addScaledVector(fwd,   -speed);
-  if (keys['a'] || keys['A']) move.addScaledVector(right, -speed);
-  if (keys['d'] || keys['D']) move.addScaledVector(right,  speed);
-  if (keys['q'] || keys['Q']) move.y += speed;
-  if (keys['e'] || keys['E']) move.y -= speed;
-  if (move.lengthSq() > 0) {
-    camera.position.add(move);
-    orbitCtrl.target.add(move);
-  }
-}
+// ─── RAYCASTER ────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const mouse     = new THREE.Vector2();
 
-// ─── CLAVIER ───────────────────────────────────────────────────
-function onKeyDown(e) {
-  keys[e.key] = true;
-
-  if (e.key === 'f' || e.key === 'F') {
-    e.preventDefault();
-    if (selectedType === 'avatar' && marker)   focusOnObj(marker);
-    else if (selectedType === 'decor' && decorObj) focusOnObj(decorObj);
-    return;
-  }
-  if (e.key === 'r' || e.key === 'R') { recenterAll(); return; }
-
-  if (marker && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
-    e.preventDefault();
-    const step = e.shiftKey ? 0.05 : 0.25;
-    if (e.key === 'ArrowUp')    marker.position.z -= step;
-    if (e.key === 'ArrowDown')  marker.position.z += step;
-    if (e.key === 'ArrowLeft')  marker.position.x -= step;
-    if (e.key === 'ArrowRight') marker.position.x += step;
-    const bc = beacons.find(b => b.id === activeBeaconId);
-    if (bc) {
-      bc.pos = { x: marker.position.x, y: marker.position.y, z: marker.position.z };
-      if (bc.mesh) bc.mesh.position.set(bc.pos.x, bc.pos.y, bc.pos.z);
-    }
-    if (boxHelper)     boxHelper.update();
-    if (transformCtrl) transformCtrl.update();
-    updateUI();
-    return;
-  }
-  if (marker && (e.key === '[' || e.key === ']')) {
-    e.preventDefault();
-    const step = e.shiftKey ? Math.PI / 36 : Math.PI / 18;
-    avatarRotY += e.key === ']' ? step : -step;
-    marker.rotation.y = avatarRotY;
-    if (boxHelper) boxHelper.update();
-    return;
-  }
-}
-
-// ─── RAYCASTING ────────────────────────────────────────────────
-function castRay(clientX, clientY, targets) {
-  if (!targets || !targets.length) return null;
-  const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x =  ((clientX - rect.left) / rect.width)  * 2 - 1;
-  mouse.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+canvas.addEventListener('click', (e) => {
+  if (e.button !== 0) return;
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(targets, true);
-  return hits.length ? hits[0] : null;
+  const hits = raycaster.intersectObjects(S.decorMeshes, true);
+  if (!hits.length) return;
+  const pt = hits[0].point;
+  if (S.settingEnd) { setEndPoint(pt); } else { addBeacon(pt); }
+});
+
+function setStatus(msg) {
+  document.getElementById('status-bar').textContent = msg;
 }
 
-// ─── POINTER MOVE ─────────────────────────────────────────────
-function onMove(e) {
-  const hit = castRay(e.clientX, e.clientY, decorMeshes);
-  if (hit) {
-    const p = hit.point;
-    document.getElementById('hud-pos').textContent =
-      'X:' + p.x.toFixed(2) + '  Y:' + p.y.toFixed(2) + '  Z:' + p.z.toFixed(2);
-  } else {
-    document.getElementById('hud-pos').textContent = 'Survoler le decor';
-  }
-}
-
-// ─── POINTER UP ────────────────────────────────────────────────
-function onUp(e) {
-  if (!pointerDown) return;
-  const dx = e.clientX - pointerDown.x;
-  const dy = e.clientY - pointerDown.y;
-  if (Math.sqrt(dx*dx + dy*dy) > 5) return; // drag ignore
-  if (e.button !== 0) return;               // clic gauche uniquement
-
-  const now = Date.now();
-  const dt  = now - lastClickTime;
-  const isDbl = dt > 0 && dt < 350;
-  lastClickTime = now;
-
-  // 1. Clic sur avatar place → selectionner
-  if (marker) {
-    const mMeshes = [];
-    marker.traverse(c => { if (c.isMesh) mMeshes.push(c); });
-    if (castRay(e.clientX, e.clientY, mMeshes)) {
-      setSelection('avatar');
-      return;
-    }
-  }
-
-  // 2. DOUBLE-CLIC sur decor → creer balise
-  if (isDbl && decorMeshes.length) {
-    const hit = castRay(e.clientX, e.clientY, decorMeshes);
-    if (hit) {
-      openBeaconPopup(hit.point);
-      return;
-    }
-  }
-
-  // 3. Simple clic dans le vide → deselectionner
-  if (!isDbl) setSelection(null);
-}
-
-// ─── SELECTION ────────────────────────────────────────────────
-function setSelection(type) {
-  selectedType = type;
-  if (boxHelper) { scene.remove(boxHelper); boxHelper = null; }
-  document.getElementById('card-decor').classList.remove('selected');
-  document.getElementById('card-avatar').classList.remove('selected');
-  const hudSel = document.getElementById('hud-sel');
-
-  if (type === 'decor' && decorObj) {
-    document.getElementById('card-decor').classList.add('selected');
-    boxHelper = new THREE.BoxHelper(decorObj, 0x4caf50);
-    scene.add(boxHelper);
-    hudSel.style.display = 'block';
-    hudSel.innerHTML = 'DECOR selectionne<br><small style="color:#666">F = focus</small>';
-    transformCtrl.detach();
-  } else if (type === 'avatar' && marker) {
-    document.getElementById('card-avatar').classList.add('selected');
-    boxHelper = new THREE.BoxHelper(marker, 0xc8a96e);
-    scene.add(boxHelper);
-    hudSel.style.display = 'block';
-    hudSel.innerHTML = 'AVATAR selectionne<br><small style="color:#666">Gizmo | Fleches | [ ] | F</small>';
-    transformCtrl.attach(marker);
-  } else {
-    hudSel.style.display = 'none';
-    transformCtrl.detach();
-  }
-}
-
-window.selectObj = function(type) {
-  if (type === 'decor'  && !decorObj) return;
-  if (type === 'avatar' && !marker)   return;
-  setSelection(type);
-};
-window.focusObj = function(type, e) {
-  if (e) e.stopPropagation();
-  if (type === 'decor'  && decorObj) focusOnObj(decorObj);
-  if (type === 'avatar' && marker)   focusOnObj(marker);
-};
-
-// ─── FOCUS / RECENTRER ────────────────────────────────────────
-function focusOnObj(obj) {
-  const box    = new THREE.Box3().setFromObject(obj);
-  const center = box.getCenter(new THREE.Vector3());
-  const size   = box.getSize(new THREE.Vector3());
-  const dist   = Math.max(size.x, size.y, size.z, 1) * 1.8;
-  orbitCtrl.target.copy(center);
-  camera.position.set(center.x + dist * 0.4, center.y + dist * 0.5, center.z + dist);
-  orbitCtrl.update();
-}
-function recenterAll() {
-  const obj = decorObj || marker;
-  if (obj) focusOnObj(obj);
-}
-
-// Vue de face : camera placee directement devant l'avatar, axe -Z monde
-window.frontViewAvatar = function(e) {
-  if (e) e.stopPropagation();
-  if (!marker) { setBadge('Placer d\'abord l\'avatar (balise)', 'err'); return; }
-  const box    = new THREE.Box3().setFromObject(marker);
-  const center = box.getCenter(new THREE.Vector3());
-  const height = box.max.y - box.min.y;
-  const dist   = Math.max(height * 2.2, 1.5);
-  // Camera en face (axe +Z), a hauteur mi-corps
-  orbitCtrl.target.set(center.x, center.y, center.z);
-  camera.position.set(center.x, center.y, center.z + dist);
-  orbitCtrl.update();
-};
-
-// ─── BEACON SYSTEM ────────────────────────────────────────────
-
-// Cree le mesh visuel (pole + sphere) d'une balise
-function makeBeaconMesh(hasAvatar) {
-  const g     = new THREE.Group();
-  const color = hasAvatar ? 0x4caf50 : 0xc8a96e;
-  const mat   = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.2 });
-  const pole  = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8), mat);
-  pole.position.y = 0.4;
-  const sph   = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 12), mat.clone());
-  sph.position.y = 0.85;
-  g.add(pole);
-  g.add(sph);
-  return g;
-}
-
-// Etape 1 : popup confirmer balise
-function openBeaconPopup(pt) {
-  pendingBeaconPos = pt.clone();
-  popupStep = 1;
-  document.getElementById('popup-icon').textContent  = '📍';
-  document.getElementById('popup-title').textContent = 'Poser une balise ici ?';
-  document.getElementById('popup-sub').textContent   =
-    'X: ' + pt.x.toFixed(2) + '  Y: ' + pt.y.toFixed(2) + '  Z: ' + pt.z.toFixed(2);
-  document.getElementById('popup-yes').textContent   = 'Oui, poser';
-  document.getElementById('popup-overlay').classList.add('show');
-}
-
-// Etape 2 : popup assigner avatar
-function openAvatarPopup(beaconId) {
-  activeBeaconId = beaconId;
-  popupStep = 2;
-  const bc = beacons.find(b => b.id === beaconId);
-  document.getElementById('popup-icon').textContent  = '👤';
-  document.getElementById('popup-title').textContent = "Importer l'avatar sur cette balise ?";
-  document.getElementById('popup-sub').textContent   = bc ? bc.name : '';
-  document.getElementById('popup-yes').textContent   = 'Oui, importer';
-  document.getElementById('popup-overlay').classList.add('show');
-}
-
-window.popupYes = function() {
-  document.getElementById('popup-overlay').classList.remove('show');
-
-  if (popupStep === 1) {
-    // Creer la balise
-    const num  = nextBeaconNum++;
-    const id   = 'B' + num;
-    const name = 'Balise_' + String(num).padStart(2, '0');
-    const mesh = makeBeaconMesh(false);
-    mesh.position.copy(pendingBeaconPos);
-    scene.add(mesh);
-    const bc = {
-      id, name,
-      pos: { x: pendingBeaconPos.x, y: pendingBeaconPos.y, z: pendingBeaconPos.z },
-      mesh,
-      hasAvatar: false
-    };
-    beacons.push(bc);
-    renderBeaconList();
-    setBadge(name + ' creee', 'ok');
-    // Passer etape 2
-    if (avatarTemplate) {
-      openAvatarPopup(id);
-    } else {
-      setBadge(name + ' creee — charger avatar pour assigner', 'warn');
-    }
-
-  } else if (popupStep === 2) {
-    const bc = beacons.find(b => b.id === activeBeaconId);
-    if (bc) assignAvatarToBeacon(bc);
+// ─── LOAD DECOR ───────────────────────────────────────────────────
+window.loadDecor = async () => {
+  document.getElementById('chip-decor').textContent = '&#8230;';
+  setStatus('Chargement d\u00e9cor&#8230;');
+  try {
+    const res = await fetch('/files/decor');
+    if (!res.ok) throw new Error(await res.text());
+    const buf = await res.arrayBuffer();
+    new GLTFLoader().parse(buf, '', (gltf) => {
+      S.decorMeshes.forEach(m => { if (m.parent) m.parent.removeFromParent(); });
+      S.decorMeshes = [];
+      gltf.scene.traverse(o => { if (o.isMesh) { o.receiveShadow = true; S.decorMeshes.push(o); }});
+      scene.add(gltf.scene);
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      const sz  = box.getSize(new THREE.Vector3()).length();
+      const ctr = box.getCenter(new THREE.Vector3());
+      camera.position.set(ctr.x, ctr.y + sz * 0.4, ctr.z + sz * 0.8);
+      orbit.target.copy(ctr); orbit.update();
+      document.getElementById('chip-decor').textContent = 'OK';
+      document.getElementById('chip-decor').parentElement.className = 'chip ok';
+      document.getElementById('btn-confirm').disabled = false;
+      setStatus('D\u00e9cor charg\u00e9 ✓');
+    }, err => { throw err; });
+  } catch(e) {
+    document.getElementById('chip-decor').textContent = 'ERR';
+    setFeedback('Erreur d\u00e9cor : ' + e.message, '#f44336');
+    setStatus('Erreur d\u00e9cor : ' + e.message);
   }
 };
 
-window.popupNo = function() {
-  document.getElementById('popup-overlay').classList.remove('show');
-  // Etape 1 annulee : rien cree. Etape 2 annulee : balise existe sans avatar, OK.
-  pendingBeaconPos = null;
+// ─── LOAD AVATAR ──────────────────────────────────────────────────
+window.loadAvatar = async () => {
+  document.getElementById('chip-avatar').textContent = '&#8230;';
+  setStatus('Chargement avatar&#8230;');
+  try {
+    const res = await fetch('/files/avatar');
+    if (!res.ok) throw new Error(await res.text());
+    const buf = await res.arrayBuffer();
+    new GLTFLoader().parse(buf, '', (gltf) => {
+      if (S.avatarObj) scene.remove(S.avatarObj);
+      S.avatarObj = gltf.scene;
+      scene.add(S.avatarObj);
+      updateAvatarTransform();
+      document.getElementById('chip-avatar').textContent = 'OK';
+      document.getElementById('chip-avatar').parentElement.className = 'chip ok';
+      setStatus('Avatar charg\u00e9 ✓');
+    }, err => { throw err; });
+  } catch(e) {
+    document.getElementById('chip-avatar').textContent = 'ERR';
+    setFeedback('Erreur avatar : ' + e.message, '#f44336');
+    setStatus('Erreur avatar : ' + e.message);
+  }
 };
 
-// Assigner l'avatar a une balise
-function assignAvatarToBeacon(bc) {
-  if (!avatarTemplate) { setBadge('Charger un avatar first', 'err'); return; }
-  activeBeaconId = bc.id;
-  avatarRotY = 0;
+// ─── AUTO-LOAD ────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  try {
+    const info = await fetch('/info').then(r => r.json());
+    if (info.has_decor)  await loadDecor();
+    if (info.has_avatar) await loadAvatar();
+    if (!info.has_decor && !info.has_avatar) setStatus('Prêt — cliquez DRIVE pour charger les fichiers');
+  } catch(e) {
+    setStatus('Serveur prêt');
+  }
+});
 
-  if (marker) { scene.remove(marker); transformCtrl.detach(); }
-  if (boxHelper) { scene.remove(boxHelper); boxHelper = null; }
-
-  marker = avatarTemplate.clone(true);
-  marker.position.set(bc.pos.x, bc.pos.y, bc.pos.z);
-  marker.scale.setScalar(scale);
-  applyOpacity(marker, 1.0);
-  scene.add(marker);
-
-  // Mettre a jour couleurs balises
-  beacons.forEach(b => { b.hasAvatar = false; updateBeaconColor(b); });
-  bc.hasAvatar = true;
-  updateBeaconColor(bc);
-
-  setSelection('avatar');
+// ─── BEACONS ──────────────────────────────────────────────────────
+function addBeacon(pos) {
+  const idx  = S.beacons.length + 1;
+  const name = `Balise_${String(idx).padStart(2,'0')}`;
+  const geo  = new THREE.SphereGeometry(0.15, 12, 12);
+  const mat  = new THREE.MeshStandardMaterial({ color: 0xc8a96e, emissive: 0xc8a96e, emissiveIntensity: 0.3 });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.copy(pos);
+  scene.add(mesh);
+  S.beacons.push({ name, pos: pos.clone(), mesh });
+  activateBeacon(S.beacons.length - 1);
   renderBeaconList();
-  updateUI();
-  setBadge(bc.name + ' — avatar assigne', 'ok');
 }
 
-function updateBeaconColor(bc) {
-  if (!bc.mesh) return;
-  const color = bc.hasAvatar ? 0x4caf50 : 0xc8a96e;
-  bc.mesh.traverse(c => {
-    if (c.isMesh && c.material) c.material.color.setHex(color);
+function activateBeacon(i) {
+  S.beacons.forEach((b, j) => {
+    b.mesh.material.color.setHex(j === i ? 0xffd700 : 0xc8a96e);
+    b.mesh.material.emissive.setHex(j === i ? 0xffd700 : 0xc8a96e);
   });
+  S.activeBeacon = S.beacons[i];
+  if (S.avatarObj) updateAvatarTransform();
+  updateStartCoords();
+  document.getElementById('beacon-hint').style.display = 'none';
+  renderBeaconList();
 }
 
-// ─── BEACON LIST UI ───────────────────────────────────────────
 function renderBeaconList() {
-  const list  = document.getElementById('beacon-list');
-  const empty = document.getElementById('beacon-empty');
-  document.getElementById('beacon-count').textContent = '(' + beacons.length + ')';
-
-  // Supprimer anciens items
-  Array.from(list.querySelectorAll('.beacon-item')).forEach(el => el.remove());
-
-  if (!beacons.length) { empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  beacons.forEach(bc => {
-    const item = document.createElement('div');
-    item.className = 'beacon-item' + (bc.hasAvatar ? ' has-avatar' : '');
-    item.id = 'bitem-' + bc.id;
-    item.innerHTML =
-      '<div class="beacon-dot' + (bc.hasAvatar ? ' av' : '') + '"></div>' +
-      '<span class="beacon-name">' + bc.name + '</span>' +
-      '<div class="beacon-actions">' +
-        '<button class="bc-btn' + (bc.hasAvatar ? ' av-on' : '') +
-          '" onclick="beaconAssign(\'' + bc.id + '\')">' +
-          (bc.hasAvatar ? 'Avatar ✓' : 'Avatar') + '</button>' +
-        '<button class="bc-btn" onclick="beaconFocus(\'' + bc.id + '\')">Voir</button>' +
-        '<button class="bc-btn del" onclick="beaconDelete(\'' + bc.id + '\')">X</button>' +
-      '</div>';
-    list.appendChild(item);
-  });
-  updateUI();
-}
-
-window.beaconAssign = function(id) {
-  if (!avatarTemplate) { setBadge('Charger un avatar', 'err'); return; }
-  const bc = beacons.find(b => b.id === id);
-  if (bc) assignAvatarToBeacon(bc);
-};
-window.beaconFocus = function(id) {
-  const bc = beacons.find(b => b.id === id);
-  if (bc && bc.mesh) focusOnObj(bc.mesh);
-};
-window.beaconDelete = function(id) {
-  const idx = beacons.findIndex(b => b.id === id);
-  if (idx < 0) return;
-  const bc = beacons[idx];
-  if (bc.mesh) scene.remove(bc.mesh);
-  if (bc.hasAvatar && marker) {
-    scene.remove(marker); marker = null;
-    transformCtrl.detach();
-    if (boxHelper) { scene.remove(boxHelper); boxHelper = null; }
-    activeBeaconId = null;
-    setSelection(null);
-  }
-  beacons.splice(idx, 1);
-  renderBeaconList();
-  if (!beacons.length) {
-    document.getElementById('cx').textContent = '—';
-    document.getElementById('cy').textContent = '—';
-    document.getElementById('cz').textContent = '—';
-    document.getElementById('json-box').textContent = 'Aucune balise definie...';
-    document.getElementById('btn-ok').disabled = true;
-    setBadge('Pret — double-clic sol', 'ok');
-  }
-};
-
-// ─── TAILLE PRESETS ───────────────────────────────────────────
-window.applyPreset = function(targetH) {
-  if (!avatarNaturalH) { setBadge('Charger un avatar d\'abord', 'err'); return; }
-  scale = targetH / avatarNaturalH;
-  document.getElementById('scale-sl').value = Math.min(4, Math.max(0.05, scale));
-  document.getElementById('sv').textContent = scale.toFixed(2);
-  document.getElementById('hv').textContent = (avatarNaturalH * scale).toFixed(2) + ' m';
-  document.querySelectorAll('.size-btn').forEach(btn => {
-    btn.classList.toggle('active', parseFloat(btn.dataset.h) === targetH);
-  });
-  if (marker) { marker.scale.setScalar(scale); if (boxHelper) boxHelper.update(); }
-  updateUI();
-};
-
-window.onScale = function(v) {
-  scale = parseFloat(v);
-  document.getElementById('sv').textContent = scale.toFixed(2);
-  if (avatarNaturalH)
-    document.getElementById('hv').textContent = (avatarNaturalH * scale).toFixed(2) + ' m';
-  document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
-  if (marker) { marker.scale.setScalar(scale); if (boxHelper) boxHelper.update(); }
-  updateUI();
-};
-
-// ─── CHARGEMENT GLB ───────────────────────────────────────────
-const makeLoader = () => new GLTFLoader();
-
-window.loadDecor = function(input) {
-  const file = input.files[0]; if (!file) return;
-  document.getElementById('decor-name').textContent      = file.name;
-  document.getElementById('card-decor-name').textContent = file.name;
-  showLoading('Decor...', 0);
-  const url = URL.createObjectURL(file);
-  makeLoader().load(url, gltf => {
-    if (decorObj) scene.remove(decorObj);
-    decorObj = gltf.scene; decorMeshes = [];
-    decorObj.traverse(c => {
-      if (!c.isMesh) return;
-      c.receiveShadow = true; c.castShadow = true;
-      decorMeshes.push(c);
+  const list = document.getElementById('beacon-list');
+  list.innerHTML = '';
+  S.beacons.forEach((b, i) => {
+    const el = document.createElement('div');
+    el.className = 'beacon-item' + (S.activeBeacon === b ? ' active' : '');
+    const p = b.pos;
+    el.innerHTML = `<span>${b.name}</span>
+      <span class="coords">${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}</span>
+      <span class="beacon-del" data-idx="${i}">✕</span>`;
+    el.querySelector('.beacon-del').addEventListener('click', (ev) => {
+      ev.stopPropagation(); removeBeacon(parseInt(ev.target.dataset.idx));
     });
-    scene.add(decorObj);
-    hideLoading(); URL.revokeObjectURL(url);
-    const box = new THREE.Box3().setFromObject(decorObj);
-    const sz  = box.getSize(new THREE.Vector3());
-    const meta = decorMeshes.length + ' meshes  ' +
-      sz.x.toFixed(1) + 'x' + sz.y.toFixed(1) + 'x' + sz.z.toFixed(1) + 'm';
-    document.getElementById('card-decor-meta').textContent = meta;
-    document.getElementById('btn-decor').classList.add('loaded');
-    document.getElementById('card-decor').classList.add('loaded');
-    document.getElementById('placeholder').style.display = 'none';
-    document.getElementById('hud').style.display = 'block';
-    if (!decorMeshes.length) {
-      logError('0 mesh — re-exporter sans DRACO (Blender: Compression = None)');
-      document.getElementById('btn-decor').classList.replace('loaded','error');
-      document.getElementById('card-decor').classList.replace('loaded','fail');
-    } else { logClear(); }
-    focusOnObj(decorObj); checkReady();
-    console.log('[M3F03] Decor:', meta);
-  },
-  xhr => { if (xhr.total) showLoading('Decor...', Math.round(xhr.loaded/xhr.total*100)); },
-  err => {
-    hideLoading(); URL.revokeObjectURL(url);
-    document.getElementById('btn-decor').classList.add('error');
-    logError('Erreur decor: ' + (err.message || err));
-  });
-};
-
-window.loadAvatar = function(input) {
-  const file = input.files[0]; if (!file) return;
-  document.getElementById('avatar-name').textContent      = file.name;
-  document.getElementById('card-avatar-name').textContent = file.name;
-  showLoading('Avatar...', 0);
-  const url = URL.createObjectURL(file);
-  makeLoader().load(url, gltf => {
-    avatarTemplate = gltf.scene;
-    const box = new THREE.Box3().setFromObject(avatarTemplate);
-    avatarNaturalH = box.getSize(new THREE.Vector3()).y;
-    let avMeshes = 0;
-    avatarTemplate.traverse(c => { if (c.isMesh) avMeshes++; });
-    const meta = avMeshes + ' meshes  H=' + avatarNaturalH.toFixed(2) + 'm';
-    document.getElementById('card-avatar-meta').textContent = meta;
-    document.getElementById('hv').textContent = (avatarNaturalH * scale).toFixed(2) + ' m';
-    hideLoading(); URL.revokeObjectURL(url);
-    if (!avMeshes) {
-      logError('Avatar 0 mesh — re-exporter sans DRACO');
-      document.getElementById('btn-avatar').classList.replace('loaded','error');
-      document.getElementById('card-avatar').classList.replace('loaded','fail');
-    } else {
-      document.getElementById('btn-avatar').classList.add('loaded');
-      document.getElementById('card-avatar').classList.add('loaded');
-      logClear();
-    }
-    checkReady();
-    console.log('[M3F03] Avatar:', meta);
-  },
-  xhr => { if (xhr.total) showLoading('Avatar...', Math.round(xhr.loaded/xhr.total*100)); },
-  err => {
-    hideLoading(); URL.revokeObjectURL(url);
-    document.getElementById('btn-avatar').classList.add('error');
-    logError('Erreur avatar: ' + (err.message || err));
-  });
-};
-
-// ─── READY CHECK ──────────────────────────────────────────────
-function checkReady() {
-  if (decorObj && avatarTemplate && decorMeshes.length > 0) {
-    setBadge('Pret — double-clic sol pour balise', 'ok');
-    document.getElementById('hint').textContent =
-      'WASD = camera | ↑↓←→ = deplacer avatar | [ ] = rotation | Double-clic sol = balise | Clic droit drag = pivoter';
-  }
-}
-
-// ─── OPACITE ─────────────────────────────────────────────────
-function applyOpacity(model, opacity) {
-  model.traverse(child => {
-    if (!child.isMesh) return;
-    const mats = Array.isArray(child.material) ? child.material : [child.material];
-    child.material = mats.map(m => {
-      const c = m.clone();
-      c.transparent = opacity < 1;
-      c.opacity     = opacity;
-      c.depthWrite  = opacity >= 1;
-      return c;
-    });
-    if (child.material.length === 1) child.material = child.material[0];
+    el.addEventListener('click', () => activateBeacon(i));
+    list.appendChild(el);
   });
 }
 
-// ─── RESET ───────────────────────────────────────────────────
-window.resetAll = function() {
-  beacons.forEach(bc => { if (bc.mesh) scene.remove(bc.mesh); });
-  beacons.length = 0; nextBeaconNum = 1; activeBeaconId = null;
-  if (marker)    { scene.remove(marker); marker = null; transformCtrl.detach(); }
-  if (boxHelper) { scene.remove(boxHelper); boxHelper = null; }
-  setSelection(null);
+window.removeBeacon = (i) => {
+  scene.remove(S.beacons[i].mesh);
+  S.beacons.splice(i, 1);
+  if (S.beacons.length > 0) activateBeacon(Math.min(i, S.beacons.length - 1));
+  else { S.activeBeacon = null; document.getElementById('beacon-hint').style.display = ''; }
   renderBeaconList();
-  document.getElementById('cx').textContent = '—';
-  document.getElementById('cy').textContent = '—';
-  document.getElementById('cz').textContent = '—';
-  document.getElementById('json-box').textContent = 'Aucune balise definie...';
-  document.getElementById('btn-ok').disabled = true;
-  if (decorObj && avatarTemplate && decorMeshes.length > 0)
-    setBadge('Pret — double-clic sol pour balise', 'ok');
 };
 
-// ─── UPDATE UI ───────────────────────────────────────────────
-function updateUI() {
-  const bc = beacons.find(b => b.id === activeBeaconId);
-  if (!bc) return;
-  document.getElementById('cx').textContent = bc.pos.x.toFixed(3);
-  document.getElementById('cy').textContent = bc.pos.y.toFixed(3);
-  document.getElementById('cz').textContent = bc.pos.z.toFixed(3);
-  document.getElementById('btn-ok').disabled = false;
-  document.getElementById('json-box').innerHTML = syntaxHL(JSON.stringify(buildConfig(), null, 2));
-}
-
-function buildConfig() {
-  const active = beacons.find(b => b.id === activeBeaconId);
-  return {
-    active_beacon:  active ? active.name : null,
-    avatar_scale:   +scale.toFixed(4),
-    avatar_rot_y:   +avatarRotY.toFixed(4),
-    beacons: beacons.map(bc => ({
-      name:       bc.name,
-      position:   { x: +bc.pos.x.toFixed(4), y: +bc.pos.y.toFixed(4), z: +bc.pos.z.toFixed(4) },
-      has_avatar: bc.hasAvatar
-    })),
-    generated_by:   'm3_f03_viewer',
-    viewer_version: '2.0.0',
-    timestamp:      new Date().toISOString(),
-    blender_note:   'loc=(x,-z,y)  rot_y_rad'
-  };
-}
-
-function syntaxHL(s) {
-  return s
-    .replace(/("[\w_]+")\s*:/g, '<span class="jk">$1</span>:')
-    .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="jv">$1</span>')
-    .replace(/:\s*"([^"]*)"/g, ': <span class="js">"$1"</span>');
-}
-
-// ─── DOWNLOAD ────────────────────────────────────────────────
-window.doDownload = function() {
-  const blob = new Blob([JSON.stringify(buildConfig(), null, 2)], { type: 'application/json' });
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob), download: 'spawn_config.json'
-  });
-  a.click(); URL.revokeObjectURL(a.href);
-  setBadge('spawn_config.json telecharge', 'warn');
+// ─── AVATAR TRANSFORM ─────────────────────────────────────────────
+window.updateAvatarTransform = () => {
+  S.scale = parseFloat(document.getElementById('sl-scale').value);
+  S.rotY  = parseFloat(document.getElementById('sl-roty').value);
+  document.getElementById('num-scale').value = S.scale.toFixed(3);
+  document.getElementById('num-roty').value  = S.rotY;
+  if (!S.avatarObj) return;
+  if (S.activeBeacon) S.avatarObj.position.copy(S.activeBeacon.pos);
+  S.avatarObj.scale.setScalar(S.scale);
+  S.avatarObj.rotation.y = S.rotY * Math.PI / 180;
 };
-window.doSave = async function() {
-  const btn = document.getElementById('btn-ok');
+window.syncScale = (v) => { document.getElementById('sl-scale').value = v; updateAvatarTransform(); };
+window.syncRotY  = (v) => { document.getElementById('sl-roty').value  = v; updateAvatarTransform(); };
+
+// ─── TRAJECTOIRE ──────────────────────────────────────────────────
+window.setTrajMode = (mode) => {
+  S.trajMode = mode;
+  document.getElementById('btn-static').classList.toggle('active', mode === 'static');
+  document.getElementById('btn-linear').classList.toggle('active', mode === 'linear');
+  document.getElementById('traj-linear-ui').style.display = mode === 'linear' ? 'flex' : 'none';
+  if (mode === 'linear') updateStartCoords();
+};
+
+function updateStartCoords() {
+  if (!S.activeBeacon) return;
+  const p = S.activeBeacon.pos;
+  document.getElementById('start-coords').textContent = `${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}`;
+}
+
+window.toggleSetEnd = () => {
+  S.settingEnd = !S.settingEnd;
+  const btn = document.getElementById('btn-set-end');
+  btn.classList.toggle('active', S.settingEnd);
+  btn.textContent = S.settingEnd ? 'CLIC SUR SOL → END…' : 'REDÉFINIR POINT D'ARRIVÉE';
+};
+
+function setEndPoint(pos) {
+  S.endPos = pos.clone();
+  S.settingEnd = false;
+  const btn = document.getElementById('btn-set-end');
+  btn.classList.remove('active');
+  btn.textContent = 'REDÉFINIR POINT D'ARRIVÉE';
+  document.getElementById('end-coords').textContent = `${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}`;
+  document.getElementById('box-end').className = 'coord-box end-box end-placed';
+  if (S.endSphere) scene.remove(S.endSphere);
+  const geo = new THREE.SphereGeometry(0.15, 12, 12);
+  const mat = new THREE.MeshStandardMaterial({ color: 0xf44336, emissive: 0xf44336, emissiveIntensity: 0.4 });
+  S.endSphere = new THREE.Mesh(geo, mat);
+  S.endSphere.position.copy(pos);
+  scene.add(S.endSphere);
+  drawTrajLine();
+}
+
+function drawTrajLine() {
+  if (S.trajLine) scene.remove(S.trajLine);
+  if (!S.activeBeacon || !S.endPos) return;
+  const pts = [S.activeBeacon.pos.clone().setY(S.activeBeacon.pos.y + 0.05),
+               S.endPos.clone().setY(S.endPos.y + 0.05)];
+  const geo  = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat  = new THREE.LineBasicMaterial({ color: 0xff6666 });
+  S.trajLine = new THREE.Line(geo, mat);
+  scene.add(S.trajLine);
+}
+
+// ─── SAVE CONFIG ──────────────────────────────────────────────────
+window.saveConfig = async () => {
+  const btn = document.getElementById('btn-confirm');
+  const fb  = document.getElementById('feedback');
   btn.disabled = true;
-  btn.textContent = 'Sauvegarde...';
-  const cfg = buildConfig();
-  let savedToDrive = false;
+  fb.textContent = 'Sauvegarde…';
+  fb.style.color = '#c8a96e';
+  const spawn = S.activeBeacon
+    ? { x: +S.activeBeacon.pos.x.toFixed(4), y: +S.activeBeacon.pos.y.toFixed(4), z: +S.activeBeacon.pos.z.toFixed(4) }
+    : { x: 0, y: 0, z: 0 };
+  const config = {
+    active_beacon: S.activeBeacon ? S.activeBeacon.name : null,
+    beacons: S.beacons.map(b => ({
+      name: b.name,
+      x: +b.pos.x.toFixed(4), y: +b.pos.y.toFixed(4), z: +b.pos.z.toFixed(4)
+    })),
+    spawn, scale: +S.scale.toFixed(4), rot_y: S.rotY,
+    trajectory: S.trajMode === 'linear' && S.endPos
+      ? { mode: 'linear', start: { ...spawn },
+          end: { x: +S.endPos.x.toFixed(4), y: +S.endPos.y.toFixed(4), z: +S.endPos.z.toFixed(4) }}
+      : { mode: 'static' }
+  };
   try {
     const r = await fetch('/save-config', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(cfg)
+      body: JSON.stringify(config)
     });
     const d = await r.json();
-    if (d.ok) { savedToDrive = true; setBadge('Sauve sur Drive ✓', 'ok'); }
-    else throw new Error(d.error || 'Erreur serveur');
+    if (d.ok) {
+      fb.textContent = 'spawn_config.json sauvé sur Drive ✓';
+      fb.style.color = '#4caf50';
+    } else throw new Error(d.error);
   } catch(e) {
-    console.warn('[M3F03] Flask save failed:', e.message, '— fallback download');
+    fb.textContent = 'Erreur : ' + e.message;
+    fb.style.color = '#f44336';
   }
-  if (!savedToDrive) { doDownload(); }
-  btn.textContent = 'Confirmer + Sauver Drive';
   btn.disabled = false;
 };
 
-// ─── HELPERS ────────────────────────────────────────────────
-function showLoading(msg, pct) {
-  document.getElementById('loading-msg').textContent = msg;
-  document.getElementById('loading').classList.add('show');
-  setProgress(pct);
+function setFeedback(msg, color) {
+  const el = document.getElementById('feedback');
+  el.textContent = msg; el.style.color = color;
 }
-function hideLoading() {
-  document.getElementById('loading').classList.remove('show');
-  document.getElementById('prog-wrap').style.display = 'none';
-  document.getElementById('prog-lbl').style.display  = 'none';
-}
-function setProgress(pct) {
-  document.getElementById('loading-pct').textContent = pct + '%';
-  document.getElementById('ov-bar').style.width      = pct + '%';
-  document.getElementById('prog-wrap').style.display = 'flex';
-  document.getElementById('prog-bar').style.width    = pct + '%';
-  document.getElementById('prog-lbl').style.display  = 'block';
-  document.getElementById('prog-lbl').textContent    = pct + '%';
-}
-function setBadge(txt, cls) {
-  const b = document.getElementById('badge');
-  b.className = 'badge ' + (cls || '');
-  document.getElementById('badge-txt').textContent = txt;
-}
-function logError(msg) {
-  const el = document.getElementById('log');
-  el.style.display = 'block'; el.textContent = msg;
-  setBadge('Erreur', 'err');
-}
-function logClear() { document.getElementById('log').style.display = 'none'; }
+
+// ─── EVENT WIRING ─────────────────────────────────────────────────
+document.getElementById('btn-load-decor').addEventListener('click',  () => loadDecor());
+document.getElementById('btn-load-avatar').addEventListener('click', () => loadAvatar());
+document.getElementById('btn-static').addEventListener('click',      () => setTrajMode('static'));
+document.getElementById('btn-linear').addEventListener('click',      () => setTrajMode('linear'));
+document.getElementById('btn-set-end').addEventListener('click',     () => toggleSetEnd());
+document.getElementById('btn-confirm').addEventListener('click',     () => saveConfig());
+document.getElementById('sl-scale').addEventListener('input',        () => updateAvatarTransform());
+document.getElementById('sl-roty').addEventListener('input',         () => updateAvatarTransform());
+document.getElementById('num-scale').addEventListener('input', function(){ syncScale(this.value); });
+document.getElementById('num-roty').addEventListener('input',  function(){ syncRotY(this.value); });
+
 </script>
 </body>
 </html>
