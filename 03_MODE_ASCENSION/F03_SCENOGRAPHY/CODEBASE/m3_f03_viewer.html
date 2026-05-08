@@ -114,8 +114,8 @@ input[type=number]:focus { border-color: #c8a96e; }
   <div class="chip"><span class="k">Décor</span><span id="chip-decor">—</span></div>
   <div class="chip"><span class="k">Avatar</span><span id="chip-avatar">—</span></div>
   <div class="divider"></div>
-  <button class="tb-btn" onclick="loadDecor()">DRIVE : Décor</button>
-  <button class="tb-btn" onclick="loadAvatar()">DRIVE : Avatar</button>
+  <button class="tb-btn" id="btn-load-decor">DRIVE : Décor</button>
+  <button class="tb-btn" id="btn-load-avatar">DRIVE : Avatar</button>
   <div class="divider"></div>
   <span class="hint">WASD / clic = balise</span>
 </div>
@@ -129,12 +129,12 @@ input[type=number]:focus { border-color: #c8a96e; }
     <div class="sec">
       <div class="sec-title">Spawn Avatar</div>
       <div class="row"><label>Scale</label>
-        <input type="range" id="sl-scale" min="0.1" max="5" step="0.001" value="1" oninput="updateAvatarTransform()">
-        <input type="number" id="num-scale" value="1" step="0.001" min="0.001" oninput="syncScale(this.value)">
+        <input type="range" id="sl-scale" min="0.1" max="5" step="0.001" value="1">
+        <input type="number" id="num-scale" value="1" step="0.001" min="0.001">
       </div>
       <div class="row"><label>Rot Y°</label>
-        <input type="range" id="sl-roty" min="-180" max="180" step="1" value="0" oninput="updateAvatarTransform()">
-        <input type="number" id="num-roty" value="0" step="1" oninput="syncRotY(this.value)">
+        <input type="range" id="sl-roty" min="-180" max="180" step="1" value="0">
+        <input type="number" id="num-roty" value="0" step="1">
       </div>
     </div>
 
@@ -149,12 +149,12 @@ input[type=number]:focus { border-color: #c8a96e; }
     <div class="sec">
       <div class="sec-title">Trajectoire</div>
       <div class="toggle-row">
-        <button class="tog-btn active" id="btn-static"  onclick="setTrajMode('static')">STATIQUE</button>
-        <button class="tog-btn"        id="btn-linear"  onclick="setTrajMode('linear')">LINÉAIRE A→B</button>
+        <button class="tog-btn active" id="btn-static">STATIQUE</button>
+        <button class="tog-btn" id="btn-linear">LINÉAIRE A→B</button>
       </div>
       <div id="traj-linear-ui" style="display:none; flex-direction:column; gap:6px;">
         <div class="coord-box" id="box-start"><span class="lbl">START</span><span id="start-coords">—</span></div>
-        <button class="btn-action" id="btn-set-end" onclick="toggleSetEnd()">DÉFINIR POINT D'ARRIVÉE</button>
+        <button class="btn-action" id="btn-set-end">DÉFINIR POINT D'ARRIVÉE</button>
         <div class="coord-box end-box" id="box-end"><span class="lbl">END</span><span id="end-coords">non défini</span></div>
       </div>
     </div>
@@ -162,7 +162,7 @@ input[type=number]:focus { border-color: #c8a96e; }
     <div style="flex:1"></div>
 
     <div class="sec">
-      <button class="btn-confirm" id="btn-confirm" disabled onclick="saveConfig()">
+      <button class="btn-confirm" id="btn-confirm" disabled>
         CONFIRMER + SAUVER
       </button>
       <div class="feedback" id="feedback"></div>
@@ -171,16 +171,16 @@ input[type=number]:focus { border-color: #c8a96e; }
   </div>
 </div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { GLTFLoader }    from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
 
 // ─── SCENE ────────────────────────────────────────────────────────
 const canvas   = document.getElementById('viewport');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true;
 
 const scene  = new THREE.Scene();
@@ -193,7 +193,7 @@ scene.add(dir);
 const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
 camera.position.set(0, 5, 15);
 
-const orbit = new OrbitControls(camera, renderer.domElement);
+const orbit = new THREE.OrbitControls(camera, renderer.domElement);
 orbit.update();
 
 // ─── RESIZE ───────────────────────────────────────────────────────
@@ -270,7 +270,7 @@ window.loadDecor = async () => {
     const res = await fetch('/files/decor');
     if (!res.ok) throw new Error(res.statusText);
     const buf = await res.arrayBuffer();
-    new GLTFLoader().parse(buf, '', (gltf) => {
+    new THREE.GLTFLoader().parse(buf, '', (gltf) => {
       // remove previous
       S.decorMeshes.forEach(m => scene.remove(m.parent || m));
       gltf.scene.traverse(o => { if (o.isMesh) { o.receiveShadow = true; S.decorMeshes.push(o); }});
@@ -298,7 +298,7 @@ window.loadAvatar = async () => {
     const res = await fetch('/files/avatar');
     if (!res.ok) throw new Error(res.statusText);
     const buf = await res.arrayBuffer();
-    new GLTFLoader().parse(buf, '', (gltf) => {
+    new THREE.GLTFLoader().parse(buf, '', (gltf) => {
       if (S.avatarObj) scene.remove(S.avatarObj);
       S.avatarObj = gltf.scene;
       scene.add(S.avatarObj);
@@ -481,6 +481,18 @@ function setFeedback(msg, color) {
   const el = document.getElementById('feedback');
   el.textContent = msg; el.style.color = color;
 }
+// ─── EVENT WIRING ─────────────────────────────────────────────────
+document.getElementById('btn-load-decor').addEventListener('click', function(){ loadDecor(); });
+document.getElementById('btn-load-avatar').addEventListener('click', function(){ loadAvatar(); });
+document.getElementById('btn-static').addEventListener('click', function(){ setTrajMode('static'); });
+document.getElementById('btn-linear').addEventListener('click', function(){ setTrajMode('linear'); });
+document.getElementById('btn-set-end').addEventListener('click', function(){ toggleSetEnd(); });
+document.getElementById('btn-confirm').addEventListener('click', function(){ saveConfig(); });
+document.getElementById('sl-scale').addEventListener('input', function(){ updateAvatarTransform(); });
+document.getElementById('sl-roty').addEventListener('input', function(){ updateAvatarTransform(); });
+document.getElementById('num-scale').addEventListener('input', function(){ syncScale(this.value); });
+document.getElementById('num-roty').addEventListener('input', function(){ syncRotY(this.value); });
+
 </script>
 </body>
 </html>
