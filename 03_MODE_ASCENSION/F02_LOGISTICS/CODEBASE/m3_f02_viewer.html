@@ -161,18 +161,18 @@ select.bone-select:focus { border-color: #c8a96e; }
   </div>
 </div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { GLTFLoader }        from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { GLTFExporter }      from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
-import { OrbitControls }     from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/TransformControls.js';
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+<script>
 
 // ─── SCENE SETUP ──────────────────────────────────────────────────
 const canvas   = document.getElementById('viewport');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true;
 
 const scene  = new THREE.Scene();
@@ -187,11 +187,11 @@ dirLight.position.set(2, 4, 3);
 dirLight.castShadow = true;
 scene.add(ambient, dirLight);
 
-const orbit = new OrbitControls(camera, renderer.domElement);
+const orbit = new THREE.OrbitControls(camera, renderer.domElement);
 orbit.target.set(0, 1, 0);
 orbit.update();
 
-const transformCtrl = new TransformControls(camera, renderer.domElement);
+const transformCtrl = new THREE.TransformControls(camera, renderer.domElement);
 transformCtrl.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
 scene.add(transformCtrl);
 
@@ -234,7 +234,7 @@ window.loadAvatar = async () => {
     const res = await fetch('/files/avatar');
     if (!res.ok) throw new Error(res.statusText);
     const buf = await res.arrayBuffer();
-    const loader = new GLTFLoader();
+    const loader = new THREE.GLTFLoader();
     loader.parse(buf, '', (gltf) => {
       if (S.avatarGltf) scene.remove(S.avatarGltf.scene);
       S.avatarGltf = gltf;
@@ -346,7 +346,7 @@ async function attachProp(propName, boneIdx) {
     const res = await fetch(`/files/prop/${encodeURIComponent(propName)}`);
     if (!res.ok) throw new Error(res.statusText);
     const buf = await res.arrayBuffer();
-    const loader = new GLTFLoader();
+    const loader = new THREE.GLTFLoader();
     loader.parse(buf, '', (gltf) => {
       const propObj = gltf.scene;
       bone.add(propObj);
@@ -422,7 +422,7 @@ window.exportAndSave = async () => {
   fb.textContent = 'Export GLB en cours…';
   fb.style.color = '#c8a96e';
   try {
-    const exporter = new GLTFExporter();
+    const exporter = new THREE.GLTFExporter();
     exporter.parse(S.avatarGltf.scene, async (glb) => {
       const blob = new Blob([glb], { type: 'model/gltf-binary' });
       const buf  = await blob.arrayBuffer();

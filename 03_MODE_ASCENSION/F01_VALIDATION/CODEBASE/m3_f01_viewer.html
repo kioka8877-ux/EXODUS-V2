@@ -192,9 +192,9 @@ pre#json-preview {
   </div>
 </div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
 
 // ─── STATE ─────────────────────────────────────────────────────────
 const S = {
@@ -241,7 +241,7 @@ async function loadGLB() {
     const res = await fetch('/files/avatar');
     if (!res.ok) throw new Error(res.statusText);
     const buf = await res.arrayBuffer();
-    const loader = new GLTFLoader();
+    const loader = new THREE.GLTFLoader();
     loader.parse(buf, '', (gltf) => {
       S.clips = gltf.animations.map(a => ({ name: a.name, duration: +a.duration.toFixed(3) }));
       S.glbOk = true;
