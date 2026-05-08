@@ -3,524 +3,453 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M3_F03 — Scenography v1.0</title>
-<style>
-html { height: 100%; overflow: hidden; }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  background: #0d0d0f; color: #e0e0e0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  display: flex; flex-direction: column;
-  height: 100%; min-height: 100vh; overflow: hidden;
-}
-#topbar {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-  flex-wrap: nowrap; overflow-x: auto;
-  padding: 7px 12px; background: #141416; border-bottom: 1px solid #2a2a2e;
-  scrollbar-width: none;
-}
-#topbar::-webkit-scrollbar { display: none; }
-.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e;
-        text-transform: uppercase; white-space: nowrap; }
-.ver  { font-size: 10px; color: #333; white-space: nowrap; }
-.divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; flex-shrink: 0; }
-.chip {
-  padding: 3px 8px; border-radius: 4px; background: #1e1e22;
-  border: 1px solid #2a2a2e; font-size: 11px; color: #666; white-space: nowrap;
-}
-.chip .k { color: #c8a96e; font-weight: 600; }
-.chip.ok { border-color: #2a5c2a; color: #4caf50; }
-.tb-btn {
-  padding: 5px 12px; border-radius: 5px; border: 1px solid #2a2a2e;
-  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
-  font-weight: 600; transition: all .18s; white-space: nowrap; flex-shrink: 0;
-}
-.tb-btn:hover { border-color: #c8a96e; color: #c8a96e; }
-.hint { font-size: 10px; color: #333; white-space: nowrap; }
-#main { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-canvas#viewport { flex: 1; min-width: 0; display: block; width: 0 !important; height: 0 !important; }
-/* PANEL */
-#panel {
-  width: 260px; min-width: 260px; background: #141416;
-  border-left: 1px solid #2a2a2e;
-  display: flex; flex-direction: column; padding: 12px; gap: 12px;
-  overflow-y: auto; flex-shrink: 0;
-}
-.sec { display: flex; flex-direction: column; gap: 6px; }
-.sec-title {
-  font-size: 10px; text-transform: uppercase; letter-spacing: .12em;
-  color: #444; padding-bottom: 4px; border-bottom: 1px solid #1e1e22;
-}
-.row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-.row label { color: #666; min-width: 56px; }
-input[type=range] { flex: 1; accent-color: #c8a96e; min-width: 0; }
-input[type=number] {
-  width: 56px; padding: 4px 6px; border-radius: 4px;
-  border: 1px solid #2a2a2e; background: #1c1c20;
-  color: #aaa; font-size: 11px; outline: none;
-}
-input[type=number]:focus { border-color: #c8a96e; }
-.beacon-list { display: flex; flex-direction: column; gap: 3px; max-height: 120px; overflow-y: auto; }
-.beacon-item {
-  padding: 4px 8px; border-radius: 4px; border: 1px solid #2a2a2e;
-  background: #1c1c20; font-size: 11px; cursor: pointer;
-  display: flex; justify-content: space-between; transition: all .15s;
-}
-.beacon-item:hover { border-color: #c8a96e; }
-.beacon-item.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
-.beacon-item .coords { font-size: 9px; color: #555; }
-.beacon-item.active .coords { color: #8a7040; }
-.beacon-del { color: #555; cursor: pointer; font-size: 11px; }
-.beacon-del:hover { color: #f44336; }
-.toggle-row { display: flex; gap: 6px; }
-.tog-btn {
-  flex: 1; padding: 7px; border-radius: 5px; border: 1px solid #2a2a2e;
-  background: #1c1c20; font-size: 11px; color: #777; cursor: pointer;
-  font-weight: 600; transition: all .18s; text-align: center;
-}
-.tog-btn.active { border-color: #c8a96e; background: #1a1608; color: #c8a96e; }
-.coord-box {
-  padding: 6px 8px; border-radius: 4px; border: 1px solid #2a2a2e;
-  background: #1c1c20; font-size: 10px; color: #666; font-family: monospace;
-  word-break: break-all;
-}
-.coord-box .lbl { color: #c8a96e; font-weight: 600; margin-right: 4px; }
-.coord-box.end-box { border-color: #5c2a2a; }
-.coord-box.end-placed { border-color: #5c6a2a; color: #aaa; }
-.btn-action {
-  padding: 8px; border-radius: 5px; border: 1px solid #2a2a2e;
-  background: #1c1c20; font-size: 11px; color: #aaa; cursor: pointer;
-  font-weight: 600; transition: all .18s; width: 100%; text-align: center;
-}
-.btn-action:hover { border-color: #c8a96e; color: #c8a96e; }
-.btn-action.active { border-color: #f44336; background: #1e0e0e; color: #f44336; }
-.btn-confirm {
-  padding: 10px; border-radius: 7px; border: none; cursor: pointer;
-  font-size: 12px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; transition: all .2s; width: 100%;
-  background: #c8a96e; color: #0d0d0f;
-}
-.btn-confirm:disabled { background: #222; color: #444; cursor: not-allowed; border: 1px solid #2a2a2e; }
-.btn-confirm:not(:disabled):hover { background: #e0c080; }
-.feedback { font-size: 11px; color: #4caf50; text-align: center; min-height: 14px; }
-.badge { padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.badge.wait { background: #222; color: #555; }
-.badge.ok   { background: #1a3a1a; color: #4caf50; border: 1px solid #2a5c2a; }
-.badge.load { background: #1a2a3a; color: #64b5f6; border: 1px solid #2a4a6a; }
-#status-bar {
-  padding: 3px 12px; font-size: 10px; color: #555;
-  background: #0d0d0f; border-top: 1px solid #1a1a1e;
-  flex-shrink: 0; text-align: center;
-}
-</style>
+<title>M3_F03 - Scenography v3.0</title>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
 </script>
+<style>
+html,body{margin:0;padding:0;height:100%;overflow:hidden;box-sizing:border-box}
+*{box-sizing:border-box}
+body{background:#0d0d0f;color:#e0e0e0;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;height:100vh}
+#topbar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#141416;border-bottom:1px solid #2a2a2e;flex-shrink:0;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+#topbar::-webkit-scrollbar{display:none}
+.logo{font-size:13px;font-weight:700;letter-spacing:.12em;color:#c8a96e;text-transform:uppercase}
+.ver{font-size:10px;color:#333}
+.divider{width:1px;height:24px;background:#2a2a2e;flex-shrink:0}
+.tb-btn{padding:5px 11px;border-radius:5px;border:1px solid #2a2a2e;background:#1c1c20;font-size:11px;color:#aaa;cursor:pointer;font-weight:600;transition:all .18s;flex-shrink:0}
+.tb-btn:hover{border-color:#c8a96e;color:#c8a96e}
+.tb-btn.ok{border-color:#2a5c2a;color:#4caf50}
+.tb-btn.err{border-color:#5c2a2a;color:#f44336}
+#main{display:flex;flex:1;overflow:hidden;min-height:0}
+#viewport{flex:1;position:relative;min-width:0}
+#panel{width:265px;min-width:265px;background:#141416;border-left:1px solid #2a2a2e;display:flex;flex-direction:column;padding:12px;gap:12px;overflow-y:auto;flex-shrink:0}
+.sec{display:flex;flex-direction:column;gap:6px}
+.sec-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:#444;padding-bottom:4px;border-bottom:1px solid #1e1e22}
+.row{display:flex;align-items:center;gap:8px;font-size:11px}
+.row label{color:#666;min-width:56px}
+input[type=range]{flex:1;accent-color:#c8a96e;min-width:0}
+input[type=number]{width:56px;padding:4px 6px;border-radius:4px;border:1px solid #2a2a2e;background:#1c1c20;color:#aaa;font-size:11px;outline:none}
+input[type=number]:focus{border-color:#c8a96e}
+.size-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sz-btn{padding:8px;border-radius:5px;border:1px solid #2a2a2e;background:#1c1c20;color:#888;font-size:11px;cursor:pointer;text-align:center;transition:all .18s}
+.sz-btn:hover,.sz-btn.active{border-color:#c8a96e;background:#1a1608;color:#c8a96e}
+.sz-val{display:block;font-size:9px;color:#555;margin-top:2px}
+.sz-btn.active .sz-val{color:#a07840}
+.beacon-list{display:flex;flex-direction:column;gap:4px;max-height:130px;overflow-y:auto}
+.bc-item{padding:5px 8px;border-radius:4px;border:1px solid #2a2a2e;background:#1c1c20;font-size:11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .15s}
+.bc-item:hover{border-color:#c8a96e}
+.bc-item.active{border-color:#c8a96e;background:#1a1608;color:#c8a96e}
+.bc-coords{font-size:9px;color:#555}
+.bc-del{color:#555;cursor:pointer;font-size:12px;padding:0 2px}
+.bc-del:hover{color:#f44336}
+.coords{display:grid;grid-template-columns:18px 1fr;gap:3px 6px;align-items:center;font-size:11px;font-family:monospace}
+.ax{color:#c8a96e;font-weight:700}
+.vl{color:#ddd}
+.traj-row{display:flex;gap:6px}
+.traj-btn{flex:1;padding:7px;border-radius:5px;border:1px solid #2a2a2e;background:#1c1c20;font-size:11px;color:#777;cursor:pointer;font-weight:600;transition:all .18s;text-align:center}
+.traj-btn.active{border-color:#c8a96e;background:#1a1608;color:#c8a96e}
+.coord-box{padding:6px 8px;border-radius:4px;border:1px solid #2a2a2e;background:#1c1c20;font-size:10px;color:#666;font-family:monospace}
+.coord-box .lbl{color:#c8a96e;font-weight:600;margin-right:4px}
+.btn-action{padding:8px;border-radius:5px;border:1px solid #2a2a2e;background:#1c1c20;font-size:11px;color:#aaa;cursor:pointer;font-weight:600;transition:all .18s;width:100%;text-align:center}
+.btn-action:hover{border-color:#c8a96e;color:#c8a96e}
+.btn-action.recording{border-color:#f44336;background:#1e0e0e;color:#f44336}
+.btn-confirm{padding:10px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;transition:all .2s;width:100%;background:#c8a96e;color:#0d0d0f}
+.btn-confirm:disabled{background:#222;color:#444;cursor:not-allowed}
+.btn-confirm:not(:disabled):hover{background:#e0c080}
+.feedback{font-size:11px;color:#4caf50;text-align:center;min-height:14px}
+#statusbar{padding:3px 12px;font-size:10px;color:#555;background:#0d0d0f;border-top:1px solid #1a1a1e;flex-shrink:0;text-align:center}
+#hud-pos{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.75);border:1px solid #1e1e22;border-radius:6px;padding:5px 10px;font-size:11px;color:#888;font-family:monospace;pointer-events:none}
+</style>
 </head>
 <body>
-
 <div id="topbar">
   <span class="logo">M3 &#8212; F03</span>
-  <span class="ver">Scenography v1.0</span>
+  <span class="ver">Scenography v3.0</span>
   <div class="divider"></div>
-  <div class="chip"><span class="k">D&#233;cor</span><span id="chip-decor">&#8212;</span></div>
-  <div class="chip"><span class="k">Avatar</span><span id="chip-avatar">&#8212;</span></div>
+  <button class="tb-btn" id="btn-decor" onclick="loadFromDrive('decor')">Drive : D&#233;cor</button>
+  <button class="tb-btn" id="btn-avatar" onclick="loadFromDrive('avatar')">Drive : Avatar</button>
   <div class="divider"></div>
-  <button class="tb-btn" id="btn-load-decor">DRIVE : D&#233;cor</button>
-  <button class="tb-btn" id="btn-load-avatar">DRIVE : Avatar</button>
-  <div class="divider"></div>
-  <span class="hint">WASD / clic = balise</span>
+  <span style="font-size:10px;color:#333">WASD cam | double-clic sol = balise</span>
 </div>
-
 <div id="main">
-  <canvas id="viewport"></canvas>
-
+  <div id="viewport">
+    <div id="hud-pos">Survoler le d&#233;cor</div>
+  </div>
   <div id="panel">
-
     <div class="sec">
-      <div class="sec-title">Spawn Avatar</div>
+      <div class="sec-title">Taille Avatar</div>
+      <div class="size-grid">
+        <button class="sz-btn" onclick="applyPreset(1.10)">Enfant<span class="sz-val">1.10 m</span></button>
+        <button class="sz-btn" onclick="applyPreset(1.55)">Ado<span class="sz-val">1.55 m</span></button>
+        <button class="sz-btn" onclick="applyPreset(1.75)">Adulte<span class="sz-val">1.75 m</span></button>
+        <button class="sz-btn" onclick="applyPreset(1.88)">Grand<span class="sz-val">1.88 m</span></button>
+      </div>
       <div class="row"><label>Scale</label>
-        <input type="range" id="sl-scale" min="0.1" max="5" step="0.001" value="1">
-        <input type="number" id="num-scale" value="1" step="0.001" min="0.001">
+        <input type="range" id="sl-scale" min="0.1" max="5" step="0.01" value="1" oninput="onScaleSlider(this.value)">
+        <input type="number" id="num-scale" value="1.00" step="0.01" min="0.01" oninput="onScaleNum(this.value)">
       </div>
-      <div class="row"><label>Rot Y&#176;</label>
-        <input type="range" id="sl-roty" min="-180" max="180" step="1" value="0">
-        <input type="number" id="num-roty" value="0" step="1">
+      <div class="row"><label>Rot Y</label>
+        <input type="range" id="sl-roty" min="-180" max="180" step="1" value="0" oninput="onRotSlider(this.value)">
+        <input type="number" id="num-roty" value="0" step="1" oninput="onRotNum(this.value)">
       </div>
     </div>
-
     <div class="sec">
-      <div class="sec-title">Balises &#8212; clic sol pour placer</div>
-      <div class="beacon-list" id="beacon-list"></div>
-      <div class="feedback" id="beacon-hint" style="color:#555">Aucune balise &#8212; clic sur le sol</div>
+      <div class="sec-title">Balises &#8212; double-clic sol</div>
+      <div class="beacon-list" id="beacon-list">
+        <div style="font-size:11px;color:#333;text-align:center;padding:10px 0">Aucune balise</div>
+      </div>
     </div>
-
+    <div class="sec">
+      <div class="sec-title">Position active</div>
+      <div class="coords">
+        <span class="ax">X</span><span class="vl" id="cx">&#8212;</span>
+        <span class="ax">Y</span><span class="vl" id="cy">&#8212;</span>
+        <span class="ax">Z</span><span class="vl" id="cz">&#8212;</span>
+      </div>
+    </div>
     <div class="sec">
       <div class="sec-title">Trajectoire</div>
-      <div class="toggle-row">
-        <button class="tog-btn active" id="btn-static">STATIQUE</button>
-        <button class="tog-btn" id="btn-linear">LIN&#201;AIRE A&#8594;B</button>
+      <div class="traj-row">
+        <button class="traj-btn active" id="btn-static" onclick="setTraj('static')">STATIQUE</button>
+        <button class="traj-btn" id="btn-linear" onclick="setTraj('linear')">LIN&#201;AIRE</button>
       </div>
-      <div id="traj-linear-ui" style="display:none; flex-direction:column; gap:6px;">
-        <div class="coord-box" id="box-start"><span class="lbl">START</span><span id="start-coords">&#8212;</span></div>
-        <button class="btn-action" id="btn-set-end">D&#201;FINIR POINT D'ARRIV&#201;E</button>
-        <div class="coord-box end-box" id="box-end"><span class="lbl">END</span><span id="end-coords">non d&#233;fini</span></div>
+      <div id="traj-ui" style="display:none;flex-direction:column;gap:6px;margin-top:4px">
+        <div class="coord-box"><span class="lbl">START</span><span id="start-coords">&#8212;</span></div>
+        <button class="btn-action" id="btn-end" onclick="toggleEnd()">D&#233;finir point d'arriv&#233;e</button>
+        <div class="coord-box"><span class="lbl">END</span><span id="end-coords">non d&#233;fini</span></div>
       </div>
     </div>
-
     <div style="flex:1"></div>
-
     <div class="sec">
-      <button class="btn-confirm" id="btn-confirm" disabled>
-        CONFIRMER + SAUVER
-      </button>
+      <button class="btn-confirm" id="btn-confirm" disabled onclick="saveConfig()">CONFIRMER + SAUVER</button>
       <div class="feedback" id="feedback"></div>
     </div>
-
   </div>
 </div>
-<div id="status-bar" id="status-bar">Chargement en cours&#8230;</div>
-
-
-
+<div id="statusbar">En attente&#8230;</div>
 
 <script type="module">
-import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-// ─── SCENE ────────────────────────────────────────────────────────
-const canvas   = document.getElementById('viewport');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-canvas.style.width = '';
-canvas.style.height = '';
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.outputEncoding = THREE.sRGBEncoding;
+// ── SCENE ──────────────────────────────────────────────────
+const vp = document.getElementById('viewport');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x111114);
+scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+const sun = new THREE.DirectionalLight(0xfff4e0, 2.2);
+sun.position.set(15, 25, 15); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+scene.add(sun);
+scene.add(new THREE.HemisphereLight(0x8888ff, 0x443322, 0.5));
+scene.add(new THREE.GridHelper(400, 200, 0x1a1a1e, 0x161618));
+
+const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 10000);
+camera.position.set(8, 6, 12);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-
-const scene  = new THREE.Scene();
-scene.background = new THREE.Color(0x111113);
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-dir.position.set(5, 10, 5); dir.castShadow = true;
-scene.add(dir);
-
-const camera = new THREE.PerspectiveCamera(55, 1, 0.01, 1000);
-camera.position.set(0, 5, 15);
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+vp.appendChild(renderer.domElement);
+renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
 
 const orbit = new OrbitControls(camera, renderer.domElement);
-orbit.update();
+orbit.enableDamping = true; orbit.dampingFactor = 0.07;
+orbit.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
 
-// ─── RESIZE ───────────────────────────────────────────────────────
-function resizeRenderer() {
-  const w = canvas.clientWidth, h = canvas.clientHeight;
-  if (w > 0 && h > 0) {
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
+const tfCtrl = new TransformControls(camera, renderer.domElement);
+tfCtrl.setMode('translate'); tfCtrl.setSpace('world');
+scene.add(tfCtrl);
+tfCtrl.addEventListener('dragging-changed', e => { orbit.enabled = !e.value; });
+tfCtrl.addEventListener('change', () => {
+  if (!avatarObj) return;
+  const bc = beacons.find(b => b.id === activeId);
+  if (bc) { bc.pos.x = avatarObj.position.x; bc.pos.y = avatarObj.position.y; bc.pos.z = avatarObj.position.z; }
+  updateCoords();
+});
+
+// ── RESIZE ─────────────────────────────────────────────────
+function resize() {
+  const w = vp.clientWidth, h = vp.clientHeight;
+  if (w > 0 && h > 0) { renderer.setSize(w, h); camera.aspect = w/h; camera.updateProjectionMatrix(); }
 }
-new ResizeObserver(resizeRenderer).observe(canvas);
-resizeRenderer();
+new ResizeObserver(resize).observe(vp);
+resize();
 
-// ─── WASD ─────────────────────────────────────────────────────────
+// ── LOOP ───────────────────────────────────────────────────
 const keys = {};
-document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-document.addEventListener('keyup',   e => keys[e.key.toLowerCase()] = false);
-function wasdMove() {
-  const spd = 0.12, fwd = new THREE.Vector3();
-  camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize();
+document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+document.addEventListener('keyup',   e => { keys[e.key.toLowerCase()] = false; });
+(function loop() {
+  requestAnimationFrame(loop);
+  const d = camera.position.distanceTo(orbit.target);
+  const spd = Math.max(0.05, d * 0.02);
+  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
   const right = new THREE.Vector3().crossVectors(fwd, THREE.Object3D.DEFAULT_UP).normalize();
-  if (keys['w']) camera.position.addScaledVector(fwd, spd);
-  if (keys['s']) camera.position.addScaledVector(fwd, -spd);
-  if (keys['a']) camera.position.addScaledVector(right, -spd);
-  if (keys['d']) camera.position.addScaledVector(right, spd);
-  if (keys['q']) camera.position.y += spd;
-  if (keys['e']) camera.position.y -= spd;
-}
-
-// ─── RENDER LOOP ──────────────────────────────────────────────────
-(function animate() {
-  requestAnimationFrame(animate);
-  wasdMove();
+  if (keys['w']) { camera.position.addScaledVector(fwd, spd); orbit.target.addScaledVector(fwd, spd); }
+  if (keys['s']) { camera.position.addScaledVector(fwd,-spd); orbit.target.addScaledVector(fwd,-spd); }
+  if (keys['a']) { camera.position.addScaledVector(right,-spd); orbit.target.addScaledVector(right,-spd); }
+  if (keys['d']) { camera.position.addScaledVector(right, spd); orbit.target.addScaledVector(right, spd); }
+  if (keys['q']) { camera.position.y += spd; orbit.target.y += spd; }
+  if (keys['e']) { camera.position.y -= spd; orbit.target.y -= spd; }
   orbit.update();
   renderer.render(scene, camera);
 })();
 
-// ─── STATE ────────────────────────────────────────────────────────
-const S = {
-  decorMeshes:  [],
-  avatarObj:    null,
-  beacons:      [],
-  activeBeacon: null,
-  scale:        1,
-  rotY:         0,
-  trajMode:     'static',
-  endPos:       null,
-  settingEnd:   false,
-  endSphere:    null,
-  trajLine:     null,
-};
+// ── STATE ──────────────────────────────────────────────────
+let decorMeshes = [], avatarTemplate = null, avatarObj = null;
+let avatarNatH = null, avatarScale = 1, avatarRotY = 0;
+let beacons = [], activeId = null, bcNextNum = 1;
+let trajMode = 'static', endPos = null, settingEnd = false;
+let endSphere = null, trajLine = null;
+let pointerDown = null, lastClick = 0;
 
-// ─── RAYCASTER ────────────────────────────────────────────────────
+// ── RAYCASTER ──────────────────────────────────────────────
 const raycaster = new THREE.Raycaster();
-const mouse     = new THREE.Vector2();
-
-canvas.addEventListener('click', (e) => {
-  if (e.button !== 0) return;
-  const rect = canvas.getBoundingClientRect();
-  mouse.x = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
-  mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+const mouse = new THREE.Vector2();
+function castRay(cx, cy, targets) {
+  if (!targets.length) return null;
+  const r = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((cx - r.left) / r.width) * 2 - 1;
+  mouse.y = -((cy - r.top) / r.height) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(S.decorMeshes, true);
-  if (!hits.length) return;
-  const pt = hits[0].point;
-  if (S.settingEnd) { setEndPoint(pt); } else { addBeacon(pt); }
-});
-
-function setStatus(msg) {
-  document.getElementById('status-bar').textContent = msg;
+  const h = raycaster.intersectObjects(targets, true);
+  return h.length ? h[0] : null;
 }
 
-// ─── LOAD DECOR ───────────────────────────────────────────────────
-window.loadDecor = async () => {
-  document.getElementById('chip-decor').textContent = '&#8230;';
-  setStatus('Chargement d\u00e9cor&#8230;');
-  try {
-    const res = await fetch('/files/decor');
-    if (!res.ok) throw new Error(await res.text());
-    const buf = await res.arrayBuffer();
-    new GLTFLoader().parse(buf, '', (gltf) => {
-      S.decorMeshes.forEach(m => { if (m.parent) m.parent.removeFromParent(); });
-      S.decorMeshes = [];
-      gltf.scene.traverse(o => { if (o.isMesh) { o.receiveShadow = true; S.decorMeshes.push(o); }});
-      scene.add(gltf.scene);
-      const box = new THREE.Box3().setFromObject(gltf.scene);
-      const sz  = box.getSize(new THREE.Vector3()).length();
-      const ctr = box.getCenter(new THREE.Vector3());
-      camera.position.set(ctr.x, ctr.y + sz * 0.4, ctr.z + sz * 0.8);
-      orbit.target.copy(ctr); orbit.update();
-      document.getElementById('chip-decor').textContent = 'OK';
-      document.getElementById('chip-decor').parentElement.className = 'chip ok';
-      document.getElementById('btn-confirm').disabled = false;
-      setStatus('D\u00e9cor charg\u00e9 ✓');
-    }, err => { throw err; });
-  } catch(e) {
-    document.getElementById('chip-decor').textContent = 'ERR';
-    setFeedback('Erreur d\u00e9cor : ' + e.message, '#f44336');
-    setStatus('Erreur d\u00e9cor : ' + e.message);
+renderer.domElement.addEventListener('pointermove', e => {
+  const h = castRay(e.clientX, e.clientY, decorMeshes);
+  if (h) { const p = h.point; document.getElementById('hud-pos').textContent = 'X:' + p.x.toFixed(2) + '  Y:' + p.y.toFixed(2) + '  Z:' + p.z.toFixed(2); }
+  else document.getElementById('hud-pos').textContent = 'Survoler le d\u00e9cor';
+});
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+renderer.domElement.addEventListener('pointerdown', e => { pointerDown = { x: e.clientX, y: e.clientY }; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!pointerDown) return;
+  const dx = e.clientX - pointerDown.x, dy = e.clientY - pointerDown.y;
+  if (Math.sqrt(dx*dx+dy*dy) > 5) return;
+  if (e.button !== 0) return;
+  const now = Date.now(), dt = now - lastClick; lastClick = now;
+  const isDbl = dt > 0 && dt < 350;
+  if (isDbl && decorMeshes.length) {
+    const h = castRay(e.clientX, e.clientY, decorMeshes);
+    if (h) { placeBeacon(h.point); return; }
   }
-};
-
-// ─── LOAD AVATAR ──────────────────────────────────────────────────
-window.loadAvatar = async () => {
-  document.getElementById('chip-avatar').textContent = '&#8230;';
-  setStatus('Chargement avatar&#8230;');
-  try {
-    const res = await fetch('/files/avatar');
-    if (!res.ok) throw new Error(await res.text());
-    const buf = await res.arrayBuffer();
-    new GLTFLoader().parse(buf, '', (gltf) => {
-      if (S.avatarObj) scene.remove(S.avatarObj);
-      S.avatarObj = gltf.scene;
-      scene.add(S.avatarObj);
-      updateAvatarTransform();
-      document.getElementById('chip-avatar').textContent = 'OK';
-      document.getElementById('chip-avatar').parentElement.className = 'chip ok';
-      setStatus('Avatar charg\u00e9 ✓');
-    }, err => { throw err; });
-  } catch(e) {
-    document.getElementById('chip-avatar').textContent = 'ERR';
-    setFeedback('Erreur avatar : ' + e.message, '#f44336');
-    setStatus('Erreur avatar : ' + e.message);
-  }
-};
-
-// ─── AUTO-LOAD ────────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  try {
-    const info = await fetch('/info').then(r => r.json());
-    if (info.has_decor)  await loadDecor();
-    if (info.has_avatar) await loadAvatar();
-    if (!info.has_decor && !info.has_avatar) setStatus('Prêt — cliquez DRIVE pour charger les fichiers');
-  } catch(e) {
-    setStatus('Serveur prêt');
+  if (!isDbl && avatarObj) {
+    const av = []; avatarObj.traverse(c => { if (c.isMesh) av.push(c); });
+    if (castRay(e.clientX, e.clientY, av)) { tfCtrl.attach(avatarObj); return; }
+    tfCtrl.detach();
   }
 });
 
-// ─── BEACONS ──────────────────────────────────────────────────────
-function addBeacon(pos) {
-  const idx  = S.beacons.length + 1;
-  const name = `Balise_${String(idx).padStart(2,'0')}`;
+// ── LOAD FROM DRIVE ────────────────────────────────────────
+window.loadFromDrive = async function(type) {
+  const btn = document.getElementById('btn-' + type);
+  const orig = btn.textContent;
+  btn.textContent = '...'; btn.className = 'tb-btn';
+  setStatus('Chargement ' + type + ' depuis Drive...');
+  try {
+    const res = await fetch('/files/' + type);
+    if (!res.ok) throw new Error(await res.text());
+    const buf = await res.arrayBuffer();
+    await loadGLB(type, buf);
+    btn.textContent = orig + ' OK'; btn.className = 'tb-btn ok';
+    setStatus(type + ' charg\u00e9 \u2713');
+  } catch(e) {
+    btn.textContent = orig + ' ERR'; btn.className = 'tb-btn err';
+    setStatus('Erreur ' + type + ': ' + e.message);
+    console.error(e);
+  }
+};
+
+function loadGLB(type, buf) {
+  return new Promise((resolve, reject) => {
+    new GLTFLoader().parse(buf, '', gltf => {
+      if (type === 'decor') {
+        if (decorMeshes.length && decorMeshes[0].parent) scene.remove(decorMeshes[0].parent);
+        decorMeshes = [];
+        gltf.scene.traverse(c => { if (c.isMesh) { c.receiveShadow = true; c.castShadow = true; decorMeshes.push(c); }});
+        scene.add(gltf.scene);
+        const box = new THREE.Box3().setFromObject(gltf.scene);
+        const ctr = box.getCenter(new THREE.Vector3());
+        const sz  = box.getSize(new THREE.Vector3()).length();
+        camera.position.set(ctr.x, ctr.y + sz*.4, ctr.z + sz*.8);
+        orbit.target.copy(ctr); orbit.update();
+        document.getElementById('btn-confirm').disabled = false;
+      } else {
+        avatarTemplate = gltf.scene;
+        const box = new THREE.Box3().setFromObject(avatarTemplate);
+        avatarNatH = box.getSize(new THREE.Vector3()).y;
+        applyPreset(1.75);
+      }
+      resolve();
+    }, reject);
+  });
+}
+
+// ── AVATAR ─────────────────────────────────────────────────
+window.applyPreset = function(targetH) {
+  document.querySelectorAll('.sz-btn').forEach(b => b.classList.toggle('active', parseFloat(b.getAttribute('onclick').match(/[\d.]+/)) === targetH));
+  if (!avatarNatH) return;
+  const sc = targetH / avatarNatH;
+  document.getElementById('sl-scale').value = sc;
+  document.getElementById('num-scale').value = sc.toFixed(2);
+  avatarScale = sc;
+  updateAvatar();
+};
+window.onScaleSlider = function(v) { avatarScale = parseFloat(v); document.getElementById('num-scale').value = parseFloat(v).toFixed(2); updateAvatar(); };
+window.onScaleNum   = function(v) { avatarScale = parseFloat(v)||1; document.getElementById('sl-scale').value = avatarScale; updateAvatar(); };
+window.onRotSlider  = function(v) { avatarRotY = parseFloat(v); document.getElementById('num-roty').value = v; if (avatarObj) avatarObj.rotation.y = avatarRotY * Math.PI/180; };
+window.onRotNum     = function(v) { avatarRotY = parseFloat(v)||0; document.getElementById('sl-roty').value = avatarRotY; if (avatarObj) avatarObj.rotation.y = avatarRotY * Math.PI/180; };
+
+function updateAvatar() {
+  if (!avatarObj) return;
+  avatarObj.scale.setScalar(avatarScale);
+  avatarObj.rotation.y = avatarRotY * Math.PI/180;
+}
+function spawnAvatar(pos) {
+  if (!avatarTemplate) return;
+  if (avatarObj) { scene.remove(avatarObj); tfCtrl.detach(); }
+  avatarObj = avatarTemplate.clone(true);
+  avatarObj.position.copy(pos);
+  avatarObj.scale.setScalar(avatarScale);
+  avatarObj.rotation.y = avatarRotY * Math.PI/180;
+  avatarObj.traverse(c => { if (c.isMesh) c.castShadow = true; });
+  scene.add(avatarObj);
+  tfCtrl.attach(avatarObj);
+}
+
+// ── BEACONS ────────────────────────────────────────────────
+function placeBeacon(pos) {
+  if (settingEnd) { setEndPt(pos); return; }
+  const id = bcNextNum++;
+  const name = 'Balise_' + String(id).padStart(2,'0');
   const geo  = new THREE.SphereGeometry(0.15, 12, 12);
-  const mat  = new THREE.MeshStandardMaterial({ color: 0xc8a96e, emissive: 0xc8a96e, emissiveIntensity: 0.3 });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.copy(pos);
+  const mat  = new THREE.MeshStandardMaterial({ color: 0xc8a96e, emissive: 0xc8a96e, emissiveIntensity: .3 });
+  const mesh = new THREE.Mesh(geo, mat); mesh.position.copy(pos);
   scene.add(mesh);
-  S.beacons.push({ name, pos: pos.clone(), mesh });
-  activateBeacon(S.beacons.length - 1);
+  beacons.push({ id, name, pos: { x:pos.x, y:pos.y, z:pos.z }, mesh });
+  activateBeacon(id);
+  spawnAvatar(pos);
   renderBeaconList();
 }
-
-function activateBeacon(i) {
-  S.beacons.forEach((b, j) => {
-    b.mesh.material.color.setHex(j === i ? 0xffd700 : 0xc8a96e);
-    b.mesh.material.emissive.setHex(j === i ? 0xffd700 : 0xc8a96e);
-  });
-  S.activeBeacon = S.beacons[i];
-  if (S.avatarObj) updateAvatarTransform();
+function activateBeacon(id) {
+  activeId = id;
+  beacons.forEach(b => { b.mesh.material.color.setHex(b.id===id?0xffd700:0xc8a96e); b.mesh.material.emissive.setHex(b.id===id?0xffd700:0xc8a96e); });
+  updateCoords();
   updateStartCoords();
-  document.getElementById('beacon-hint').style.display = 'none';
   renderBeaconList();
 }
-
 function renderBeaconList() {
-  const list = document.getElementById('beacon-list');
-  list.innerHTML = '';
-  S.beacons.forEach((b, i) => {
-    const el = document.createElement('div');
-    el.className = 'beacon-item' + (S.activeBeacon === b ? ' active' : '');
-    const p = b.pos;
-    el.innerHTML = `<span>${b.name}</span>
-      <span class="coords">${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}</span>
-      <span class="beacon-del" data-idx="${i}">✕</span>`;
-    el.querySelector('.beacon-del').addEventListener('click', (ev) => {
-      ev.stopPropagation(); removeBeacon(parseInt(ev.target.dataset.idx));
-    });
-    el.addEventListener('click', () => activateBeacon(i));
-    list.appendChild(el);
+  const el = document.getElementById('beacon-list');
+  if (!beacons.length) { el.innerHTML = '<div style="font-size:11px;color:#333;text-align:center;padding:10px 0">Aucune balise</div>'; return; }
+  el.innerHTML = '';
+  beacons.forEach(b => {
+    const d = document.createElement('div');
+    d.className = 'bc-item' + (b.id === activeId ? ' active' : '');
+    d.innerHTML = '<span>' + b.name + '</span><span class="bc-coords">' + b.pos.x.toFixed(1) + ',' + b.pos.y.toFixed(1) + ',' + b.pos.z.toFixed(1) + '</span><span class="bc-del" data-id="' + b.id + '">\u00d7</span>';
+    d.querySelector('.bc-del').addEventListener('click', ev => { ev.stopPropagation(); removeBeacon(parseInt(ev.target.dataset.id)); });
+    d.addEventListener('click', () => { activateBeacon(b.id); if (avatarObj) { avatarObj.position.set(b.pos.x,b.pos.y,b.pos.z); tfCtrl.attach(avatarObj); } });
+    el.appendChild(d);
   });
 }
-
-window.removeBeacon = (i) => {
-  scene.remove(S.beacons[i].mesh);
-  S.beacons.splice(i, 1);
-  if (S.beacons.length > 0) activateBeacon(Math.min(i, S.beacons.length - 1));
-  else { S.activeBeacon = null; document.getElementById('beacon-hint').style.display = ''; }
+function removeBeacon(id) {
+  const idx = beacons.findIndex(b => b.id===id);
+  if (idx < 0) return;
+  scene.remove(beacons[idx].mesh);
+  beacons.splice(idx, 1);
+  if (activeId === id) { activeId = beacons.length ? beacons[0].id : null; if (activeId) activateBeacon(activeId); }
   renderBeaconList();
-};
+}
+function updateCoords() {
+  const bc = beacons.find(b => b.id===activeId);
+  if (!bc) return;
+  document.getElementById('cx').textContent = bc.pos.x.toFixed(3);
+  document.getElementById('cy').textContent = bc.pos.y.toFixed(3);
+  document.getElementById('cz').textContent = bc.pos.z.toFixed(3);
+}
 
-// ─── AVATAR TRANSFORM ─────────────────────────────────────────────
-window.updateAvatarTransform = () => {
-  S.scale = parseFloat(document.getElementById('sl-scale').value);
-  S.rotY  = parseFloat(document.getElementById('sl-roty').value);
-  document.getElementById('num-scale').value = S.scale.toFixed(3);
-  document.getElementById('num-roty').value  = S.rotY;
-  if (!S.avatarObj) return;
-  if (S.activeBeacon) S.avatarObj.position.copy(S.activeBeacon.pos);
-  S.avatarObj.scale.setScalar(S.scale);
-  S.avatarObj.rotation.y = S.rotY * Math.PI / 180;
+// ── TRAJECTOIRE ────────────────────────────────────────────
+window.setTraj = function(mode) {
+  trajMode = mode;
+  document.getElementById('btn-static').classList.toggle('active', mode==='static');
+  document.getElementById('btn-linear').classList.toggle('active', mode==='linear');
+  document.getElementById('traj-ui').style.display = mode==='linear'?'flex':'none';
+  updateStartCoords();
 };
-window.syncScale = (v) => { document.getElementById('sl-scale').value = v; updateAvatarTransform(); };
-window.syncRotY  = (v) => { document.getElementById('sl-roty').value  = v; updateAvatarTransform(); };
-
-// ─── TRAJECTOIRE ──────────────────────────────────────────────────
-window.setTrajMode = (mode) => {
-  S.trajMode = mode;
-  document.getElementById('btn-static').classList.toggle('active', mode === 'static');
-  document.getElementById('btn-linear').classList.toggle('active', mode === 'linear');
-  document.getElementById('traj-linear-ui').style.display = mode === 'linear' ? 'flex' : 'none';
-  if (mode === 'linear') updateStartCoords();
-};
-
 function updateStartCoords() {
-  if (!S.activeBeacon) return;
-  const p = S.activeBeacon.pos;
-  document.getElementById('start-coords').textContent = `${p.x.toFixed(3)}, ${p.y.toFixed(3)}, ${p.z.toFixed(3)}`;
+  const bc = beacons.find(b => b.id===activeId);
+  if (!bc) return;
+  document.getElementById('start-coords').textContent = bc.pos.x.toFixed(3)+', '+bc.pos.y.toFixed(3)+', '+bc.pos.z.toFixed(3);
 }
-
-window.toggleSetEnd = () => {
-  S.settingEnd = !S.settingEnd;
-  const btn = document.getElementById('btn-set-end');
-  btn.classList.toggle('active', S.settingEnd);
-  btn.textContent = S.settingEnd ? 'CLIC SUR SOL → END…' : 'REDÉFINIR POINT D'ARRIVÉE';
+window.toggleEnd = function() {
+  settingEnd = !settingEnd;
+  const btn = document.getElementById('btn-end');
+  btn.classList.toggle('recording', settingEnd);
+  btn.textContent = settingEnd ? 'Clic sur sol...' : (endPos ? 'Red\u00e9finir arriv\u00e9e' : 'D\u00e9finir point d\'arriv\u00e9e');
 };
-
-function setEndPoint(pos) {
-  S.endPos = pos.clone();
-  S.settingEnd = false;
-  const btn = document.getElementById('btn-set-end');
-  btn.classList.remove('active');
-  btn.textContent = 'REDÉFINIR POINT D'ARRIVÉE';
-  document.getElementById('end-coords').textContent = `${pos.x.toFixed(3)}, ${pos.y.toFixed(3)}, ${pos.z.toFixed(3)}`;
-  document.getElementById('box-end').className = 'coord-box end-box end-placed';
-  if (S.endSphere) scene.remove(S.endSphere);
-  const geo = new THREE.SphereGeometry(0.15, 12, 12);
-  const mat = new THREE.MeshStandardMaterial({ color: 0xf44336, emissive: 0xf44336, emissiveIntensity: 0.4 });
-  S.endSphere = new THREE.Mesh(geo, mat);
-  S.endSphere.position.copy(pos);
-  scene.add(S.endSphere);
-  drawTrajLine();
+function setEndPt(pos) {
+  endPos = pos.clone(); settingEnd = false;
+  document.getElementById('btn-end').classList.remove('recording');
+  document.getElementById('btn-end').textContent = 'Red\u00e9finir arriv\u00e9e';
+  document.getElementById('end-coords').textContent = pos.x.toFixed(3)+', '+pos.y.toFixed(3)+', '+pos.z.toFixed(3);
+  if (endSphere) scene.remove(endSphere);
+  endSphere = new THREE.Mesh(new THREE.SphereGeometry(.15,12,12), new THREE.MeshStandardMaterial({color:0xf44336,emissive:0xf44336,emissiveIntensity:.4}));
+  endSphere.position.copy(pos); scene.add(endSphere);
+  if (trajLine) scene.remove(trajLine);
+  const bc = beacons.find(b => b.id===activeId);
+  if (bc) {
+    const pts = [new THREE.Vector3(bc.pos.x,bc.pos.y+.05,bc.pos.z), pos.clone().setY(pos.y+.05)];
+    trajLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0xff6666}));
+    scene.add(trajLine);
+  }
 }
 
-function drawTrajLine() {
-  if (S.trajLine) scene.remove(S.trajLine);
-  if (!S.activeBeacon || !S.endPos) return;
-  const pts = [S.activeBeacon.pos.clone().setY(S.activeBeacon.pos.y + 0.05),
-               S.endPos.clone().setY(S.endPos.y + 0.05)];
-  const geo  = new THREE.BufferGeometry().setFromPoints(pts);
-  const mat  = new THREE.LineBasicMaterial({ color: 0xff6666 });
-  S.trajLine = new THREE.Line(geo, mat);
-  scene.add(S.trajLine);
-}
-
-// ─── SAVE CONFIG ──────────────────────────────────────────────────
-window.saveConfig = async () => {
+// ── SAVE ───────────────────────────────────────────────────
+window.saveConfig = async function() {
   const btn = document.getElementById('btn-confirm');
   const fb  = document.getElementById('feedback');
-  btn.disabled = true;
-  fb.textContent = 'Sauvegarde…';
-  fb.style.color = '#c8a96e';
-  const spawn = S.activeBeacon
-    ? { x: +S.activeBeacon.pos.x.toFixed(4), y: +S.activeBeacon.pos.y.toFixed(4), z: +S.activeBeacon.pos.z.toFixed(4) }
-    : { x: 0, y: 0, z: 0 };
-  const config = {
-    active_beacon: S.activeBeacon ? S.activeBeacon.name : null,
-    beacons: S.beacons.map(b => ({
-      name: b.name,
-      x: +b.pos.x.toFixed(4), y: +b.pos.y.toFixed(4), z: +b.pos.z.toFixed(4)
-    })),
-    spawn, scale: +S.scale.toFixed(4), rot_y: S.rotY,
-    trajectory: S.trajMode === 'linear' && S.endPos
-      ? { mode: 'linear', start: { ...spawn },
-          end: { x: +S.endPos.x.toFixed(4), y: +S.endPos.y.toFixed(4), z: +S.endPos.z.toFixed(4) }}
-      : { mode: 'static' }
+  btn.disabled = true; btn.textContent = 'Sauvegarde...';
+  fb.textContent = ''; fb.style.color = '#c8a96e';
+  const bc = beacons.find(b => b.id===activeId);
+  const spawn = bc ? {x:+bc.pos.x.toFixed(4),y:+bc.pos.y.toFixed(4),z:+bc.pos.z.toFixed(4)} : {x:0,y:0,z:0};
+  const cfg = {
+    active_beacon: bc ? bc.name : null,
+    beacons: beacons.map(b => ({name:b.name, x:+b.pos.x.toFixed(4), y:+b.pos.y.toFixed(4), z:+b.pos.z.toFixed(4)})),
+    spawn, scale: +avatarScale.toFixed(4), rot_y: avatarRotY,
+    trajectory: trajMode==='linear' && endPos
+      ? {mode:'linear',start:{...spawn},end:{x:+endPos.x.toFixed(4),y:+endPos.y.toFixed(4),z:+endPos.z.toFixed(4)}}
+      : {mode:'static'}
   };
   try {
-    const r = await fetch('/save-config', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(config)
-    });
+    const r = await fetch('/save-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
     const d = await r.json();
-    if (d.ok) {
-      fb.textContent = 'spawn_config.json sauvé sur Drive ✓';
-      fb.style.color = '#4caf50';
-    } else throw new Error(d.error);
+    if (d.ok) { fb.textContent = 'spawn_config.json sauve \u2713'; fb.style.color = '#4caf50'; }
+    else throw new Error(d.error);
   } catch(e) {
-    fb.textContent = 'Erreur : ' + e.message;
-    fb.style.color = '#f44336';
+    fb.textContent = 'Erreur: ' + e.message; fb.style.color = '#f44336';
   }
-  btn.disabled = false;
+  btn.disabled = false; btn.textContent = 'CONFIRMER + SAUVER';
 };
 
-function setFeedback(msg, color) {
-  const el = document.getElementById('feedback');
-  el.textContent = msg; el.style.color = color;
-}
+function setStatus(msg) { document.getElementById('statusbar').textContent = msg; }
 
-// ─── EVENT WIRING ─────────────────────────────────────────────────
-document.getElementById('btn-load-decor').addEventListener('click',  () => loadDecor());
-document.getElementById('btn-load-avatar').addEventListener('click', () => loadAvatar());
-document.getElementById('btn-static').addEventListener('click',      () => setTrajMode('static'));
-document.getElementById('btn-linear').addEventListener('click',      () => setTrajMode('linear'));
-document.getElementById('btn-set-end').addEventListener('click',     () => toggleSetEnd());
-document.getElementById('btn-confirm').addEventListener('click',     () => saveConfig());
-document.getElementById('sl-scale').addEventListener('input',        () => updateAvatarTransform());
-document.getElementById('sl-roty').addEventListener('input',         () => updateAvatarTransform());
-document.getElementById('num-scale').addEventListener('input', function(){ syncScale(this.value); });
-document.getElementById('num-roty').addEventListener('input',  function(){ syncRotY(this.value); });
-
+// Auto-load depuis Drive au demarrage
+(async function autoLoad() {
+  try {
+    const info = await fetch('/info').then(r => r.json());
+    if (info.has_decor)  window.loadFromDrive('decor');
+    if (info.has_avatar) setTimeout(() => window.loadFromDrive('avatar'), 1200);
+    if (info.has_decor || info.has_avatar) setStatus('Auto-chargement Drive...');
+    else setStatus('Pret \u2014 cliquez Drive pour charger les GLBs');
+  } catch(e) { setStatus('Pret'); }
+})();
 </script>
 </body>
 </html>
