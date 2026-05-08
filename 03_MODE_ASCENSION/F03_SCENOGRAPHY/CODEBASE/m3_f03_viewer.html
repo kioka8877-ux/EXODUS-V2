@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>M3_F03 - Scenography v3.0</title>
+<title>M3_F03 - Scenography v3.1</title>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
 </script>
@@ -59,12 +59,25 @@ input[type=number]:focus{border-color:#c8a96e}
 .feedback{font-size:11px;color:#4caf50;text-align:center;min-height:14px}
 #statusbar{padding:3px 12px;font-size:10px;color:#555;background:#0d0d0f;border-top:1px solid #1a1a1e;flex-shrink:0;text-align:center}
 #hud-pos{position:absolute;bottom:10px;left:10px;background:rgba(0,0,0,.75);border:1px solid #1e1e22;border-radius:6px;padding:5px 10px;font-size:11px;color:#888;font-family:monospace;pointer-events:none}
+/* ── POPUP ─────────────────────────────────────────────── */
+#bc-popup-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center}
+#bc-popup-overlay.visible{display:flex}
+#bc-popup{background:#1c1c20;border:1px solid #c8a96e;border-radius:9px;padding:20px 22px;min-width:270px;display:flex;flex-direction:column;gap:13px;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+#bc-popup-title{font-size:12px;font-weight:700;color:#c8a96e;text-transform:uppercase;letter-spacing:.12em}
+#bc-popup-sub{font-size:11px;color:#555;margin-top:-8px}
+#bc-popup-input{padding:7px 10px;border-radius:5px;border:1px solid #2a2a2e;background:#141416;color:#ddd;font-size:12px;outline:none;transition:border-color .15s}
+#bc-popup-input:focus{border-color:#c8a96e}
+#bc-popup-btns{display:flex;gap:8px}
+#bc-popup-ok{flex:1;padding:9px;border-radius:5px;border:none;background:#c8a96e;color:#0d0d0f;font-weight:700;font-size:12px;cursor:pointer;letter-spacing:.05em;transition:background .15s}
+#bc-popup-ok:hover{background:#e0c080}
+#bc-popup-cancel{flex:1;padding:9px;border-radius:5px;border:1px solid #2a2a2e;background:#1c1c20;color:#888;font-size:12px;cursor:pointer;transition:all .15s}
+#bc-popup-cancel:hover{border-color:#555;color:#aaa}
 </style>
 </head>
 <body>
 <div id="topbar">
   <span class="logo">M3 &#8212; F03</span>
-  <span class="ver">Scenography v3.0</span>
+  <span class="ver">Scenography v3.1</span>
   <div class="divider"></div>
   <button class="tb-btn" id="btn-decor" onclick="loadFromDrive('decor')">Drive : D&#233;cor</button>
   <button class="tb-btn" id="btn-avatar" onclick="loadFromDrive('avatar')">Drive : Avatar</button>
@@ -127,6 +140,19 @@ input[type=number]:focus{border-color:#c8a96e}
   </div>
 </div>
 <div id="statusbar">En attente&#8230;</div>
+
+<!-- ── POPUP BALISE ─────────────────────────────────────── -->
+<div id="bc-popup-overlay">
+  <div id="bc-popup">
+    <div id="bc-popup-title">Nouvelle Balise</div>
+    <div id="bc-popup-sub">Nommez le point de spawn</div>
+    <input id="bc-popup-input" type="text" placeholder="Balise_01" autocomplete="off" spellcheck="false">
+    <div id="bc-popup-btns">
+      <button id="bc-popup-ok">PLACER</button>
+      <button id="bc-popup-cancel">Annuler</button>
+    </div>
+  </div>
+</div>
 
 <script type="module">
 import * as THREE from 'three';
@@ -209,6 +235,34 @@ let beacons = [], activeId = null, bcNextNum = 1;
 let trajMode = 'static', endPos = null, settingEnd = false;
 let endSphere = null, trajLine = null;
 let pointerDown = null, lastClick = 0;
+let pendingBeaconPos = null;
+
+// ── POPUP BALISE ───────────────────────────────────────────
+const popupOverlay = document.getElementById('bc-popup-overlay');
+const popupInput   = document.getElementById('bc-popup-input');
+
+function showBeaconPopup(pos) {
+  pendingBeaconPos = pos;
+  popupInput.value = 'Balise_' + String(bcNextNum).padStart(2, '0');
+  popupOverlay.classList.add('visible');
+  setTimeout(() => { popupInput.focus(); popupInput.select(); }, 60);
+}
+function closePopup() {
+  popupOverlay.classList.remove('visible');
+  pendingBeaconPos = null;
+}
+document.getElementById('bc-popup-ok').addEventListener('click', () => {
+  const name = popupInput.value.trim() || ('Balise_' + String(bcNextNum).padStart(2, '0'));
+  popupOverlay.classList.remove('visible');
+  if (pendingBeaconPos) placeBeacon(pendingBeaconPos, name);
+  pendingBeaconPos = null;
+});
+document.getElementById('bc-popup-cancel').addEventListener('click', closePopup);
+popupOverlay.addEventListener('click', e => { if (e.target === popupOverlay) closePopup(); });
+popupInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('bc-popup-ok').click();
+  if (e.key === 'Escape') closePopup();
+});
 
 // ── RAYCASTER ──────────────────────────────────────────────
 const raycaster = new THREE.Raycaster();
@@ -239,7 +293,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   const isDbl = dt > 0 && dt < 350;
   if (isDbl && decorMeshes.length) {
     const h = castRay(e.clientX, e.clientY, decorMeshes);
-    if (h) { placeBeacon(h.point); return; }
+    if (h) { showBeaconPopup(h.point); return; }
   }
   if (!isDbl && avatarObj) {
     const av = []; avatarObj.traverse(c => { if (c.isMesh) av.push(c); });
@@ -260,7 +314,11 @@ window.loadFromDrive = async function(type) {
     const buf = await res.arrayBuffer();
     await loadGLB(type, buf);
     btn.textContent = orig + ' OK'; btn.className = 'tb-btn ok';
-    setStatus(type + ' charg\u00e9 \u2713');
+    if (type === 'avatar') {
+      setStatus('Avatar pr\u00eat \u2014 double-clic sur le sol pour placer');
+    } else {
+      setStatus(type + ' charg\u00e9 \u2713');
+    }
   } catch(e) {
     btn.textContent = orig + ' ERR'; btn.className = 'tb-btn err';
     setStatus('Erreur ' + type + ': ' + e.message);
@@ -313,23 +371,29 @@ function updateAvatar() {
   avatarObj.scale.setScalar(avatarScale);
   avatarObj.rotation.y = avatarRotY * Math.PI/180;
 }
+
 function spawnAvatar(pos) {
   if (!avatarTemplate) return;
   if (avatarObj) { scene.remove(avatarObj); tfCtrl.detach(); }
   avatarObj = avatarTemplate.clone(true);
-  avatarObj.position.copy(pos);
   avatarObj.scale.setScalar(avatarScale);
   avatarObj.rotation.y = avatarRotY * Math.PI/180;
+  // Place at pos first, then compute bbox to lift feet to floor
+  avatarObj.position.copy(pos);
+  avatarObj.updateWorldMatrix(true, true);
+  const box = new THREE.Box3().setFromObject(avatarObj);
+  // Offset Y so the lowest point of the model sits exactly on pos.y
+  avatarObj.position.y += pos.y - box.min.y;
   avatarObj.traverse(c => { if (c.isMesh) c.castShadow = true; });
   scene.add(avatarObj);
   tfCtrl.attach(avatarObj);
 }
 
 // ── BEACONS ────────────────────────────────────────────────
-function placeBeacon(pos) {
+function placeBeacon(pos, customName) {
   if (settingEnd) { setEndPt(pos); return; }
   const id = bcNextNum++;
-  const name = 'Balise_' + String(id).padStart(2,'0');
+  const name = customName || ('Balise_' + String(id).padStart(2,'0'));
   const geo  = new THREE.SphereGeometry(0.15, 12, 12);
   const mat  = new THREE.MeshStandardMaterial({ color: 0xc8a96e, emissive: 0xc8a96e, emissiveIntensity: .3 });
   const mesh = new THREE.Mesh(geo, mat); mesh.position.copy(pos);
@@ -447,8 +511,8 @@ function setStatus(msg) { document.getElementById('statusbar').textContent = msg
     if (info.has_decor)  window.loadFromDrive('decor');
     if (info.has_avatar) setTimeout(() => window.loadFromDrive('avatar'), 1200);
     if (info.has_decor || info.has_avatar) setStatus('Auto-chargement Drive...');
-    else setStatus('Pret \u2014 cliquez Drive pour charger les GLBs');
-  } catch(e) { setStatus('Pret'); }
+    else setStatus('Pr\u00eat \u2014 cliquez Drive pour charger les GLBs');
+  } catch(e) { setStatus('Pr\u00eat'); }
 })();
 </script>
 </body>
