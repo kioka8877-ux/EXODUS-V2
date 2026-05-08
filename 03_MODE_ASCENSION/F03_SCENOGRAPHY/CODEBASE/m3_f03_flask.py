@@ -8,13 +8,12 @@ from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
 
 # ─── CONFIG PATHS ─────────────────────────────────────────────────
-SCRIPT_DIR   = Path(__file__).parent                    # /content/m3_f03/
-DRIVE_ROOT   = Path("/content/drive/MyDrive/EXODUS_V2/03_MODE_ASCENSION")
-DECOR_PATH   = SCRIPT_DIR / "decor.glb"
-AVATAR_PATH  = SCRIPT_DIR / "avatar.glb"
+DRIVE_ROOT   = Path("/content/drive/MyDrive/EXODUS_V3/M3")
+DECOR_PATH   = DRIVE_ROOT / "SHARED" / "decor.glb"
+AVATAR_PATH  = DRIVE_ROOT / "SHARED" / "avatar.glb"
 OUT_DIR      = DRIVE_ROOT / "F03_SCENOGRAPHY" / "OUT"
 CONFIG_PATH  = OUT_DIR / "spawn_config.json"
-HTML_PATH    = SCRIPT_DIR / "m3_f03_viewer.html"
+HTML_PATH    = Path(__file__).parent / "m3_f03_viewer.html"
 
 app = Flask(__name__)
 CORS(app)
