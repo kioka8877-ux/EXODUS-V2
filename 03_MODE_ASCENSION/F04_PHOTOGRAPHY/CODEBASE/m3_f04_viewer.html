@@ -89,8 +89,8 @@ input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
   <div class="chip"><span class="k">Décor</span><span id="chip-decor">—</span></div>
   <div class="chip"><span class="k">Spawn</span><span id="chip-spawn">—</span></div>
   <div class="divider"></div>
-  <button class="tb-btn" onclick="loadAvatar()">DRIVE : Avatar</button>
-  <button class="tb-btn" onclick="loadDecor()">DRIVE : Décor</button>
+  <button class="tb-btn" id="btn-load-avatar">DRIVE : Avatar</button>
+  <button class="tb-btn" id="btn-load-decor">DRIVE : Décor</button>
 </div>
 
 <div id="main">
@@ -102,9 +102,9 @@ input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
     <div class="sec">
       <div class="sec-title">Presets Eclairage</div>
       <div class="preset-row">
-        <button class="preset-btn" id="pr-studio"  onclick="applyPreset('STUDIO')">STUDIO</button>
-        <button class="preset-btn" id="pr-outdoor" onclick="applyPreset('OUTDOOR')">OUTDOOR</button>
-        <button class="preset-btn" id="pr-neon"    onclick="applyPreset('NEON')">NEON</button>
+        <button class="preset-btn" id="pr-studio">STUDIO</button>
+        <button class="preset-btn" id="pr-outdoor">OUTDOOR</button>
+        <button class="preset-btn" id="pr-neon">NEON</button>
       </div>
     </div>
 
@@ -112,19 +112,19 @@ input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
     <div class="sec">
       <div class="sec-title">Camera Principale</div>
       <div class="row"><label>FOV</label>
-        <input type="range" id="sl-fov" min="15" max="120" step="1" value="55" oninput="updateCam()">
+        <input type="range" id="sl-fov" min="15" max="120" step="1" value="55">
         <span class="val" id="v-fov">55°</span>
       </div>
       <div class="row"><label>Pos X</label>
-        <input type="range" id="sl-cx" min="-50" max="50" step="0.1" value="0" oninput="updateCam()">
+        <input type="range" id="sl-cx" min="-50" max="50" step="0.1" value="0">
         <span class="val" id="v-cx">0</span>
       </div>
       <div class="row"><label>Pos Y</label>
-        <input type="range" id="sl-cy" min="0" max="30" step="0.1" value="3" oninput="updateCam()">
+        <input type="range" id="sl-cy" min="0" max="30" step="0.1" value="3">
         <span class="val" id="v-cy">3</span>
       </div>
       <div class="row"><label>Pos Z</label>
-        <input type="range" id="sl-cz" min="-50" max="50" step="0.1" value="6" oninput="updateCam()">
+        <input type="range" id="sl-cz" min="-50" max="50" step="0.1" value="6">
         <span class="val" id="v-cz">6</span>
       </div>
     </div>
@@ -133,11 +133,11 @@ input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
     <div class="sec">
       <div class="sec-title">Lumière Ambiante</div>
       <div class="row"><label>Intensité</label>
-        <input type="range" id="sl-ai" min="0" max="5" step="0.05" value="1.5" oninput="updateLights()">
+        <input type="range" id="sl-ai" min="0" max="5" step="0.05" value="1.5">
         <span class="val" id="v-ai">1.5</span>
       </div>
       <div class="color-row"><label>Couleur</label>
-        <input type="color" id="col-a" value="#ffffff" oninput="updateLights()">
+        <input type="color" id="col-a" value="#ffffff">
       </div>
     </div>
 
@@ -145,26 +145,26 @@ input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
     <div class="sec">
       <div class="sec-title">Lumière Directionnelle</div>
       <div class="row"><label>Intensité</label>
-        <input type="range" id="sl-di" min="0" max="6" step="0.1" value="2.0" oninput="updateLights()">
+        <input type="range" id="sl-di" min="0" max="6" step="0.1" value="2.0">
         <span class="val" id="v-di">2.0</span>
       </div>
       <div class="color-row"><label>Couleur</label>
-        <input type="color" id="col-d" value="#fff4e0" oninput="updateLights()">
+        <input type="color" id="col-d" value="#fff4e0">
       </div>
       <div class="row"><label>Dir X</label>
-        <input type="range" id="sl-dx" min="-20" max="20" step="0.5" value="5" oninput="updateLights()">
+        <input type="range" id="sl-dx" min="-20" max="20" step="0.5" value="5">
         <span class="val" id="v-dx">5</span>
       </div>
       <div class="row"><label>Dir Y</label>
-        <input type="range" id="sl-dy" min="0" max="30" step="0.5" value="10" oninput="updateLights()">
+        <input type="range" id="sl-dy" min="0" max="30" step="0.5" value="10">
         <span class="val" id="v-dy">10</span>
       </div>
       <div class="row"><label>Dir Z</label>
-        <input type="range" id="sl-dz" min="-20" max="20" step="0.5" value="5" oninput="updateLights()">
+        <input type="range" id="sl-dz" min="-20" max="20" step="0.5" value="5">
         <span class="val" id="v-dz">5</span>
       </div>
       <div class="chk-row">
-        <input type="checkbox" id="chk-shadow" checked onchange="updateLights()">
+        <input type="checkbox" id="chk-shadow" checked>
         <label for="chk-shadow">Ombres portées</label>
       </div>
     </div>
@@ -173,37 +173,37 @@ input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
     <div class="sec">
       <div class="sec-title">Hemisphere</div>
       <div class="row"><label>Intensité</label>
-        <input type="range" id="sl-hi" min="0" max="3" step="0.05" value="0.6" oninput="updateLights()">
+        <input type="range" id="sl-hi" min="0" max="3" step="0.05" value="0.6">
         <span class="val" id="v-hi">0.6</span>
       </div>
       <div class="color-row"><label>Sky</label>
-        <input type="color" id="col-hs" value="#8888ff" oninput="updateLights()">
+        <input type="color" id="col-hs" value="#8888ff">
       </div>
       <div class="color-row"><label>Ground</label>
-        <input type="color" id="col-hg" value="#443322" oninput="updateLights()">
+        <input type="color" id="col-hg" value="#443322">
       </div>
     </div>
 
     <div style="flex:1"></div>
 
     <div class="sec">
-      <button class="btn-confirm" id="btn-confirm" onclick="saveConfig()">CONFIRMER DRIVE</button>
+      <button class="btn-confirm" id="btn-confirm">CONFIRMER DRIVE</button>
       <div class="feedback" id="feedback"></div>
     </div>
 
   </div>
 </div>
 
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-import { GLTFLoader }    from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
 
 // ─── SCENE ────────────────────────────────────────────────────────
 const canvas   = document.getElementById('viewport');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -213,7 +213,7 @@ scene.background = new THREE.Color(0x111113);
 // Editor camera (navigate with OrbitControls)
 const editorCam = new THREE.PerspectiveCamera(55, 1, 0.01, 2000);
 editorCam.position.set(10, 8, 15);
-const orbit = new OrbitControls(editorCam, renderer.domElement);
+const orbit = new THREE.OrbitControls(editorCam, renderer.domElement);
 orbit.update();
 
 // Main camera (the one being configured → shown via CameraHelper)
@@ -347,7 +347,7 @@ async function loadGLB(url, chipId, isAvatar) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.statusText);
     const buf = await res.arrayBuffer();
-    new GLTFLoader().parse(buf, '', (gltf) => {
+    new THREE.GLTFLoader().parse(buf, '', (gltf) => {
       gltf.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }});
       scene.add(gltf.scene);
       const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -458,6 +458,17 @@ function setFeedback(msg, color) {
   const el = document.getElementById('feedback');
   el.textContent = msg; el.style.color = color;
 }
+
+// ─── EVENT WIRING ─────────────────────────────────────────────────
+document.getElementById('btn-load-avatar').addEventListener('click', function(){ loadAvatar(); });
+document.getElementById('btn-load-decor').addEventListener('click', function(){ loadDecor(); });
+document.getElementById('pr-studio').addEventListener('click', function(){ applyPreset('STUDIO'); });
+document.getElementById('pr-outdoor').addEventListener('click', function(){ applyPreset('OUTDOOR'); });
+document.getElementById('pr-neon').addEventListener('click', function(){ applyPreset('NEON'); });
+document.getElementById('btn-confirm').addEventListener('click', function(){ saveConfig(); });
+['sl-fov','sl-cx','sl-cy','sl-cz'].forEach(function(id){ document.getElementById(id).addEventListener('input', function(){ updateCam(); }); });
+['sl-ai','sl-di','sl-dx','sl-dy','sl-dz','sl-hi','col-a','col-d','col-hs','col-hg'].forEach(function(id){ document.getElementById(id).addEventListener('input', function(){ updateLights(); }); });
+document.getElementById('chk-shadow').addEventListener('change', function(){ updateLights(); });
 
 // Init
 loadSpawnConfig();
