@@ -12,9 +12,11 @@ body {
   display: flex; flex-direction: column; height: 100vh; overflow: hidden;
 }
 #topbar {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  overflow-x: auto; white-space: nowrap;
   padding: 7px 12px; background: #141416; border-bottom: 1px solid #2a2a2e;
 }
+.tb-btn { flex-shrink: 0; }
 .logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #c8a96e; text-transform: uppercase; }
 .ver  { font-size: 10px; color: #333; }
 .divider { width: 1px; height: 24px; background: #2a2a2e; margin: 0 2px; }
@@ -194,16 +196,19 @@ input[type=checkbox] { accent-color: #c8a96e; cursor: pointer; }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // ─── SCENE ────────────────────────────────────────────────────────
 const canvas   = document.getElementById('viewport');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -213,7 +218,7 @@ scene.background = new THREE.Color(0x111113);
 // Editor camera (navigate with OrbitControls)
 const editorCam = new THREE.PerspectiveCamera(55, 1, 0.01, 2000);
 editorCam.position.set(10, 8, 15);
-const orbit = new THREE.OrbitControls(editorCam, renderer.domElement);
+const orbit = new OrbitControls(editorCam, renderer.domElement);
 orbit.update();
 
 // Main camera (the one being configured → shown via CameraHelper)
@@ -347,7 +352,7 @@ async function loadGLB(url, chipId, isAvatar) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.statusText);
     const buf = await res.arrayBuffer();
-    new THREE.GLTFLoader().parse(buf, '', (gltf) => {
+    new GLTFLoader().parse(buf, '', (gltf) => {
       gltf.scene.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }});
       scene.add(gltf.scene);
       const box = new THREE.Box3().setFromObject(gltf.scene);
