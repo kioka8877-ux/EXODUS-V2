@@ -96,7 +96,7 @@ input[type=number]:focus{border-color:#c8a96e}
   <button class="tb-btn" id="btn-decor" onclick="loadFromDrive('decor')">Drive : D&#233;cor</button>
   <button class="tb-btn" id="btn-avatar" onclick="loadFromDrive('avatar')">Drive : Avatar</button>
   <div class="divider"></div>
-  <span style="font-size:10px;color:#333">WASD cam | double-clic sol = balise</span>
+  <span style="font-size:10px;color:#333">WASD cam | double-clic sol = balise | P = vue caméra</span>
 </div>
 <div id="main">
   <div id="viewport">
@@ -238,6 +238,7 @@ tfCtrl.addEventListener('change', () => {
   const bc = beacons.find(b => b.id === activeId);
   if (bc) { bc.pos.x = avatarObj.position.x; bc.pos.y = avatarObj.position.y; bc.pos.z = avatarObj.position.z; }
   updateCoords();
+  updateDirArrow();
 });
 
 // ── RESIZE ─────────────────────────────────────────────────
@@ -274,6 +275,7 @@ let avatarNatH = null, avatarScale = 1, avatarRotY = 0;
 let beacons = [], activeId = null, bcNextNum = 1;
 let trajMode = 'static', endPos = null, settingEnd = false;
 let endSphere = null, trajLine = null;
+let dirArrow = null;
 let pointerDown = null, lastClick = 0;
 let pendingBeaconPos = null;
 let pendingBeaconId = null;
@@ -441,8 +443,8 @@ window.applyPreset = function(targetH) {
 };
 window.onScaleSlider = function(v) { avatarScale = parseFloat(v); document.getElementById('num-scale').value = parseFloat(v).toFixed(2); updateAvatar(); };
 window.onScaleNum   = function(v) { avatarScale = parseFloat(v)||1; document.getElementById('sl-scale').value = avatarScale; updateAvatar(); };
-window.onRotSlider  = function(v) { avatarRotY = parseFloat(v); document.getElementById('num-roty').value = v; if (avatarObj) avatarObj.rotation.y = avatarRotY * Math.PI/180; };
-window.onRotNum     = function(v) { avatarRotY = parseFloat(v)||0; document.getElementById('sl-roty').value = avatarRotY; if (avatarObj) avatarObj.rotation.y = avatarRotY * Math.PI/180; };
+window.onRotSlider  = function(v) { avatarRotY = parseFloat(v); document.getElementById('num-roty').value = v; if (avatarObj) { avatarObj.rotation.y = avatarRotY * Math.PI/180; updateDirArrow(); } };
+window.onRotNum     = function(v) { avatarRotY = parseFloat(v)||0; document.getElementById('sl-roty').value = avatarRotY; if (avatarObj) { avatarObj.rotation.y = avatarRotY * Math.PI/180; updateDirArrow(); } };
 
 function updateAvatar() {
   if (!avatarObj) return;
@@ -464,8 +466,34 @@ function spawnAvatar(pos) {
   avatarObj.position.y += pos.y - box.min.y;
   avatarObj.traverse(c => { if (c.isMesh) c.castShadow = true; });
   scene.add(avatarObj);
+  updateDirArrow();
   tfCtrl.attach(avatarObj);
 }
+
+
+// ── DIRECTION ARROW + PREVIEW CAM ─────────────────
+function updateDirArrow() {
+  if (!avatarObj) return;
+  if (dirArrow) scene.remove(dirArrow);
+  const rY = avatarRotY * Math.PI / 180;
+  const dir = new THREE.Vector3(-Math.sin(rY), 0, -Math.cos(rY)).normalize();
+  const origin = new THREE.Vector3(
+    avatarObj.position.x, avatarObj.position.y + 0.05, avatarObj.position.z);
+  dirArrow = new THREE.ArrowHelper(dir, origin, 1.8, 0xc8a96e, 0.35, 0.18);
+  scene.add(dirArrow);
+}
+function previewCamera() {
+  if (!avatarObj) return;
+  const pos = avatarObj.position;
+  const rY = avatarRotY * Math.PI / 180;
+  const fwd = new THREE.Vector3(-Math.sin(rY), 0, -Math.cos(rY));
+  camera.position.set(pos.x + fwd.x * 3, pos.y + 1.6, pos.z + fwd.z * 3);
+  orbit.target.set(pos.x, pos.y + 1.0, pos.z);
+  orbit.update();
+}
+document.addEventListener('keydown', e => {
+  if (e.key.toLowerCase() === 'p') previewCamera();
+});
 
 // ── BEACONS ────────────────────────────────────────────────
 function placeBeacon(pos, customName) {
