@@ -72,6 +72,20 @@ input[type=number]:focus{border-color:#c8a96e}
 #bc-popup-ok:hover{background:#e0c080}
 #bc-popup-cancel{flex:1;padding:9px;border-radius:5px;border:1px solid #2a2a2e;background:#1c1c20;color:#888;font-size:12px;cursor:pointer;transition:all .15s}
 #bc-popup-cancel:hover{border-color:#555;color:#aaa}
+
+#anim-popup-overlay,#loop-popup-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.65);z-index:201;align-items:center;justify-content:center}
+#anim-popup-overlay.visible,#loop-popup-overlay.visible{display:flex}
+#anim-popup,#loop-popup{background:#1c1c20;border:1px solid #c8a96e;border-radius:9px;padding:22px 24px;min-width:280px;display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 32px rgba(0,0,0,.65)}
+.p2-title{font-size:12px;font-weight:700;color:#c8a96e;text-transform:uppercase;letter-spacing:.12em}
+.p2-sub{font-size:11px;color:#555;margin-top:-8px}
+.p2-row{display:flex;gap:8px}
+.p2-btn{flex:1;padding:11px 8px;border-radius:6px;border:1px solid #2a2a2e;background:#1c1c20;color:#aaa;font-size:12px;cursor:pointer;font-weight:700;transition:all .15s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:3px}
+.p2-btn:hover{border-color:#c8a96e;background:#1a1608;color:#c8a96e}
+.p2-desc{font-size:9px;color:#555;font-weight:400}
+.p2-btn:hover .p2-desc{color:#a07840}
+.p2-cancel{padding:7px;border-radius:5px;border:1px solid #1e1e22;background:transparent;color:#444;font-size:11px;cursor:pointer;transition:all .15s;text-align:center;width:100%}
+.p2-cancel:hover{color:#888;border-color:#333}
+
 </style>
 </head>
 <body>
@@ -151,6 +165,32 @@ input[type=number]:focus{border-color:#c8a96e}
       <button id="bc-popup-ok">PLACER</button>
       <button id="bc-popup-cancel">Annuler</button>
     </div>
+  </div>
+</div>
+
+<!-- ── POPUP ANIMATION ────────────────── -->
+<div id="anim-popup-overlay">
+  <div id="anim-popup">
+    <div class="p2-title">Type d&#x2019;Animation</div>
+    <div class="p2-sub">Comment l&#x2019;avatar se comporte &#xe0; cette balise&nbsp;?</div>
+    <div class="p2-row">
+      <button class="p2-btn" id="anim-btn-static">STATIQUE<span class="p2-desc">reste ici</span></button>
+      <button class="p2-btn" id="anim-btn-linear">LIN&#xc9;AIRE<span class="p2-desc">se d&#xe9;place</span></button>
+    </div>
+    <button class="p2-cancel" id="anim-popup-cancel">Annuler</button>
+  </div>
+</div>
+
+<!-- ── POPUP LECTURE ──────────────────── -->
+<div id="loop-popup-overlay">
+  <div id="loop-popup">
+    <div class="p2-title">Lecture</div>
+    <div class="p2-sub">Nombre de fois que l&#x2019;animation se joue</div>
+    <div class="p2-row">
+      <button class="p2-btn" id="loop-btn-once">UNE FOIS<span class="p2-desc">joue et arr&#xea;te</span></button>
+      <button class="p2-btn" id="loop-btn-loop">LOOP x2<span class="p2-desc">joue deux fois</span></button>
+    </div>
+    <button class="p2-cancel" id="loop-popup-cancel">Annuler</button>
   </div>
 </div>
 
@@ -236,6 +276,8 @@ let trajMode = 'static', endPos = null, settingEnd = false;
 let endSphere = null, trajLine = null;
 let pointerDown = null, lastClick = 0;
 let pendingBeaconPos = null;
+let pendingBeaconId = null;
+const bcAnimModes = {};
 
 // ── POPUP BALISE ───────────────────────────────────────────
 const popupOverlay = document.getElementById('bc-popup-overlay');
@@ -247,6 +289,38 @@ function showBeaconPopup(pos) {
   popupOverlay.classList.add('visible');
   setTimeout(() => { popupInput.focus(); popupInput.select(); }, 60);
 }
+
+// ── POPUP ANIM + LOOP ───────────────────────────
+function applyBeaconAnim(mode, loop) {
+  if (pendingBeaconId !== null) bcAnimModes[pendingBeaconId] = { mode, loop };
+  setTraj(mode);
+  pendingBeaconId = null;
+}
+document.getElementById('anim-btn-static').addEventListener('click', () => {
+  document.getElementById('anim-popup-overlay').classList.remove('visible');
+  applyBeaconAnim('static', 1);
+});
+document.getElementById('anim-btn-linear').addEventListener('click', () => {
+  document.getElementById('anim-popup-overlay').classList.remove('visible');
+  document.getElementById('loop-popup-overlay').classList.add('visible');
+});
+document.getElementById('anim-popup-cancel').addEventListener('click', () => {
+  document.getElementById('anim-popup-overlay').classList.remove('visible');
+  applyBeaconAnim('static', 1);
+});
+document.getElementById('loop-btn-once').addEventListener('click', () => {
+  document.getElementById('loop-popup-overlay').classList.remove('visible');
+  applyBeaconAnim('linear', 1);
+});
+document.getElementById('loop-btn-loop').addEventListener('click', () => {
+  document.getElementById('loop-popup-overlay').classList.remove('visible');
+  applyBeaconAnim('linear', 2);
+});
+document.getElementById('loop-popup-cancel').addEventListener('click', () => {
+  document.getElementById('loop-popup-overlay').classList.remove('visible');
+  applyBeaconAnim('linear', 1);
+});
+
 function closePopup() {
   popupOverlay.classList.remove('visible');
   pendingBeaconPos = null;
@@ -254,7 +328,11 @@ function closePopup() {
 document.getElementById('bc-popup-ok').addEventListener('click', () => {
   const name = popupInput.value.trim() || ('Balise_' + String(bcNextNum).padStart(2, '0'));
   popupOverlay.classList.remove('visible');
-  if (pendingBeaconPos) placeBeacon(pendingBeaconPos, name);
+  if (pendingBeaconPos) {
+    placeBeacon(pendingBeaconPos, name);
+    pendingBeaconId = activeId;
+    document.getElementById('anim-popup-overlay').classList.add('visible');
+  }
   pendingBeaconPos = null;
 });
 document.getElementById('bc-popup-cancel').addEventListener('click', closePopup);
@@ -487,9 +565,15 @@ window.saveConfig = async function() {
     active_beacon: bc ? bc.name : null,
     beacons: beacons.map(b => ({name:b.name, x:+b.pos.x.toFixed(4), y:+b.pos.y.toFixed(4), z:+b.pos.z.toFixed(4)})),
     spawn, scale: +avatarScale.toFixed(4), rot_y: avatarRotY,
-    trajectory: trajMode==='linear' && endPos
-      ? {mode:'linear',start:{...spawn},end:{x:+endPos.x.toFixed(4),y:+endPos.y.toFixed(4),z:+endPos.z.toFixed(4)}}
-      : {mode:'static'}
+    trajectory: (function(){
+      const ai = bcAnimModes[activeId] || { mode: trajMode, loop: 1 };
+      if (ai.mode === 'linear' && endPos) {
+        return { mode:'linear', start:{...spawn},
+                 end:{x:+endPos.x.toFixed(4),y:+endPos.y.toFixed(4),z:+endPos.z.toFixed(4)},
+                 loop: ai.loop };
+      }
+      return { mode:'static' };
+    })()
   };
   try {
     const r = await fetch('/save-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(cfg)});
