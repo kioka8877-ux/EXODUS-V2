@@ -1,7 +1,7 @@
 # TRACKING F04 — PHOTOGRAPHY
 ## "L'Oeil du Psyker"
 
-**Statut** : ✅ FORGE
+**Statut** : ✅ VALIDE EN PRODUCTION
 **Priorité** : P1
 **Dépendances entrantes** : spawn_config.json (F03)
 **Dépendances sortantes** : camera_config.json + light_config.json → F05
@@ -70,6 +70,14 @@ OUT : camera_config.json
 | F04-S4-T7 | Preset NEON ROBLOX applique toutes les valeurs | ✅ DONE |
 | F04-S4-T8 | POST /save-config → {camera_config, light_config} | ✅ DONE |
 
+### SESSION 5 — Hotfixes + Validation production (2026-05-09)
+| ID | Tâche | Statut |
+|----|-------|--------|
+| F04-S5-T1 | Fix : editorCam ne framait pas l'avatar après apply spawn_config — box2/ctr2/sz2 ajouté | ✅ DONE |
+| F04-S5-T2 | Analyse fonctionnelle : F04 viewer passif, pas de TransformControls nécessaire | ✅ DONE |
+| F04-S5-T3 | Outputs vérifiés manuellement : camera_config.json + light_config.json structurellement valides | ✅ DONE |
+| F04-S5-T4 | Confirmation pipeline : F03 → spawn_config → F04 → camera_config + light_config → F05 | ✅ DONE |
+
 ## PRESETS ECLAIRAGE
 | Preset | Ambient | Directionnel | Hemisphere | HDRI |
 |--------|---------|-------------|-----------|------|
@@ -83,10 +91,18 @@ OUT : camera_config.json
 - [x] 3 presets fonctionnels
 - [x] Sliders mise à jour live
 - [x] 2 JSONs valides sauvés sur Drive
+- [x] camera_config.json validé en production (fov:55, position:{0,3,6}, near:0.01, far:10000)
+- [x] light_config.json validé en production (preset:studio_soft, ambient/directional/hemisphere complets)
+- [x] Fix framing avatar (commit 5b935f492e71) — editorCam recadre l'avatar après spawn_config apply
+
+## DECLARATION DE VICTOIRE
+> *« F04 — L'Oeil du Psyker voit. Les configs sont forgées. Le pipeline tient. Au nom de l'Empereur, F04 est VALIDE. »*
+>
+> — Sceau apposé le 2026-05-09. La flotte peut avancer vers F05.
 
 ## FICHIERS FORGES
 | Fichier | Description |
 |---------|-------------|
 | `m3_f04_flask.py` | Flask 6 endpoints : `/`, `/info`, `/files/avatar`, `/files/decor`, `/config/spawn`, `/save-config` |
-| `m3_f04_viewer.html` | Three.js r160 — editorCam + mainCam + CameraHelper gold, AmbientLight + DirLight + HemiLight, 3 presets, sliders live |
+| `m3_f04_viewer.html` | Three.js r160 — editorCam + mainCam + CameraHelper gold, AmbientLight + DirLight + HemiLight, 3 presets, sliders live, fix framing avatar |
 | `m3_f04.ipynb` | 4 cellules Colab : montage Drive, vérif inputs, lancement Flask, lecture configs |
