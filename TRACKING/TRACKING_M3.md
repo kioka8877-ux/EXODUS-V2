@@ -15,7 +15,7 @@
 |----|---------|---------|----------|--------|----------|
 | F01 | VALIDATION | GLB + Audio → rapport JSON | P1 | ✅ SCELLÉ — TEST PROD OK (2026-05-08) | — |
 | F02 | LOGISTICS | Attach props → actor_equipped.glb | P2 | ✅ FORGE | F01 |
-| F03 | SCENOGRAPHY | Spawn + Trajectoire → spawn_config.json | P0 | ✅ FORGE | — |
+| F03 | SCENOGRAPHY | Spawn + Trajectoire → spawn_config.json | P0 | ✅ SCELLÉ — TEST PROD OK (2026-05-09) | — |
 | F04 | PHOTOGRAPHY | Camera + Lights → 2 JSONs | P1 | ✅ FORGE | F03 |
 | F05 | ALCHEMIST | Render GPU T4 → frames PNG | P0 | ✅ FORGE | F03 F04 |
 | F06 | CARRIER | RIFE + ffmpeg → MP4 final | P0 | ✅ FORGE | F05 |
