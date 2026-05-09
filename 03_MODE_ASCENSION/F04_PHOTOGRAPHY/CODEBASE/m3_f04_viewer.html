@@ -366,6 +366,12 @@ async function loadGLB(url, chipId, isAvatar) {
           gltf.scene.scale.setScalar(s.scale || 1);
           gltf.scene.rotation.y = ((s.rot_y || 0) * Math.PI) / 180;
         }
+        // Frame editor camera on avatar
+        const box2 = new THREE.Box3().setFromObject(gltf.scene);
+        const ctr2 = box2.getCenter(new THREE.Vector3());
+        const sz2  = box2.getSize(new THREE.Vector3()).length();
+        editorCam.position.set(ctr2.x, ctr2.y + sz2 * 0.4, ctr2.z + sz2 * 0.8);
+        orbit.target.copy(ctr2); orbit.update();
       } else {
         // Frame decor in editor camera
         editorCam.position.set(ctr.x, ctr.y + sz * 0.4, ctr.z + sz * 0.8);
