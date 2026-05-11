@@ -443,7 +443,11 @@ async function loadAvatar() {
       chipOK('chip-avatar');
       assetsReady.avatar = true;
       checkAllReady();
-    }, e => { throw e; });
+    }, (e) => {
+      chipERR('chip-avatar');
+      assetsReady.avatar = true;
+      checkAllReady();
+    });
   } catch (e) {
     chipERR('chip-avatar');
     assetsReady.avatar = true;
@@ -464,7 +468,11 @@ async function loadDecor() {
       chipOK('chip-decor');
       assetsReady.decor = true;
       checkAllReady();
-    }, e => { throw e; });
+    }, (e) => {
+      chipERR('chip-decor');
+      assetsReady.decor = true;
+      checkAllReady();
+    });
   } catch (e) {
     chipERR('chip-decor');
     assetsReady.decor = true;
