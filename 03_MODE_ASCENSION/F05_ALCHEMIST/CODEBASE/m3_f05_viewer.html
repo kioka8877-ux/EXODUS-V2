@@ -235,11 +235,7 @@ input[type=range] { flex: 1; accent-color: #c8a96e; cursor: pointer; }
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { GLTFLoader }    from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
-import {
-  EffectComposer, RenderPass, EffectPass,
-  BloomEffect, VignetteEffect, HueSaturationEffect,
-  BrightnessContrastEffect, FXAAEffect
-} from 'https://esm.sh/postprocessing@6.36.3?external=three';
+// [PATCH] postprocessing chargé dynamiquement dans initPostFX()
 
 // ─── URL PARAMS ───────────────────────────────────────────────────
 const urlP     = new URLSearchParams(location.search);
@@ -285,17 +281,33 @@ dirLight.shadow.mapSize.set(2048, 2048);
 const hemiLight = new THREE.HemisphereLight(0x8888ff, 0x443322, 0.6);
 scene.add(ambLight, dirLight, hemiLight);
 
-// ─── POSTPROCESSING ───────────────────────────────────────────────
-const composer        = new EffectComposer(renderer);
-const renderPass      = new RenderPass(scene, camera);
-const bloomEffect     = new BloomEffect({ intensity: 1.0, radius: 0.4, luminanceThreshold: 0.3 });
-const vignetteEffect  = new VignetteEffect({ offset: 0.3, darkness: 0.5 });
-const hueSatEffect    = new HueSaturationEffect({ saturation: 0 });
-const bcEffect        = new BrightnessContrastEffect({ brightness: 0, contrast: 0 });
-const fxaaEffect      = new FXAAEffect();
+// ─── POSTPROCESSING (dynamique + fallback) ───────────────────────
+let composer       = null;
+let bloomEffect    = null;
+let vignetteEffect = null;
+let hueSatEffect   = null;
+let bcEffect       = null;
+let fxaaEffect     = null;
+let renderFn = () => renderer.render(scene, camera);
 
-composer.addPass(renderPass);
-composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, hueSatEffect, bcEffect, fxaaEffect));
+async function initPostFX() {
+  try {
+    const pfx = await import('https://esm.sh/postprocessing@6.36.3?external=three');
+    composer       = new pfx.EffectComposer(renderer);
+    bloomEffect    = new pfx.BloomEffect({ intensity: 1.0, radius: 0.4, luminanceThreshold: 0.3 });
+    vignetteEffect = new pfx.VignetteEffect({ offset: 0.3, darkness: 0.5 });
+    hueSatEffect   = new pfx.HueSaturationEffect({ saturation: 0 });
+    bcEffect       = new pfx.BrightnessContrastEffect({ brightness: 0, contrast: 0 });
+    fxaaEffect     = new pfx.FXAAEffect();
+    composer.addPass(new pfx.RenderPass(scene, camera));
+    composer.addPass(new pfx.EffectPass(camera, bloomEffect, vignetteEffect,
+                                        hueSatEffect, bcEffect, fxaaEffect));
+    renderFn = () => composer.render();
+    console.log('[PostFX] EffectComposer chargé OK');
+  } catch (e) {
+    console.warn('[PostFX] CDN inaccessible — fallback renderer.render() actif :', e.message);
+  }
+}
 
 // ─── ÉTAT SCÈNE ───────────────────────────────────────────────────
 let avatarRoot     = null;
@@ -319,6 +331,7 @@ function chipERR(id) { const c = document.getElementById(id); c.textContent = 'E
 function checkAllReady() {
   if (Object.values(assetsReady).every(Boolean)) {
     document.getElementById('scene-ready').style.display = 'block';
+    window.sceneReady = true;
     updateFramesInfo();
   }
 }
@@ -632,7 +645,7 @@ window.setRenderFrame = function(frameN) {
     avatarAction.time   = (frameN / currentFps) % clip.duration;
     mixer.update(0);
   }
-  composer.render();
+  renderFn();
   document.getElementById('frame-done').dataset.ready = '1';
 };
 
@@ -643,7 +656,7 @@ if (!isRender) {
     const delta = clock.getDelta();
     if (mixer) mixer.update(delta);
     if (orbit) orbit.update();
-    composer.render();
+    renderFn();
   })();
 }
 
@@ -658,6 +671,7 @@ document.getElementById('btn-cancel').addEventListener('click', function(){ canc
 ['sl-bloom-i','sl-bloom-r','sl-bloom-t','sl-vig-o','sl-vig-d','sl-sat','sl-bri','sl-con'].forEach(function(id){ document.getElementById(id).addEventListener('input', function(){ updateFX(); }); });
 
 // ─── INIT ─────────────────────────────────────────────────────────
+initPostFX(); // non-bloquant — fallback si CDN down
 loadSpawnConfig();
 loadCameraConfig();
 loadLightConfig();

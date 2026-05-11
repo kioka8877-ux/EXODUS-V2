@@ -79,7 +79,7 @@ def _playwright_render(fps: int, total_frames: int, port: int) -> None:
         try:
             url = f"http://localhost:{port}/?render=1&fps={fps}&total={total_frames}"
             page.goto(url, timeout=30_000)
-            page.wait_for_selector("#scene-ready", timeout=300_000)
+            page.wait_for_function("window.sceneReady === true", timeout=300_000)
 
             for frame_n in range(start_frame, total_frames + 1):
                 if _cancel_flag.is_set():
