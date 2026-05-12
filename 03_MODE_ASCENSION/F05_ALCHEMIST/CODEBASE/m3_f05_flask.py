@@ -3,8 +3,13 @@ M3_F05 — ALCHEMIST : Serveur Flask
 Endpoints : /, /info, /files/avatar, /files/decor,
             /config/spawn, /config/camera, /config/light,
             /render, /status, /cancel
+
+FIX [mescouilles] : Playwright ne peut pas écrire directement sur le
+mount Google Drive (FUSE). Les screenshots sont d'abord sauvegardés
+en local (/content/frames_out/) puis copiés vers Drive via shutil.
 """
 import json
+import shutil
 import threading
 import time
 from pathlib import Path
@@ -22,6 +27,9 @@ LIGHT_CFG   = DRIVE_ROOT / "F04_PHOTOGRAPHY"  / "OUT" / "light_config.json"
 OUT_FRAMES  = DRIVE_ROOT / "F05_ALCHEMIST"    / "OUT_FRAMES"
 CHECKPOINT  = DRIVE_ROOT / "F05_ALCHEMIST"    / "OUT" / "m3_f05_checkpoint.json"
 HTML_PATH   = Path(__file__).parent / "m3_f05_viewer.html"
+
+# ─── CHEMIN LOCAL pour Playwright (évite le bug FUSE Drive) ───────
+LOCAL_FRAMES = Path("/content/frames_out")
 
 app = Flask(__name__)
 CORS(app)
@@ -41,7 +49,11 @@ _cancel_flag   = threading.Event()
 
 
 def _playwright_render(fps: int, total_frames: int, port: int) -> None:
-    """Thread de capture Playwright — GPU EGL headless."""
+    """Thread de capture Playwright — GPU EGL headless.
+
+    FIX FUSE : Playwright écrit en local (/content/frames_out/),
+    puis Python copie chaque frame vers Drive via shutil.copy2().
+    """
     _cancel_flag.clear()
     try:
         from playwright.sync_api import sync_playwright
@@ -52,6 +64,7 @@ def _playwright_render(fps: int, total_frames: int, port: int) -> None:
         return
 
     OUT_FRAMES.mkdir(parents=True, exist_ok=True)
+    LOCAL_FRAMES.mkdir(parents=True, exist_ok=True)
     CHECKPOINT.parent.mkdir(parents=True, exist_ok=True)
 
     # Reprise depuis checkpoint éventuel
@@ -95,7 +108,15 @@ def _playwright_render(fps: int, total_frames: int, port: int) -> None:
                 )
 
                 fname = f"frame_{frame_n:04d}.png"
-                page.screenshot(path=str(OUT_FRAMES / fname), full_page=False)
+
+                # ── FIX FUSE : screenshot → local d'abord ─────────
+                local_path = LOCAL_FRAMES / fname
+                page.screenshot(path=str(local_path), full_page=False)
+
+                # Copie vers Drive après confirmation d'écriture locale
+                if local_path.exists():
+                    shutil.copy2(str(local_path), str(OUT_FRAMES / fname))
+                # ──────────────────────────────────────────────────
 
                 # Mise à jour état
                 elapsed = time.time() - started_at
