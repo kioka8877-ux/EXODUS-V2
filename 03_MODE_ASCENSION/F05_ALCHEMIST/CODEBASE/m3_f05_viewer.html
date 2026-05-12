@@ -374,6 +374,7 @@ async function loadCameraConfig() {
     camera.far  = cfg.far  || 10000;
     if (cfg.position) camera.position.set(cfg.position.x, cfg.position.y, cfg.position.z);
     camera.updateProjectionMatrix();
+    window._camAnim = cfg.animation || null;
     if (orbit) { orbit.target.set(0, 1, 0); orbit.update(); }
     chipOK('chip-cam');
   } catch (e) {
@@ -634,12 +635,37 @@ function setFeedback(msg, color) {
 
 // ─── window.setRenderFrame — APPELÉ PAR PLAYWRIGHT ───────────────
 window.setRenderFrame = function(frameN) {
+  const t = totalFrames > 0 ? frameN / totalFrames : 0;
+
   // Root motion
   if (!isTrajStatic && avatarRoot) {
-    const t = totalFrames > 0 ? frameN / totalFrames : 0;
     avatarRoot.position.lerpVectors(trajStart, trajEnd, t);
   }
-  // Animation
+
+  // Camera animation
+  if (window._camAnim && camera) {
+    const anim = window._camAnim;
+    if (anim.type === 'track' && avatarRoot) {
+      const base = avatarRoot.position;
+      camera.position.set(
+        base.x + anim.offset.x,
+        base.y + anim.offset.y,
+        base.z + anim.offset.z
+      );
+      camera.lookAt(base.x, base.y, base.z);
+    } else if (anim.type === 'orbit') {
+      const angle = (anim.start_angle + (anim.end_angle - anim.start_angle) * t) * Math.PI / 180;
+      camera.position.set(
+        anim.target.x + anim.radius * Math.sin(angle),
+        anim.target.y + anim.height_start + (anim.height_end - anim.height_start) * t,
+        anim.target.z + anim.radius * Math.cos(angle)
+      );
+      camera.lookAt(anim.target.x, anim.target.y, anim.target.z);
+    }
+    camera.updateProjectionMatrix();
+  }
+
+  // Animation squelettique
   if (avatarAction && clip && mixer) {
     avatarAction.paused = true;
     avatarAction.time   = (frameN / currentFps) % clip.duration;
